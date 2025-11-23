@@ -12,7 +12,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     const systemConstants = ref({
         maxSp: 300,
-        initialSp: 200, // 默认初始技力
+        initialSp: 200,
         spRegenRate: 8,
         skillSpCostDefault: 100,
         maxStagger: 100
@@ -41,7 +41,6 @@ export const useTimelineStore = defineStore('timeline', () => {
     const characterRoster = ref([])
     const iconDatabase = ref({})
 
-    // 核心数据
     const tracks = ref([
         { id: null, actions: [], initialGauge: 0, maxGaugeOverride: null },
         { id: null, actions: [], initialGauge: 0, maxGaugeOverride: null },
@@ -58,7 +57,9 @@ export const useTimelineStore = defineStore('timeline', () => {
     const activeTrackId = ref(null)
     const timelineScrollLeft = ref(0)
     const zoomLevel = ref(1.0)
-    const showCursorGuide = ref(true)
+
+    // 默认关闭辅助线
+    const showCursorGuide = ref(false)
     const cursorCurrentTime = ref(0)
 
     // 拖拽相关
@@ -174,7 +175,8 @@ export const useTimelineStore = defineStore('timeline', () => {
             let defaults = { spCost: 0, spGain: 0, gaugeCost: 0, gaugeGain: 0, stagger: 0, teamGaugeGain: 0 }
 
             if (suffix === 'attack') {
-                defaults.spGain = activeChar.attack_spGain || 0; defaults.stagger = activeChar.attack_stagger || 0
+                defaults.spGain = activeChar.attack_spGain || 0
+                defaults.stagger = activeChar.attack_stagger || 0
             } else if (suffix === 'skill') {
                 defaults.spCost = activeChar.skill_spCost || systemConstants.value.skillSpCostDefault;
                 defaults.spGain = activeChar.skill_spGain || activeChar.skill_spReply || 0;
@@ -182,9 +184,14 @@ export const useTimelineStore = defineStore('timeline', () => {
                 defaults.teamGaugeGain = activeChar.skill_teamGaugeGain || 0;
                 defaults.stagger = activeChar.skill_stagger || 0
             } else if (suffix === 'link') {
-                defaults.spGain = activeChar.link_spGain || 0; defaults.gaugeGain = activeChar.link_gaugeGain || 0; defaults.stagger = activeChar.link_stagger || 0
+                defaults.spGain = activeChar.link_spGain || 0
+                defaults.gaugeGain = activeChar.link_gaugeGain || 0
+                defaults.stagger = activeChar.link_stagger || 0
             } else if (suffix === 'ultimate') {
-                defaults.gaugeCost = activeChar.ultimate_gaugeMax || 100; defaults.spGain = activeChar.ultimate_spGain || activeChar.ultimate_spReply || 0; defaults.gaugeGain = activeChar.ultimate_gaugeReply || 0; defaults.stagger = activeChar.ultimate_stagger || 0
+                defaults.gaugeCost = activeChar.ultimate_gaugeMax || 100
+                defaults.spGain = activeChar.ultimate_spGain || activeChar.ultimate_spReply || 0
+                defaults.gaugeGain = activeChar.ultimate_gaugeReply || 0
+                defaults.stagger = activeChar.ultimate_stagger || 0
             } else if (suffix === 'execution') {
                 defaults.spGain = activeChar.execution_spGain || 0;
             }
@@ -209,7 +216,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     })
 
     // ===================================================================================
-    // 6. 基础操作 Actions (Basic Actions)
+    // 6. 基础操作 Actions
     // ===================================================================================
 
     function setZoom(val) { if (val < 0.2) val = 0.2; if (val > 3.0) val = 3.0; zoomLevel.value = val }
@@ -251,7 +258,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     // ===================================================================================
-    // 7. 数据修改 Actions (Recorded History)
+    // 7. 数据修改 Actions
     // ===================================================================================
 
     function addSkillToTrack(trackId, skill, startTime) {
@@ -423,62 +430,35 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     function calculateGlobalSpData() {
         const { maxSp, spRegenRate, initialSp } = systemConstants.value;
-        // 事件队列
         const events = []
         tracks.value.forEach(track => {
             if (!track.actions) return
             track.actions.forEach(action => {
-                // 1. 瞬间消耗 (Cost)
                 if (action.spCost > 0) {
-                    events.push({
-                        time: action.startTime,
-                        valChange: -action.spCost,
-                        type: 'cost'
-                    })
+                    events.push({ time: action.startTime, valChange: -action.spCost, type: 'cost' })
                 }
-                // 逻辑：在这段时间内，暂停自然回复
                 if (action.type === 'skill') {
                     const castTime = 0.5;
-                    // 开始暂停回复
-                    events.push({
-                        time: action.startTime,
-                        lockChange: 1, // 锁计数 +1
-                        type: 'lock_start'
-                    })
-                    // 恢复回复
-                    events.push({
-                        time: action.startTime + castTime,
-                        lockChange: -1, // 锁计数 -1
-                        type: 'lock_end'
-                    })
+                    events.push({ time: action.startTime, lockChange: 1, type: 'lock_start' })
+                    events.push({ time: action.startTime + castTime, lockChange: -1, type: 'lock_end' })
                 }
-                // 3. 瞬间回复 (Gain)
                 if (action.spGain > 0) {
-                    events.push({
-                        time: action.startTime + action.duration,
-                        valChange: action.spGain,
-                        type: 'gain'
-                    })
+                    events.push({ time: action.startTime + action.duration, valChange: action.spGain, type: 'gain' })
                 }
             })
         })
-        // 按时间排序
         events.sort((a, b) => a.time - b.time)
         const points = [];
-        // 初始 SP
         let currentSp = (initialSp !== undefined && initialSp !== null && initialSp !== "") ? Number(initialSp) : 200;
-        // 初始状态
         let currentTime = 0;
-        let regenLockCount = 0; // 当前有多少个技能正在阻止回复
+        let regenLockCount = 0;
         points.push({ time: 0, sp: currentSp });
-        // === 核心推进函数 ===
+
         const advanceTime = (targetTime) => {
             const timeDiff = targetTime - currentTime;
             if (timeDiff <= 0) return;
-            // 关键修改：如果有锁，回复率为 0，否则为正常回复率
             const effectiveRegenRate = regenLockCount > 0 ? 0 : spRegenRate;
             if (currentSp >= maxSp && effectiveRegenRate > 0) {
-                // 已经满且还在回，直接平移
                 currentTime = targetTime;
                 points.push({ time: currentTime, sp: maxSp });
                 return;
@@ -487,45 +467,30 @@ export const useTimelineStore = defineStore('timeline', () => {
             const projectedSp = currentSp + potentialGain;
 
             if (projectedSp >= maxSp) {
-                // 可能会在半路回满
                 const timeToMax = (maxSp - currentSp) / effectiveRegenRate;
                 points.push({ time: currentTime + timeToMax, sp: maxSp });
                 currentSp = maxSp;
                 currentTime = targetTime;
                 points.push({ time: currentTime, sp: maxSp });
             } else {
-                // 没回满，正常增长（如果被锁了，potentialGain是0，这里就是画平线）
                 currentSp = projectedSp;
                 currentTime = targetTime;
                 points.push({ time: currentTime, sp: currentSp });
             }
         }
 
-        // === 遍历事件 ===
         events.forEach(ev => {
-            // 1. 先把时间推移到事件发生的那一刻
             advanceTime(ev.time);
-
-            // 2. 处理数值变化 (瞬间消耗/回复)
             if (ev.valChange) {
                 currentSp += ev.valChange;
-                // 越界修正
                 if (currentSp > maxSp) currentSp = maxSp;
-                // 注意：这里不限制 <0，允许透支显示，交给UI去标红
             }
-
-            // 3. 处理锁变化 (开始/结束暂停)
             if (ev.lockChange) {
                 regenLockCount += ev.lockChange;
             }
-
-            // 记录当前点
             points.push({ time: currentTime, sp: currentSp, type: ev.type })
         });
-
-        // 补齐到最后
         if (currentTime < TOTAL_DURATION) advanceTime(TOTAL_DURATION);
-
         return points
     }
 
@@ -564,6 +529,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function exportProject() { const projectData = { version: '2.0.0', timestamp: Date.now(), tracks: tracks.value, connections: connections.value, characterOverrides: characterOverrides.value }; const jsonString = JSON.stringify(projectData, null, 2); const blob = new Blob([jsonString], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `endaxis_project_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(link.href) }
+
     async function importProject(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader(); reader.onload = (e) => {
