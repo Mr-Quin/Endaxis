@@ -153,10 +153,8 @@ const renderableAnomalies = computed(() => {
   if (raw.length === 0) return []
 
   const rows = Array.isArray(raw[0]) ? raw : [raw]
-  const rowDelays = props.action.anomalyRowDelays || []
   const widthUnit = store.timeBlockWidth
   const ICON_SIZE = 20
-  const GAP = 2
   const BAR_MARGIN = 2
 
   const resultRows = []
@@ -164,20 +162,19 @@ const renderableAnomalies = computed(() => {
   // 获取从本动作出发的所有连线
   const myConnections = store.connections.filter(c => c.from === props.action.instanceId)
 
-  let globalFlatIndex = 0 // 这个仅用于生成唯一的 key 或 id，不再用于匹配连线
+  let globalFlatIndex = 0
 
   rows.forEach((row, rowIndex) => {
-    const startDelay = rowDelays[rowIndex] || 0
-    let currentDurationOffset = startDelay
-    let currentLeft = startDelay * widthUnit
-
     const processedRow = row.map((effect, colIndex) => {
       const myEffectIndex = globalFlatIndex++
-      const originalDurationWidth = effect.duration > 0 ? (effect.duration * widthUnit) : 0
 
-      let displayDuration = effect.duration
+      const offsetTime = Number(effect.offset) || 0
+      const currentLeft = offsetTime * widthUnit
+
+      let displayDuration = effect.duration || 0
       let isConsumed = false
 
+      // 连线消耗逻辑
       let conn = null
       if (effect._id) {
         conn = myConnections.find(c => c.fromEffectId === effect._id)
@@ -191,13 +188,13 @@ const renderableAnomalies = computed(() => {
         const targetAction = targetTrack?.actions.find(a => a.instanceId === conn.to)
 
         if (targetAction) {
-          const visualAbsStartTime = props.action.startTime + (currentLeft / widthUnit)
+          // 计算视觉上的绝对开始时间 (动作开始时间 + 状态偏移时间)
+          const visualAbsStartTime = props.action.startTime + offsetTime
 
           const offset = conn.consumptionOffset || 0
           const consumptionTime = targetAction.startTime - offset
 
           const cutDuration = consumptionTime - visualAbsStartTime
-
           const snappedCutDuration = Math.round(cutDuration * 10) / 10
 
           if (snappedCutDuration >= 0) {
@@ -207,11 +204,15 @@ const renderableAnomalies = computed(() => {
         }
       }
 
+      // 计算时长条的像素宽度
       let finalBarWidth = displayDuration > 0 ? (displayDuration * widthUnit) : 0
       if (finalBarWidth > 0) {
+        // 减去图标宽度，剩余的才是条的宽度
         finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE)
       }
-      if (finalBarWidth > 0) finalBarWidth = Math.max(0, finalBarWidth - BAR_MARGIN)
+      if (finalBarWidth > 0) {
+        finalBarWidth = Math.max(0, finalBarWidth - BAR_MARGIN)
+      }
 
       const itemLayout = {
         data: effect,
@@ -229,11 +230,6 @@ const renderableAnomalies = computed(() => {
         displayDuration,
         originalDuration: effect.duration
       }
-
-      currentDurationOffset += effect.duration
-      const originalBarRenderWidth = Math.max(0, originalDurationWidth - ICON_SIZE - BAR_MARGIN)
-      const spaceTaken = ICON_SIZE + (originalDurationWidth > 0 ? (BAR_MARGIN + originalBarRenderWidth) : 0) + GAP
-      currentLeft += spaceTaken
 
       return itemLayout
     })

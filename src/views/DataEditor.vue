@@ -84,7 +84,7 @@ function addNewCharacter() {
   const allGlobalEffects = [...effectKeys]
 
   const newChar = {
-    id: newId, name: "新干员", rarity: 5, element: "physical", avatar: "/avatars/default.png", exclusive_buffs: [],
+    id: newId, name: "新干员", rarity: 5, element: "physical", avatar: "/Endaxis/avatars/default.png", exclusive_buffs: [],
     accept_team_gauge: true,
 
     // 初始化各类动作属性
@@ -147,7 +147,6 @@ function getSnapshotFromBase(char, type) {
     element: char[`${type}_element`],
     allowedTypes: char[`${type}_allowed_types`] ? [...char[`${type}_allowed_types`]] : [],
     physicalAnomaly: char[`${type}_anomalies`] ? JSON.parse(JSON.stringify(char[`${type}_anomalies`])) : [],
-    anomalyRowDelays: char[`${type}_anomaly_delays`] ? [...char[`${type}_anomaly_delays`]] : [],
     damageTicks: char[`${type}_damage_ticks`] ? JSON.parse(JSON.stringify(char[`${type}_damage_ticks`])) : []
   }
 
@@ -286,7 +285,7 @@ function addAnomalyRow(char, skillType) {
   }
   const allowedList = char[`${skillType}_allowed_types`] || []
   const defaultType = allowedList.length > 0 ? allowedList[0] : 'default'
-  char[key].push([{ type: defaultType, stacks: 1, duration: 0 }])
+  char[key].push([{ type: defaultType, stacks: 1, duration: 0, offset: 0 }])
 }
 
 function addAnomalyToRow(char, skillType, rowIndex) {
@@ -294,7 +293,7 @@ function addAnomalyToRow(char, skillType, rowIndex) {
   const allowedList = char[`${skillType}_allowed_types`] || []
   const defaultType = allowedList.length > 0 ? allowedList[0] : 'default'
   if (rows[rowIndex]) {
-    rows[rowIndex].push({ type: defaultType, stacks: 1, duration: 0 })
+    rows[rowIndex].push({ type: defaultType, stacks: 1, duration: 0, offset: 0 })
   }
 }
 
@@ -308,34 +307,17 @@ function removeAnomaly(char, skillType, rowIndex, colIndex) {
   }
 }
 
-function getRowDelay(char, skillType, rowIndex) {
-  if (!char) return 0
-  const key = `${skillType}_anomaly_delays`
-  const delays = char[key] || []
-  return delays[rowIndex] || 0
-}
-
-function setRowDelay(char, skillType, rowIndex, val) {
-  if (!char) return
-  const key = `${skillType}_anomaly_delays`
-  if (!char[key]) char[key] = []
-  while (char[key].length <= rowIndex) {
-    char[key].push(0)
-  }
-  char[key][rowIndex] = val
-}
-
 // 变体里的矩阵操作
 function addVariantRow(variant) {
   if (!variant.physicalAnomaly) variant.physicalAnomaly = []
   const defaultType = (variant.allowedTypes && variant.allowedTypes.length > 0) ? variant.allowedTypes[0] : 'default'
-  variant.physicalAnomaly.push([{ type: defaultType, stacks: 1, duration: 0 }])
+  variant.physicalAnomaly.push([{ type: defaultType, stacks: 1, duration: 0, offset: 0 }])
 }
 
 function addVariantEffect(variant, rowIndex) {
   if (variant.physicalAnomaly && variant.physicalAnomaly[rowIndex]) {
     const defaultType = (variant.allowedTypes && variant.allowedTypes.length > 0) ? variant.allowedTypes[0] : 'default'
-    variant.physicalAnomaly[rowIndex].push({ type: defaultType, stacks: 1, duration: 0 })
+    variant.physicalAnomaly[rowIndex].push({ type: defaultType, stacks: 1, duration: 0, offset: 0 })
   }
 }
 
@@ -344,22 +326,8 @@ function removeVariantEffect(variant, rowIndex, colIndex) {
     variant.physicalAnomaly[rowIndex].splice(colIndex, 1)
     if (variant.physicalAnomaly[rowIndex].length === 0) {
       variant.physicalAnomaly.splice(rowIndex, 1)
-      if (variant.anomalyRowDelays) variant.anomalyRowDelays.splice(rowIndex, 1)
     }
   }
-}
-
-function getVariantRowDelay(variant, rowIndex) {
-  const delays = variant.anomalyRowDelays || []
-  return delays[rowIndex] || 0
-}
-
-function setVariantRowDelay(variant, rowIndex, val) {
-  if (!variant.anomalyRowDelays) variant.anomalyRowDelays = []
-  while (variant.anomalyRowDelays.length <= rowIndex) {
-    variant.anomalyRowDelays.push(0)
-  }
-  variant.anomalyRowDelays[rowIndex] = val
 }
 
 // 变体里的判定点操作
@@ -413,7 +381,7 @@ function saveData() {
              @click="selectChar(char.id)">
 
           <div class="avatar-wrapper-small" :class="`rarity-${char.rarity}-border`">
-            <img :src="char.avatar" @error="e=>e.target.src='/avatars/default.png'" />
+            <img :src="char.avatar" @error="e=>e.target.src='/Endaxis/avatars/default.png'" />
           </div>
 
           <div class="char-info">
@@ -435,7 +403,7 @@ function saveData() {
         <header class="panel-header">
           <div class="header-left">
             <div class="avatar-wrapper-large" :class="`rarity-${selectedChar.rarity}-border`">
-              <img :src="selectedChar.avatar" @error="e=>e.target.src='/avatars/default.png'" />
+              <img :src="selectedChar.avatar" @error="e=>e.target.src='/Endaxis/avatars/default.png'" />
             </div>
 
             <div class="header-titles">
@@ -573,27 +541,39 @@ function saveData() {
                 <label style="font-size: 12px; color: #aaa; margin-bottom: 8px; display: block; font-weight: bold;">附加异常状态</label>
                 <div class="anomalies-grid-editor">
                   <div v-for="(row, rIndex) in (variant.physicalAnomaly || [])" :key="rIndex" class="editor-row">
-                    <div class="row-delay-input" title="该行起始延迟 (秒)">
-                      <span class="delay-icon">↦</span>
-                      <input type="number" :value="getVariantRowDelay(variant, rIndex)" @input="e => setVariantRowDelay(variant, rIndex, Number(e.target.value))" step="0.1" min="0" class="delay-num" />
-                    </div>
                     <div v-for="(item, cIndex) in row" :key="cIndex" class="editor-card">
                       <div class="card-header">
                         <span class="card-label">R{{rIndex+1}}:C{{cIndex+1}}</span>
                         <button class="btn-icon-del" @click="removeVariantEffect(variant, rIndex, cIndex)">×</button>
                       </div>
-                      <select v-model="item.type" class="card-input">
+                      <select v-model="item.type" class="card-input full-width-mb">
                         <option v-for="opt in getVariantAvailableOptions(variant)" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                       </select>
-                      <div class="card-row">
-                        <input type="number" v-model.number="item.stacks" placeholder="层" class="mini-input"><span class="unit">层</span>
-                        <input type="number" v-model.number="item.duration" placeholder="秒" step="0.5" class="mini-input"><span class="unit">s</span>
+
+                      <div class="card-props-grid">
+                        <div class="prop-item full-span">
+                          <label>层数 (Stacks)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.stacks" placeholder="1" class="mini-input">
+                            <span class="unit">层</span>
+                          </div>
+                        </div>
+                        <div class="prop-item">
+                          <label>触发 (Start)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.offset" placeholder="0" step="0.1" class="mini-input">
+                            <span class="unit">s</span>
+                          </div>
+                        </div>
+                        <div class="prop-item">
+                          <label>持续 (Dur)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.duration" placeholder="0" step="0.5" class="mini-input">
+                            <span class="unit">s</span>
+                          </div>
+                        </div>
                       </div>
-                      <div style="display: flex; align-items: center; justify-content: flex-end; margin: 2px 0;">
-                        <label style="font-size: 9px; color: #888; display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
-                          <input type="checkbox" v-model="item.hideDuration" style="width: 11px; height: 11px; margin: 0; accent-color: #666;"> 隐藏时长条
-                        </label>
-                      </div>
+
                     </div>
                     <button class="btn-add-col" @click="addVariantEffect(variant, rIndex)">+</button>
                   </div>
@@ -663,34 +643,40 @@ function saveData() {
                 <h3 class="section-title">默认附带状态 (二维矩阵)</h3>
                 <div class="anomalies-grid-editor">
                   <div v-for="(row, rIndex) in getAnomalyRows(selectedChar, type)" :key="rIndex" class="editor-row">
-                    <div class="row-delay-input" title="该行起始延迟 (秒)">
-                      <span class="delay-icon">↦</span>
-                      <input
-                          type="number"
-                          :value="getRowDelay(selectedChar, type, rIndex)"
-                          @input="e => setRowDelay(selectedChar, type, rIndex, Number(e.target.value))"
-                          step="0.1"
-                          min="0"
-                          class="delay-num"
-                      />
-                    </div>
+
                     <div v-for="(item, cIndex) in row" :key="cIndex" class="editor-card">
                       <div class="card-header">
                         <span class="card-label">R{{rIndex+1}}:C{{cIndex+1}}</span>
                         <button class="btn-icon-del" @click="removeAnomaly(selectedChar, type, rIndex, cIndex)">×</button>
                       </div>
-                      <select v-model="item.type" class="card-input">
+                      <select v-model="item.type" class="card-input full-width-mb">
                         <option v-for="opt in getAvailableAnomalyOptions(type)" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                       </select>
-                      <div class="card-row">
-                        <input type="number" v-model.number="item.stacks" placeholder="层" class="mini-input"><span class="unit">层</span>
-                        <input type="number" v-model.number="item.duration" placeholder="秒" step="0.5" class="mini-input"><span class="unit">s</span>
+
+                      <div class="card-props-grid">
+                        <div class="prop-item full-span">
+                          <label>层数 (Stacks)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.stacks" placeholder="1" class="mini-input">
+                            <span class="unit">层</span>
+                          </div>
+                        </div>
+                        <div class="prop-item">
+                          <label>触发 (Start)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.offset" placeholder="0" step="0.1" class="mini-input">
+                            <span class="unit">s</span>
+                          </div>
+                        </div>
+                        <div class="prop-item">
+                          <label>持续 (Dur)</label>
+                          <div class="input-with-unit">
+                            <input type="number" v-model.number="item.duration" placeholder="0" step="0.5" class="mini-input">
+                            <span class="unit">s</span>
+                          </div>
+                        </div>
                       </div>
-                      <div style="display: flex; align-items: center; justify-content: flex-end; margin: 2px 0;">
-                        <label style="font-size: 9px; color: #888; display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
-                          <input type="checkbox" v-model="item.hideDuration" style="width: 11px; height: 11px; margin: 0; accent-color: #666;"> 隐藏时长条
-                        </label>
-                      </div>
+
                     </div>
                     <button class="btn-add-col" @click="addAnomalyToRow(selectedChar, type, rIndex)">+</button>
                   </div>
@@ -805,19 +791,103 @@ function saveData() {
 .matrix-editor-area { margin-top: 25px; border-top: 1px dashed #444; padding-top: 20px; }
 .anomalies-grid-editor { display: flex; flex-direction: column; gap: 10px; }
 .editor-row { display: flex; flex-wrap: wrap; gap: 10px; background: #1f1f1f; padding: 10px; border-radius: 6px; border: 1px solid #333; align-items: center; }
-.editor-card { background: #2b2b2b; border: 1px solid #444; border-radius: 6px; padding: 8px; width: 150px; display: flex; flex-direction: column; gap: 6px; transition: transform 0.2s; }
-.editor-card:hover { border-color: #666; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-.card-label { font-size: 11px; color: #666; font-family: monospace; }
 .card-input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #ddd; font-size: 12px; padding: 4px; border-radius: 3px; }
-.card-row { display: flex; align-items: center; gap: 5px; }
-.mini-input { width: 50px !important; padding: 4px !important; text-align: center; background: #1a1a1a; border: 1px solid #333; color: #ffd700; font-weight: bold; }
-.unit { font-size: 10px; color: #666; }
 .btn-add-col { width: 40px; background: #252526; border: 1px dashed #444; color: #666; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.2s; }
 .btn-add-col:hover { border-color: #ffd700; color: #ffd700; background: #2b2b2b; }
 .btn-add-row { width: 100%; padding: 10px; background: #252526; border: 1px dashed #444; color: #888; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
 .btn-add-row:hover:not(:disabled) { border-color: #ffd700; color: #ffd700; background: #2b2b2b; }
 .btn-add-row:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* === 卡片样式 === */
+.editor-card {
+  background: #2b2b2b;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 8px;
+  width: 170px; /* 稍微加宽 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.editor-card:hover {
+  border-color: #777;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3a3a3a;
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+.card-label {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}
+
+.full-width-mb {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+/* 属性网格布局 */
+.card-props-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.prop-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prop-item.full-span {
+  grid-column: span 2;
+}
+
+.prop-item label {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mini-input {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 2px 4px !important;
+  text-align: center;
+  color: #fff;
+  font-size: 12px;
+  height: 20px;
+}
+.mini-input:focus {
+  background: #222 !important;
+  outline: none;
+}
+
+.unit {
+  font-size: 10px;
+  color: #666;
+  padding-right: 4px;
+  background: #1a1a1a;
+  user-select: none;
+}
 
 /* Ticks Editor Area */
 .ticks-editor-area { background: #1f1f1f; padding: 15px; border-radius: 6px; border: 1px solid #333; margin-bottom: 20px; }
@@ -836,11 +906,6 @@ function saveData() {
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.row-delay-input { display: flex; align-items: center; margin-right: 6px; background: #222; border: 1px solid #555; border-radius: 3px; padding: 0 2px; height: 22px; }
-.delay-icon { color: #888; font-size: 10px; margin-right: 2px; user-select: none; }
-.delay-num { width: 30px !important; border: none !important; background: transparent !important; padding: 0 !important; height: 100% !important; font-size: 11px !important; text-align: center; color: #ffd700 !important; }
-.delay-num:focus { outline: none; }
-.delay-num::-webkit-outer-spin-button, .delay-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .rarity-6-border { border: 2px solid transparent; background: linear-gradient(#2b2b2b, #2b2b2b) padding-box, linear-gradient(135deg, #FFD700, #FF8C00, #FF4500) border-box; box-shadow: 0 0 6px rgba(255, 140, 0, 0.3); }
 .rarity-5-border { border-color: #ffc400; }
 .rarity-4-border { border-color: #d8b4fe; }

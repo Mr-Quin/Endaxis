@@ -334,7 +334,7 @@ function onActionMouseDown(evt, track, action) {
   wasSelectedOnPress.value = store.multiSelectedIds.has(action.instanceId)
   hadAnomalySelection.value = (store.selectedAnomalyId !== null)
 
-  if (!store.multiSelectedIds.has(action.instanceId) || hadAnomalySelection.value) {
+  if (!store.multiSelectedIds.has(action.instanceId)) {
     store.selectAction(action.instanceId)
   }
 

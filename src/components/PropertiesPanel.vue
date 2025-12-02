@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
 import draggable from 'vuedraggable'
 import CustomNumberInput from './CustomNumberInput.vue'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 const store = useTimelineStore()
 
@@ -32,16 +33,17 @@ const GROUP_DEFINITIONS = [
 ]
 
 // ===================================================================================
-// 2. 核心状态计算 (基于 Store)
+// 2. 核心状态计算
 // ===================================================================================
 
-// 当前选中的技能库模板
+const isTicksExpanded = ref(false)
+const isBarsExpanded = ref(false)
+
 const selectedLibrarySkill = computed(() => {
   if (!store.selectedLibrarySkillId) return null
   return store.activeSkillLibrary.find(s => s.id === store.selectedLibrarySkillId)
 })
 
-// 当前选中的时间轴动作实例
 const selectedAction = computed(() => {
   if (!store.selectedActionId) return null
   for (const track of store.tracks) {
@@ -51,7 +53,6 @@ const selectedAction = computed(() => {
   return null
 })
 
-// 当前动作所属干员信息
 const currentCharacter = computed(() => {
   if (!selectedAction.value) return null
   const track = store.tracks.find(t => t.actions.some(a => a.instanceId === store.selectedActionId))
@@ -59,14 +60,12 @@ const currentCharacter = computed(() => {
   return store.characterRoster.find(c => c.id === track.id)
 })
 
-// 当前技能类型 (attack/skill/link/ultimate)
 const currentSkillType = computed(() => {
   if (selectedLibrarySkill.value) return selectedLibrarySkill.value.type
   if (selectedAction.value) return selectedAction.value.type
   return 'unknown'
 })
 
-// 异常状态矩阵 (支持双向绑定以响应拖拽)
 const anomalyRows = computed({
   get: () => selectedAction.value?.physicalAnomaly || [],
   set: (val) => store.updateAction(store.selectedActionId, { physicalAnomaly: val })
@@ -74,18 +73,15 @@ const anomalyRows = computed({
 
 const currentSelectedCoords = computed(() => {
   if (!store.selectedActionId || !store.selectedAnomalyId) return null
-  // 需要在 store 中实现 getAnomalyIndexById 方法
   return store.getAnomalyIndexById(store.selectedActionId, store.selectedAnomalyId)
 })
 
-// 获取当前正在编辑的效果数据
 const editingEffectData = computed(() => {
   const coords = currentSelectedCoords.value
   if (!coords) return null
   return anomalyRows.value[coords.rowIndex]?.[coords.colIndex]
 })
 
-// 计算当前选中项的 Flat Index (用于连线定位)
 const currentFlatIndex = computed(() => {
   const coords = currentSelectedCoords.value
   if (!coords) return null
@@ -97,27 +93,23 @@ const currentFlatIndex = computed(() => {
   return flatIndex
 })
 
-// 判断指定格子是否处于选中状态
 function isEditing(r, c) {
   const coords = currentSelectedCoords.value
   return coords && coords.rowIndex === r && coords.colIndex === c
 }
 
 // ===================================================================================
-// 3. 数据操作逻辑
+// 3. 动作与更新逻辑
 // ===================================================================================
 
 function toggleEditEffect(r, c) {
   const effect = anomalyRows.value[r]?.[c]
   if (!effect) return
-
-  // 数据兜底：确保有 ID
   if (!effect._id) effect._id = Math.random().toString(36).substring(2, 9)
 
   if (store.selectedAnomalyId === effect._id) {
     store.setSelectedAnomalyId(null)
   } else {
-    // 调用 store 的方法选中，它会更新 store.selectedAnomalyId
     store.selectAnomaly(store.selectedActionId, r, c)
   }
 }
@@ -135,7 +127,6 @@ function updateEffectProp(key, value) {
 
 function addRow() {
   store.addAnomalyRow(selectedAction.value, currentSkillType.value)
-  // 选中新行第一个 (直接操作 Store ID)
   const newRows = selectedAction.value.physicalAnomaly
   if (newRows && newRows.length > 0) {
     const lastRowIndex = newRows.length - 1
@@ -146,7 +137,6 @@ function addRow() {
 
 function addEffectToRow(rowIndex) {
   store.addAnomalyToRow(selectedAction.value, currentSkillType.value, rowIndex)
-  // 选中新添加的图标 (直接操作 Store ID)
   const row = selectedAction.value.physicalAnomaly[rowIndex]
   if (row) {
     const newEffect = row[row.length - 1]
@@ -156,26 +146,65 @@ function addEffectToRow(rowIndex) {
 
 function removeEffect(r, c) {
   store.removeAnomaly(store.selectedActionId, r, c)
-  // 删除后 ID 自动失效，computed 变为 null
   store.setSelectedAnomalyId(null)
 }
 
-function getRowDelay(rowIndex) {
-  const delays = selectedAction.value?.anomalyRowDelays || []
-  return delays[rowIndex] || 0
+function updateActionProp(key, value) {
+  if (!selectedAction.value) return
+  store.updateAction(store.selectedActionId, { [key]: value })
 }
 
-function updateRowDelay(rowIndex, value) {
-  const currentDelays = [...(selectedAction.value?.anomalyRowDelays || [])]
-  while (currentDelays.length <= rowIndex) {
-    currentDelays.push(0)
+function updateActionGaugeWithLink(value) {
+  if (!selectedAction.value) return
+  store.updateAction(store.selectedActionId, { gaugeGain: value, teamGaugeGain: value * 0.5 })
+}
+
+function addDamageTick() {
+  const currentTicks = selectedAction.value.damageTicks ? [...selectedAction.value.damageTicks] : []
+  currentTicks.push({ offset: 0, stagger: 0, sp: 0 })
+  currentTicks.sort((a, b) => a.offset - b.offset)
+  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
+  isTicksExpanded.value = true
+}
+
+function removeDamageTick(index) {
+  const currentTicks = [...(selectedAction.value.damageTicks || [])]
+  currentTicks.splice(index, 1)
+  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
+}
+
+function updateDamageTick(index, key, value) {
+  const currentTicks = [...(selectedAction.value.damageTicks || [])]
+  currentTicks[index] = { ...currentTicks[index], [key]: value }
+  if (key === 'offset') {
+    currentTicks.sort((a, b) => a.offset - b.offset)
   }
-  currentDelays[rowIndex] = value
-  store.updateAction(store.selectedActionId, { anomalyRowDelays: currentDelays })
+  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
+}
+
+const customBarsList = computed(() => selectedAction.value?.customBars || [])
+
+function addCustomBar() {
+  const newList = [...customBarsList.value]
+  newList.push({ text: '', duration: 1, offset: 0 })
+  store.updateAction(store.selectedActionId, { customBars: newList })
+  isBarsExpanded.value = true
+}
+
+function removeCustomBar(index) {
+  const newList = [...customBarsList.value]
+  newList.splice(index, 1)
+  store.updateAction(store.selectedActionId, { customBars: newList })
+}
+
+function updateCustomBarItem(index, key, value) {
+  const newList = [...customBarsList.value]
+  newList[index] = { ...newList[index], [key]: value }
+  store.updateAction(store.selectedActionId, { customBars: newList })
 }
 
 // ===================================================================================
-// 4. 图标与连线资源管理
+// 4. 资源与连线查询
 // ===================================================================================
 
 const iconOptions = computed(() => {
@@ -186,8 +215,6 @@ const iconOptions = computed(() => {
       : allGlobalKeys
 
   const groups = []
-
-  // 专属效果组
   if (currentCharacter.value && currentCharacter.value.exclusive_buffs) {
     let exclusiveOpts = currentCharacter.value.exclusive_buffs.map(buff => ({
       label: `★ ${buff.name}`, value: buff.key, path: buff.path
@@ -229,6 +256,7 @@ const iconOptions = computed(() => {
 
 function getIconPath(type, actionContext = null) {
   if (store.iconDatabase[type]) return store.iconDatabase[type]
+
   if (actionContext) {
     const track = store.tracks.find(t => t.actions.some(a => a.instanceId === actionContext.instanceId))
     if (track) {
@@ -239,14 +267,15 @@ function getIconPath(type, actionContext = null) {
       }
     }
   }
+
   if (currentCharacter.value && currentCharacter.value.exclusive_buffs) {
     const exclusive = currentCharacter.value.exclusive_buffs.find(b => b.key === type)
     if (exclusive) return exclusive.path
   }
+
   return store.iconDatabase['default'] || ''
 }
 
-// 相关连线查询逻辑
 const relevantConnections = computed(() => {
   if (!store.selectedActionId) return []
 
@@ -267,18 +296,14 @@ const relevantConnections = computed(() => {
           }
         }
 
-        // 获取我方图标
         let myIconPath = null
         if (selectedAction.value) {
           const myEffectId = isOutgoing ? conn.fromEffectId : conn.toEffectId
           let realIndex = -1
           if (myEffectId) realIndex = store.findEffectIndexById(selectedAction.value, myEffectId)
-          // 兜底兼容
-          if (realIndex === -1) {
-            const storedIdx = isOutgoing ? conn.fromEffectIndex : conn.toEffectIndex
-            if (storedIdx !== null) realIndex = storedIdx
+          if (realIndex === -1 && (isOutgoing ? conn.fromEffectIndex : conn.toEffectIndex) !== null) {
+            realIndex = isOutgoing ? conn.fromEffectIndex : conn.toEffectIndex
           }
-
           if (realIndex !== -1) {
             const allEffects = (selectedAction.value.physicalAnomaly || []).flat()
             const effect = allEffects[realIndex]
@@ -286,18 +311,14 @@ const relevantConnections = computed(() => {
           }
         }
 
-        // 获取对方图标
         let otherIconPath = null
         if (otherAction) {
           const otherEffectId = isOutgoing ? conn.toEffectId : conn.fromEffectId
           let realIndex = -1
           if (otherEffectId) realIndex = store.findEffectIndexById(otherAction, otherEffectId)
-          // 兜底兼容
-          if (realIndex === -1) {
-            const storedIdx = isOutgoing ? conn.toEffectIndex : conn.fromEffectIndex
-            if (storedIdx !== null) realIndex = storedIdx
+          if (realIndex === -1 && (isOutgoing ? conn.toEffectIndex : conn.fromEffectIndex) !== null) {
+            realIndex = isOutgoing ? conn.toEffectIndex : conn.fromEffectIndex
           }
-
           if (realIndex !== -1) {
             const allEffects = (otherAction.physicalAnomaly || []).flat()
             const effect = allEffects[realIndex]
@@ -316,391 +337,237 @@ const relevantConnections = computed(() => {
         }
       })
 })
-
-// ===================================================================================
-// 5. 属性更新通用方法
-// ===================================================================================
-
-function updateLibraryProp(key, value) {
-  if (!selectedLibrarySkill.value) return
-  store.updateLibrarySkill(selectedLibrarySkill.value.id, { [key]: value })
-}
-
-function updateActionProp(key, value) {
-  if (!selectedAction.value) return
-  store.updateAction(store.selectedActionId, { [key]: value })
-}
-
-function updateActionGaugeWithLink(value) {
-  if (!selectedAction.value) return
-  store.updateAction(store.selectedActionId, { gaugeGain: value, teamGaugeGain: value * 0.5 })
-}
-
-function updateLibraryGaugeWithLink(value) {
-  if (!selectedLibrarySkill.value) return
-  store.updateLibrarySkill(selectedLibrarySkill.value.id, { gaugeGain: value, teamGaugeGain: value * 0.5 })
-}
-
-const customBarsList = computed(() => selectedAction.value?.customBars || [])
-
-function addCustomBar() {
-  const newList = [...customBarsList.value]
-  newList.push({ text: '', duration: 1, offset: 0 })
-  store.updateAction(store.selectedActionId, { customBars: newList })
-}
-
-function removeCustomBar(index) {
-  const newList = [...customBarsList.value]
-  newList.splice(index, 1)
-  store.updateAction(store.selectedActionId, { customBars: newList })
-}
-
-function updateCustomBarItem(index, key, value) {
-  const newList = [...customBarsList.value]
-  newList[index] = { ...newList[index], [key]: value }
-  store.updateAction(store.selectedActionId, { customBars: newList })
-}
-
-function addDamageTick() {
-  const currentTicks = selectedAction.value.damageTicks ? [...selectedAction.value.damageTicks] : []
-  currentTicks.push({ offset: 0, stagger: 0, sp: 0 })
-  currentTicks.sort((a, b) => a.offset - b.offset)
-  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
-}
-
-function removeDamageTick(index) {
-  const currentTicks = [...(selectedAction.value.damageTicks || [])]
-  currentTicks.splice(index, 1)
-  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
-}
-
-function updateDamageTick(index, key, value) {
-  const currentTicks = [...(selectedAction.value.damageTicks || [])]
-  currentTicks[index] = { ...currentTicks[index], [key]: value }
-  if (key === 'offset') {
-    currentTicks.sort((a, b) => a.offset - b.offset)
-  }
-  store.updateAction(store.selectedActionId, { damageTicks: currentTicks })
-}
-
 </script>
 
 <template>
   <div v-if="selectedAction" class="properties-panel">
-    <h3 class="panel-title">动作实例编辑</h3>
-    <div class="type-tag">{{ selectedAction.name }}</div>
+    <div class="panel-header">
+      <h3 class="panel-title">{{ selectedAction.name }}</h3>
+      <div class="type-badge">{{ selectedAction.type }}</div>
+    </div>
 
-    <button class="link-btn" @click.stop="store.startLinking()"
-            :class="{ 'is-linking': store.isLinking && store.linkingEffectIndex === null }">
-      {{ (store.isLinking && store.linkingEffectIndex === null) ? '请点击目标动作块...' : '🔗 建立连线' }}
-    </button>
-
-    <div class="attribute-editor">
-      <div class="form-group">
-        <label>持续时间</label>
-        <CustomNumberInput :model-value="selectedAction.duration" @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
-      </div>
-
-      <div class="form-group" v-if="currentSkillType === 'link'">
-        <label>冷却时间</label>
-        <CustomNumberInput :model-value="selectedAction.cooldown" @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
-      </div>
-      <div class="form-group" v-if="currentSkillType === 'link'">
-        <label>触发窗口</label>
-        <CustomNumberInput :model-value="selectedAction.triggerWindow || 0" @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
-      </div>
-      <div class="form-group" v-if="currentSkillType === 'skill'">
-        <label>技力消耗</label>
-        <CustomNumberInput :model-value="selectedAction.spCost" @update:model-value="val => updateActionProp('spCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
-      </div>
-      <div class="form-group" v-if="currentSkillType === 'ultimate'">
-        <label>充能消耗</label>
-        <CustomNumberInput :model-value="selectedAction.gaugeCost" @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
-      </div>
-
-      <div class="form-group" v-if="!['attack', 'execution'].includes(currentSkillType)">
-        <label>自身充能</label>
-        <CustomNumberInput :model-value="selectedAction.gaugeGain" @update:model-value="val => updateActionGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
-      </div>
-      <div class="form-group" v-if="currentSkillType === 'skill'">
-        <label>队友充能</label>
-        <CustomNumberInput :model-value="selectedAction.teamGaugeGain" @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
-      </div>
-
-      <hr class="divider"/>
-
-      <div class="form-group highlight-red"
-           style="border: 1px dashed #ff7875; padding: 8px; border-radius: 4px; background: rgba(255, 120, 117, 0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label style="color: #ff7875; font-weight: bold; margin: 0;">伤害判定点</label>
-          <button class="add-bar-btn" @click="addDamageTick" title="添加判定点" style="background: #ff7875;">+</button>
+    <div class="section-container">
+      <div class="section-label">基础属性</div>
+      <div class="attribute-grid">
+        <div class="form-group compact">
+          <label>持续时间(s)</label>
+          <CustomNumberInput :model-value="selectedAction.duration" @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
         </div>
 
-        <div v-if="!selectedAction.damageTicks || selectedAction.damageTicks.length === 0"
-             style="color: #666; font-size: 12px; text-align: center; padding: 10px;">
-          暂无判定点
+        <div class="form-group compact" v-if="currentSkillType === 'link'">
+          <label>冷却时间(s)</label>
+          <CustomNumberInput :model-value="selectedAction.cooldown" @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
         </div>
 
-        <div v-for="(tick, index) in (selectedAction.damageTicks || [])" :key="index" class="custom-bar-item" style="border-left-color: #ff7875;">
+        <div class="form-group compact" v-if="currentSkillType === 'link'">
+          <label>触发窗口(s)</label>
+          <CustomNumberInput :model-value="selectedAction.triggerWindow || 0" @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
+        </div>
 
-          <div class="bar-header">
-            <span class="bar-index" style="color: #ff7875;">HIT {{ index + 1 }}</span>
-            <button class="remove-bar-btn" @click="removeDamageTick(index)">×</button>
+        <div class="form-group compact" v-if="currentSkillType === 'skill'">
+          <label>技力消耗</label>
+          <CustomNumberInput :model-value="selectedAction.spCost" @update:model-value="val => updateActionProp('spCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
+        </div>
+
+        <div class="form-group compact" v-if="currentSkillType === 'ultimate'">
+          <label>充能消耗</label>
+          <CustomNumberInput :model-value="selectedAction.gaugeCost" @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+        </div>
+
+        <div class="form-group compact" v-if="!['attack', 'execution'].includes(currentSkillType)">
+          <label>自身充能</label>
+          <CustomNumberInput :model-value="selectedAction.gaugeGain" @update:model-value="val => updateActionGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+        </div>
+
+        <div class="form-group compact" v-if="currentSkillType === 'skill'">
+          <label>队友充能</label>
+          <CustomNumberInput :model-value="selectedAction.teamGaugeGain" @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-container border-red">
+      <div class="section-header clickable" @click="isTicksExpanded = !isTicksExpanded">
+        <div class="header-left">
+          <label style="color: #ff7875;">伤害判定点 ({{ (selectedAction.damageTicks || []).length }})</label>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn-add" @click.stop="addDamageTick">+</button>
+          <el-icon :class="{ 'is-rotated': isTicksExpanded }" style="margin-left:5px"><ArrowRight /></el-icon>
+        </div>
+      </div>
+
+      <div v-if="isTicksExpanded" class="section-content">
+        <div v-if="!selectedAction.damageTicks || selectedAction.damageTicks.length === 0" class="empty-hint">暂无判定点</div>
+        <div v-for="(tick, index) in (selectedAction.damageTicks || [])" :key="index" class="tick-item">
+          <div class="tick-header">
+            <span class="tick-idx">HIT {{ index + 1 }}</span>
+            <button class="remove-btn" @click="removeDamageTick(index)">×</button>
           </div>
-
-          <div style="margin-bottom: 8px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-              <label style="font-size:10px; color:#aaa;">触发时间 (相对于动作开始)</label>
-              <span style="font-size:10px; color:#666;">秒</span>
+          <div class="tick-row">
+            <div class="tick-col">
+              <label>触发时间(s)</label>
+              <CustomNumberInput :model-value="tick.offset" @update:model-value="val => updateDamageTick(index, 'offset', val)" :step="0.1" :min="0" border-color="#ff7875" />
             </div>
-            <CustomNumberInput
-                :model-value="tick.offset"
-                @update:model-value="val => updateDamageTick(index, 'offset', val)"
-                :step="0.1" :min="0"
-                :border-color="'#ff7875'"
-                text-align="left"
-                style="width: 100%;" />
-          </div>
-
-          <div style="display: flex; gap: 8px; margin-bottom: 2px;">
-
-            <div style="flex: 1;">
-              <label style="font-size:10px; color:#aaa; display: block; margin-bottom: 2px;">失衡值</label>
-              <CustomNumberInput
-                  :model-value="tick.stagger"
-                  @update:model-value="val => updateDamageTick(index, 'stagger', val)"
-                  :step="1" :min="0"
-                  :border-color="'#ff7875'"
-                  text-align="center"/>
+            <div class="tick-col">
+              <label>失衡值</label>
+              <CustomNumberInput :model-value="tick.stagger" @update:model-value="val => updateDamageTick(index, 'stagger', val)" :step="1" :min="0" border-color="#ff7875" text-align="center"/>
             </div>
-
-            <div style="flex: 1;">
-              <label style="font-size:10px; color:#aaa; display: block; margin-bottom: 2px;">技力回复</label>
-              <CustomNumberInput
-                  :model-value="tick.sp || 0"
-                  @update:model-value="val => updateDamageTick(index, 'sp', val)"
-                  :step="1" :min="0"
-                  :border-color="'#ffd700'"
-                  text-align="center"/>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <hr class="divider"/>
-
-      <div class="form-group highlight-cyan"
-           style="border: 1px dashed #00e5ff; padding: 8px; border-radius: 4px; background: rgba(0, 229, 255, 0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label style="color: #00e5ff; font-weight: bold; margin: 0;">自定义时间条</label>
-          <button class="add-bar-btn" @click="addCustomBar" title="添加一条">+</button>
-        </div>
-        <div v-if="customBarsList.length === 0"
-             style="color: #666; font-size: 12px; text-align: center; padding: 10px;">
-          暂无时间条
-        </div>
-        <div v-for="(bar, index) in customBarsList" :key="index" class="custom-bar-item">
-          <div class="bar-header">
-            <span class="bar-index">#{{ index + 1 }}</span>
-            <button class="remove-bar-btn" @click="removeCustomBar(index)">×</button>
-          </div>
-          <div style="margin-bottom: 6px;">
-            <input type="text" :value="bar.text" @input="e => updateCustomBarItem(index, 'text', e.target.value)"
-                   placeholder="显示文本" style="border-color: #00e5ff; width: 100%;">
-          </div>
-          <div style="display: flex; gap: 6px;">
-            <div style="flex: 1;">
-              <CustomNumberInput :model-value="bar.duration" @update:model-value="val => updateCustomBarItem(index, 'duration', val)" :step="0.5" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
-            </div>
-            <div style="flex: 1;">
-              <CustomNumberInput :model-value="bar.offset" @update:model-value="val => updateCustomBarItem(index, 'offset', val)" :step="0.1" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
+            <div class="tick-col">
+              <label>技力回复</label>
+              <CustomNumberInput :model-value="tick.sp || 0" @update:model-value="val => updateDamageTick(index, 'sp', val)" :step="1" :min="0" border-color="#ffd700" text-align="center"/>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-if="relevantConnections.length > 0" class="connections-list-area">
-      <div class="info-row"><label>现有连线</label></div>
-      <div v-for="conn in relevantConnections" :key="conn.id" class="connection-item"
-           :class="{ 'is-outgoing': conn.isOutgoing, 'is-incoming': !conn.isOutgoing }">
-
-        <div class="conn-visual-row">
-          <div class="conn-node">
-            <template v-if="conn.isOutgoing">
-              <img v-if="conn.myIconPath" :src="conn.myIconPath" class="conn-mini-icon" title="我方状态"/>
-              <span v-else class="conn-node-text">本动作</span>
-            </template>
-            <template v-else>
-              <img v-if="conn.otherIconPath" :src="conn.otherIconPath" class="conn-mini-icon" title="来源状态"/>
-              <span v-else class="conn-node-text">{{ conn.otherActionName }}</span>
-            </template>
-          </div>
-
-          <div class="conn-arrow">
-            <span v-if="conn.isOutgoing" style="color: #ffd700;">➔</span>
-            <span v-else style="color: #00e5ff;">➔</span>
-          </div>
-
-          <div class="conn-node">
-            <template v-if="conn.isOutgoing">
-              <img v-if="conn.otherIconPath" :src="conn.otherIconPath" class="conn-mini-icon" title="目标状态"/>
-              <span v-else class="conn-node-text">{{ conn.otherActionName }}</span>
-            </template>
-            <template v-else>
-              <img v-if="conn.myIconPath" :src="conn.myIconPath" class="conn-mini-icon" title="我方状态"/>
-              <span v-else class="conn-node-text">本动作</span>
-            </template>
-          </div>
+    <div class="section-container border-blue">
+      <div class="section-header clickable" @click="isBarsExpanded = !isBarsExpanded">
+        <div class="header-left">
+          <label style="color: #00e5ff;">自定义时间条 ({{ customBarsList.length }})</label>
         </div>
-
-        <div class="conn-controls">
-          <div v-if="conn.isOutgoing && conn.rawConnection.fromEffectIndex != null" class="consume-toggle"
-               :class="{ 'is-active': conn.rawConnection.isConsumption }"
-               @click="store.updateConnection(conn.id, { isConsumption: !conn.rawConnection.isConsumption })"
-               title="切换：状态是否被此动作消耗？">
-            <span class="toggle-icon">⚡</span>
-            <span class="toggle-text">消耗</span>
-          </div>
-
-          <div v-if="conn.rawConnection.isConsumption" class="offset-input-wrapper" title="消耗提前量 (秒)">
-            <span class="offset-label">提前</span>
-            <CustomNumberInput
-                class="mini-offset-input"
-                :model-value="conn.rawConnection.consumptionOffset || 0"
-                @update:model-value="val => store.updateConnection(conn.id, { consumptionOffset: val })"
-                :step="0.1"
-                :min="0"
-                text-align="left"
-            />
-          </div>
-
-          <div class="delete-conn-btn" @click="store.removeConnection(conn.id)" title="断开连线">×</div>
+        <div class="header-right">
+          <button class="icon-btn-add cyan" @click.stop="addCustomBar">+</button>
+          <el-icon :class="{ 'is-rotated': isBarsExpanded }" style="margin-left:5px"><ArrowRight /></el-icon>
         </div>
       </div>
-    </div>
-
-    <hr class="divider"/>
-
-    <div class="info-row" style="margin-bottom: 5px;">
-      <label>状态效果排布 (可二维拖拽)</label>
-    </div>
-
-    <div class="anomalies-editor-container">
-      <draggable v-model="anomalyRows" item-key="rowIndex" class="rows-container" handle=".row-handle" :animation="200">
-        <template #item="{ element: row, index: rowIndex }">
-          <div class="anomaly-editor-row">
-            <div class="row-handle">⋮</div>
-            <div class="row-delay-input" title="该行起始延迟 (秒)">
-              <CustomNumberInput
-                  :model-value="getRowDelay(rowIndex)"
-                  @update:model-value="val => updateRowDelay(rowIndex, val)"
-                  :step="0.1"
-                  :min="0"
-                  class="delay-num"
-                  text-align="left"
-              >
-                <template #prepend><span class="delay-icon">↦</span></template>
-              </CustomNumberInput>
+      <div v-if="isBarsExpanded" class="section-content">
+        <div v-if="customBarsList.length === 0" class="empty-hint">暂无时间条</div>
+        <div v-for="(bar, index) in customBarsList" :key="index" class="tick-item blue-theme">
+          <div class="tick-header">
+            <input type="text" :value="bar.text" @input="e => updateCustomBarItem(index, 'text', e.target.value)" placeholder="条目名称..." class="simple-input">
+            <button class="remove-btn" @click="removeCustomBar(index)">×</button>
+          </div>
+          <div class="tick-row">
+            <div class="tick-col">
+              <label>持续时间(s)</label>
+              <CustomNumberInput :model-value="bar.duration" @update:model-value="val => updateCustomBarItem(index, 'duration', val)" :step="0.5" :min="0" border-color="#00e5ff" />
             </div>
-            <draggable :list="row" item-key="_id" class="row-items-list" :group="{ name: 'effects' }" :animation="150"
-                       @change="() => store.updateAction(store.selectedActionId, { physicalAnomaly: anomalyRows })">
-              <template #item="{ element: effect, index: colIndex }">
-                <div class="icon-wrapper" :class="{ 'is-editing': isEditing(rowIndex, colIndex) }"
-                     @click="toggleEditEffect(rowIndex, colIndex)">
-                  <img :src="getIconPath(effect.type)" class="mini-icon"/>
-                  <div v-if="effect.stacks > 1" class="mini-stacks">{{ effect.stacks }}</div>
-                </div>
-              </template>
-            </draggable>
-            <button class="add-to-row-btn" @click="addEffectToRow(rowIndex)" title="在此行追加效果">+</button>
+            <div class="tick-col">
+              <label>偏移(s)</label>
+              <CustomNumberInput :model-value="bar.offset" @update:model-value="val => updateCustomBarItem(index, 'offset', val)" :step="0.1" :min="0" border-color="#00e5ff" />
+            </div>
           </div>
-        </template>
-      </draggable>
-      <button class="add-effect-bar" @click="addRow"> + 添加新行</button>
+        </div>
+      </div>
     </div>
 
-    <div v-if="editingEffectData && currentSelectedCoords" class="effect-detail-editor">
-      <div class="editor-header">
-        <span>编辑 R{{ currentSelectedCoords.rowIndex + 1 }} : C{{ currentSelectedCoords.colIndex + 1 }}</span>
-        <button class="close-btn" @click="store.setSelectedAnomalyId(null)">×</button>
+    <div class="section-container no-border">
+      <div class="section-label">状态效果与排布</div>
+      <div class="anomalies-editor-container">
+        <draggable v-model="anomalyRows" item-key="rowIndex" class="rows-container" handle=".row-handle" :animation="200">
+          <template #item="{ element: row, index: rowIndex }">
+            <div class="anomaly-editor-row">
+              <div class="row-handle">⋮</div>
+              <draggable :list="row" item-key="_id" class="row-items-list" :group="{ name: 'effects' }" :animation="150"
+                         @change="() => store.updateAction(store.selectedActionId, { physicalAnomaly: anomalyRows })">
+                <template #item="{ element: effect, index: colIndex }">
+                  <div class="icon-wrapper" :class="{ 'is-editing': isEditing(rowIndex, colIndex) }"
+                       @click="toggleEditEffect(rowIndex, colIndex)">
+                    <img :src="getIconPath(effect.type)" class="mini-icon"/>
+                    <div v-if="effect.stacks > 1" class="mini-stacks">{{ effect.stacks }}</div>
+                  </div>
+                </template>
+              </draggable>
+              <button class="add-to-row-btn" @click="addEffectToRow(rowIndex)" title="追加">+</button>
+            </div>
+          </template>
+        </draggable>
+        <button class="add-effect-bar" @click="addRow">+ 添加新行</button>
       </div>
 
-      <div class="form-row full-width">
-        <label>类型</label>
-        <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)" placeholder="选择状态" filterable size="small" class="effect-select">
-          <el-option-group v-for="group in iconOptions" :key="group.label" :label="group.label">
-            <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <img :src="item.path" style="width: 18px; height: 18px; object-fit: contain;"/>
-                <span>{{ item.label }}</span>
-              </div>
-            </el-option>
-          </el-option-group>
-        </el-select>
-      </div>
-
-      <div class="form-row">
-        <label>层数</label>
-        <CustomNumberInput :model-value="editingEffectData.stacks" @update:model-value="val => updateEffectProp('stacks', val)" :min="1" text-align="left" :activeColor="HIGHLIGHT_COLORS.default"/>
-      </div>
-      <div class="form-row">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-          <label>持续(s)</label>
-          <label
-              style="font-size: 10px; color: #888; display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;">
-            <input type="checkbox" :checked="editingEffectData.hideDuration"
-                   @change="e => updateEffectProp('hideDuration', e.target.checked)"
-                   style="width: 12px; height: 12px; margin: 0; vertical-align: middle;">
-            隐藏时长条
-          </label>
+      <div v-if="editingEffectData && currentSelectedCoords" class="effect-detail-editor-embedded">
+        <div class="editor-arrow"></div>
+        <div class="editor-header-mini">
+          <span>编辑 R{{ currentSelectedCoords.rowIndex + 1 }} : C{{ currentSelectedCoords.colIndex + 1 }}</span>
+          <button class="close-btn" @click="store.setSelectedAnomalyId(null)">关闭</button>
         </div>
-        <CustomNumberInput :model-value="editingEffectData.duration" @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.1" text-align="left" :activeColor="HIGHLIGHT_COLORS.default"/>
-      </div>
 
-      <div class="editor-footer">
-        <button class="effect-link-btn" @click.stop="store.startLinking(currentFlatIndex)"
-                :class="{ 'is-linking': store.isLinking && store.linkingEffectIndex === currentFlatIndex }">
-          🔗 连线
-        </button>
-        <button class="delete-btn-small"
-                @click="removeEffect(currentSelectedCoords.rowIndex, currentSelectedCoords.colIndex)">删除此效果
+        <div class="editor-grid">
+          <div class="full-width-col">
+            <label>类型</label>
+            <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)" placeholder="选择状态" filterable size="small" class="effect-select-dark">
+              <el-option-group v-for="group in iconOptions" :key="group.label" :label="group.label">
+                <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
+                  <div class="opt-row">
+                    <img :src="item.path" /><span>{{ item.label }}</span>
+                  </div>
+                </el-option>
+              </el-option-group>
+            </el-select>
+          </div>
+
+          <div>
+            <label>触发时间(s)</label>
+            <CustomNumberInput :model-value="editingEffectData.offset || 0" @update:model-value="val => updateEffectProp('offset', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default"/>
+          </div>
+          <div>
+            <label>持续时间(s)</label>
+            <CustomNumberInput :model-value="editingEffectData.duration" @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.5" :activeColor="HIGHLIGHT_COLORS.default"/>
+          </div>
+          <div>
+            <label>层数</label>
+            <CustomNumberInput :model-value="editingEffectData.stacks" @update:model-value="val => updateEffectProp('stacks', val)" :min="1" :activeColor="HIGHLIGHT_COLORS.default"/>
+          </div>
+        </div>
+
+        <div class="editor-actions">
+          <button class="action-btn link-style" @click.stop="store.startLinking(currentFlatIndex)"
+                  :class="{ 'is-linking': store.isLinking && store.linkingEffectIndex === currentFlatIndex }">
+            连线
+          </button>
+          <button class="action-btn delete-style" @click="removeEffect(currentSelectedCoords.rowIndex, currentSelectedCoords.colIndex)">删除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-container no-border" style="margin-top: 20px;">
+      <div class="connection-header-group">
+        <div class="section-label">动作连线关系</div>
+        <button class="main-link-btn" @click.stop="store.startLinking()"
+                :class="{ 'is-linking': store.isLinking && store.linkingEffectIndex === null }">
+          {{ (store.isLinking && store.linkingEffectIndex === null) ? '选择目标...' : '+ 新建连线' }}
         </button>
       </div>
-    </div>
-  </div>
 
-  <div v-else-if="selectedLibrarySkill" class="properties-panel library-mode">
-    <h3 class="panel-title" style="color: #4a90e2;">基础数值调整</h3>
-    <div class="panel-desc">
-      修改 <strong>{{ selectedLibrarySkill.name }}</strong> 的基础属性。<br/>
-      此修改将同步更新所有同类技能（全局生效）。
-    </div>
-    <div class="attribute-editor">
-      <div class="form-group"><label>持续时间</label><CustomNumberInput :model-value="selectedLibrarySkill.duration" @update:model-value="val => updateLibraryProp('duration', val)" :min="0.5" :step="0.5" text-align="left"/></div>
+      <div v-if="relevantConnections.length === 0" class="empty-hint">无连线</div>
 
-      <div class="form-group" v-if="currentSkillType === 'link'"><label>冷却时间</label><CustomNumberInput
-          :model-value="selectedLibrarySkill.cooldown"
-          @update:model-value="val => updateLibraryProp('cooldown', val)"
-          :min="0" text-align="left"/></div>
-      <div class="form-group" v-if="currentSkillType === 'skill'"><label>技力消耗</label><CustomNumberInput
-          :model-value="selectedLibrarySkill.spCost"
-          @update:model-value="val => updateLibraryProp('spCost', val)"
-          :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/></div>
-      <div class="form-group" v-if="currentSkillType === 'ultimate'"><label>充能消耗</label><CustomNumberInput
-          :model-value="selectedLibrarySkill.gaugeCost"
-          @update:model-value="val => updateLibraryProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/></div>
+      <div class="connections-list">
+        <div v-for="conn in relevantConnections" :key="conn.id" class="connection-card"
+             :class="{ 'outgoing': conn.isOutgoing, 'incoming': !conn.isOutgoing }">
 
-      <div class="form-group" v-if="!['attack', 'execution'].includes(currentSkillType)">
-        <label>自身充能 (联动队友)</label>
-        <CustomNumberInput :model-value="selectedLibrarySkill.gaugeGain" @update:model-value="val => updateLibraryGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+          <div class="conn-vis">
+            <div class="node left">
+              <img v-if="conn.isOutgoing && conn.myIconPath" :src="conn.myIconPath" class="icon-s" />
+              <span v-else class="text-s">{{ conn.isOutgoing ? '本动作' : conn.otherActionName }}</span>
+            </div>
+            <div class="arrow">➔</div>
+            <div class="node right">
+              <img v-if="!conn.isOutgoing && conn.myIconPath" :src="conn.myIconPath" class="icon-s" />
+              <span v-else class="text-s">{{ conn.isOutgoing ? conn.otherActionName : '本动作' }}</span>
+            </div>
+          </div>
+
+          <div class="conn-tools">
+            <div v-if="conn.isOutgoing && conn.rawConnection.fromEffectIndex != null" class="consume-tag"
+                 :class="{ 'active': conn.rawConnection.isConsumption }"
+                 @click="store.updateConnection(conn.id, { isConsumption: !conn.rawConnection.isConsumption })">
+              被消耗
+            </div>
+
+            <div v-if="conn.rawConnection.isConsumption" class="offset-mini">
+              <span>提前</span>
+              <CustomNumberInput :model-value="conn.rawConnection.consumptionOffset || 0" @update:model-value="val => store.updateConnection(conn.id, { consumptionOffset: val })" :step="0.1" style="width: 65px; height: 22px;"/>
+            </div>
+
+            <div class="spacer"></div>
+            <button class="btn-del-conn" @click="store.removeConnection(conn.id)">×</button>
+          </div>
+        </div>
       </div>
-      <div class="form-group" v-if="currentSkillType === 'skill'">
-        <label>队友充能</label>
-        <CustomNumberInput :model-value="selectedLibrarySkill.teamGaugeGain" @update:model-value="val => updateLibraryProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
-      </div>
     </div>
+
   </div>
 
   <div v-else class="properties-panel empty">
@@ -709,601 +576,175 @@ function updateDamageTick(index, key, value) {
 </template>
 
 <style scoped>
+/* Reset & Base */
 .properties-panel {
-  padding: 15px;
+  padding: 12px;
   color: #e0e0e0;
   background-color: #2b2b2b;
   height: 100%;
   box-sizing: border-box;
   overflow-y: auto;
-  border-left: 1px solid #444;
-  font-size: 14px;
+  font-size: 13px;
 }
 
-.attribute-editor {
-  border: 1px solid #444;
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  background: #333;
-}
-
-.panel-title {
-  color: #ffd700;
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-
-.type-tag {
-  font-size: 12px;
-  color: #888;
-  margin-bottom: 15px;
-  font-style: italic;
-}
-
-.info-row {
+/* Header */
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #aaa;
-  font-size: 12px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+}
+.panel-title { margin: 0; color: #ffd700; font-size: 16px; font-weight: bold; }
+.type-badge { font-size: 10px; background: #444; padding: 2px 6px; border-radius: 4px; color: #aaa; text-transform: uppercase; }
+
+/* Sections */
+.section-container {
+  margin-bottom: 15px;
+  background: #333;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+.section-container.no-border { background: transparent; border: none; overflow: visible; }
+.section-container.border-red { border-left: 3px solid #ff7875; }
+.section-container.border-blue { border-left: 3px solid #00e5ff; }
+
+.section-label {
+  font-size: 12px; font-weight: bold; color: #888; margin-bottom: 8px; display: block;
 }
 
-.divider {
-  border: 0;
-  border-top: 1px solid #444;
-  margin: 15px 0;
+/* Grid Layout for Attributes */
+.attribute-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
 }
+.form-group.compact label { font-size: 10px; color: #999; margin-bottom: 2px; display: block; }
 
-.empty {
+/* Accordion Headers */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.section-header:hover { background: rgba(0,0,0,0.4); }
+.header-left label { font-size: 12px; font-weight: bold; cursor: pointer; }
+.header-right { display: flex; align-items: center; }
+.icon-btn-add {
+  background: #ff7875; color: #000; border: none; width: 18px; height: 18px;
+  border-radius: 2px; font-weight: bold; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.icon-btn-add.cyan { background: #00e5ff; }
+
+.section-content { padding: 8px; background: rgba(0,0,0,0.1); border-top: 1px solid #444; }
+
+/* Tick Items */
+.tick-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #444; }
+.tick-item:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
+.tick-header { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+.tick-idx { font-size: 10px; color: #ff7875; font-family: monospace; }
+.blue-theme .tick-idx { color: #00e5ff; }
+.remove-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
+.remove-btn:hover { color: #fff; }
+.tick-row { display: flex; gap: 6px; }
+.tick-col label { font-size: 9px; color: #777; display: block; margin-bottom: 1px; }
+.simple-input { background: transparent; border: none; border-bottom: 1px solid #555; color: #ccc; width: 100%; font-size: 12px; padding: 0 0 2px 0; }
+.simple-input:focus { outline: none; border-color: #00e5ff; }
+
+/* Anomalies Matrix */
+.anomalies-editor-container { background: #252525; padding: 8px; border-radius: 4px; border: 1px solid #444; }
+.anomaly-editor-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; background: #2f2f2f; padding: 2px; border-radius: 4px; }
+.row-handle { color: #555; cursor: grab; padding: 0 2px; }
+.row-items-list { display: flex; flex-wrap: wrap; gap: 4px; flex-grow: 1; }
+.add-to-row-btn { background: #333; border: 1px dashed #555; color: #777; width: 20px; height: 20px; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+.add-to-row-btn:hover { color: #ffd700; border-color: #ffd700; }
+.add-effect-bar { width: 100%; background: #333; border: 1px dashed #444; color: #777; font-size: 11px; padding: 4px; cursor: pointer; margin-top: 4px; border-radius: 2px; }
+.add-effect-bar:hover { border-color: #888; color: #ccc; }
+
+.icon-wrapper { width: 28px; height: 28px; background: #3a3a3a; border: 1px solid #555; border-radius: 3px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+.icon-wrapper:hover { border-color: #999; background: #444; }
+.icon-wrapper.is-editing { border-color: #ffd700; box-shadow: 0 0 0 1px #ffd700; z-index: 5; }
+.mini-icon { width: 20px; height: 20px; object-fit: contain; }
+.mini-stacks { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 0 2px; line-height: 1; }
+
+/* Embedded Editor */
+.effect-detail-editor-embedded { margin-top: 10px; background: #1f1f1f; border: 1px solid #555; border-radius: 6px; padding: 10px; position: relative; animation: fadeIn 0.2s ease; }
+.editor-arrow { position: absolute; top: -6px; left: 20px; width: 10px; height: 10px; background: #1f1f1f; border-left: 1px solid #555; border-top: 1px solid #555; transform: rotate(45deg); }
+.editor-header-mini { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; color: #ffd700; font-weight: bold; }
+.close-btn { background: none; border: none; color: #666; font-size: 11px; cursor: pointer; text-decoration: underline; }
+.editor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.full-width-col { grid-column: 1 / -1; }
+.editor-grid label { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
+
+.effect-select-dark { width: 100%; }
+:deep(.effect-select-dark .el-input__wrapper) { background-color: #111; box-shadow: none; border: 1px solid #444; }
+.opt-row { display: flex; align-items: center; gap: 6px; }
+.opt-row img { width: 16px; height: 16px; }
+
+.editor-actions { display: flex; gap: 8px; }
+.action-btn { flex: 1; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 12px; border: 1px solid; background: transparent; }
+.action-btn.link-style { border-color: #ffd700; color: #ffd700; }
+.action-btn.link-style:hover { background: rgba(255, 215, 0, 0.1); }
+.action-btn.link-style.is-linking { background: #ffd700; color: #000; }
+.action-btn.delete-style { border-color: #ff4d4f; color: #ff4d4f; }
+.action-btn.delete-style:hover { background: rgba(255, 77, 79, 0.1); }
+
+/* Connections Zone */
+.connection-header-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.main-link-btn {
+  background: transparent; border: 1px dashed #ffd700; color: #ffd700;
+  padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer;
+  transition: all 0.2s;
+}
+.main-link-btn:hover { background: rgba(255, 215, 0, 0.1); }
+.main-link-btn.is-linking { background: #ffd700; color: #000; border-style: solid; animation: pulse 1s infinite; }
+
+.connection-card {
+  background: #222; border-left: 3px solid #666; margin-bottom: 6px; border-radius: 2px;
+  padding: 6px; display: flex; flex-direction: column; gap: 4px;
+}
+.connection-card.outgoing { border-left-color: #ffd700; }
+.connection-card.incoming { border-left-color: #00e5ff; }
+
+.conn-vis { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #ccc; }
+.node { display: flex; align-items: center; gap: 4px; width: 45%; overflow: hidden; }
+.node.right { justify-content: flex-end; }
+.icon-s { width: 16px; height: 16px; border: 1px solid #444; border-radius: 2px; }
+.text-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arrow { color: #666; font-size: 10px; }
+
+.conn-tools { display: flex; align-items: center; gap: 6px; margin-top: 2px; padding-top: 4px; border-top: 1px solid #333; }
+.consume-tag {
+  font-size: 10px;
+  padding: 0 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  cursor: pointer;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
-}
-
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 12px;
-  color: #bbb;
-}
-
-input,
-select {
-  width: 100%;
   box-sizing: border-box;
-  background: #222;
-  color: white;
-  border: 1px solid #555;
-  padding: 6px;
-  border-radius: 4px;
-}
-
-.link-btn {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  background-color: #444;
-  color: #ffd700;
-  border: 1px solid #ffd700;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.link-btn:hover {
-  background-color: #555;
-}
-
-.link-btn.is-linking {
-  background-color: #ffd700;
-  color: #000;
-  animation: pulse 1s infinite;
-}
-
-.add-effect-bar {
-  width: 100%;
-  padding: 8px;
-  margin-top: 8px;
-  background-color: #333;
-  border: 1px dashed #666;
-  color: #aaa;
-  border-radius: 4px;
-  cursor: pointer;
   transition: all 0.2s;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-
-.add-effect-bar:hover {
-  border-color: #ffd700;
-  color: #ffd700;
-  background-color: #3a3a3a;
-}
-
-.delete-btn-small {
-  background: #d32f2f;
-  border: none;
-  color: white;
-  font-size: 12px;
-  padding: 4px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  width: 100%;
-}
-
-.delete-conn-btn {
-  cursor: pointer;
-  color: #aaa;
-  font-weight: bold;
-  padding: 0 5px;
-}
-
-.delete-conn-btn:hover {
-  color: #d32f2f;
-}
-
-.anomalies-editor-container {
-  background: #333;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #444;
-  margin-top: 5px;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.anomaly-editor-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 6px;
-  background: #2a2a2a;
-  padding: 4px;
-  border-radius: 4px;
-  border: 1px solid #444;
-}
-
-.row-handle {
-  cursor: grab;
-  color: #666;
-  font-size: 16px;
-  padding: 0 4px;
-}
-
-.row-handle:active {
-  cursor: grabbing;
-  color: #ffd700;
-}
-
-.row-items-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  flex-grow: 1;
-  min-height: 24px;
-  align-items: center;
-}
-
-.add-to-row-btn {
-  background: #444;
-  border: 1px dashed #666;
-  color: #aaa;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font-size: 16px;
-  font-family: sans-serif;
-  padding-bottom: 2px;
-  transition: all 0.2s;
-}
-
-.add-to-row-btn:hover {
-  border-color: #ffd700;
-  color: #ffd700;
-  background: #3a3a3a;
-}
-
-.icon-wrapper {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  background: #444;
-  border: 1px solid #666;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.icon-wrapper:hover {
-  border-color: #999;
-  background: #555;
-}
-
-.icon-wrapper.is-editing {
-  border-color: #ffd700;
-  background: #4a4a3a;
-  box-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
-}
-
-.mini-icon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
-.mini-stacks {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  font-size: 9px;
-  padding: 0 2px;
-  line-height: 1;
-  border-radius: 2px;
-}
-
-.effect-detail-editor {
-  margin-top: 10px;
-  background: #383838;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  animation: fadeIn 0.2s ease;
-}
-
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  color: #ffd700;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: #888;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  padding: 0;
-}
-
-.form-row {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 8px;
-}
-
-.form-row.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-row label {
-  font-size: 11px;
-  color: #999;
-  margin-bottom: 2px;
-}
-
-.form-row input,
-.form-row select {
-  font-size: 12px;
-  padding: 4px;
-}
-
-.editor-footer {
-  display: flex;
-  gap: 8px;
-}
-
-.effect-link-btn {
-  flex-grow: 1;
-  background: #444;
-  border: 1px dashed #ffd700;
-  color: #ffd700;
-  font-size: 12px;
-  padding: 4px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.effect-link-btn.is-linking {
-  background-color: #ffd700;
-  color: #000;
-  border-style: solid;
-  animation: pulse 1s infinite;
-}
-
-.effect-select {
-  width: 100%;
-}
-
-:deep(.el-select .el-input__wrapper) {
-  background-color: #222;
-  box-shadow: 0 0 0 1px #555 inset;
-}
-
-:deep(.el-select .el-input__inner) {
-  color: #eee;
-}
-
-.connection-item {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  margin-bottom: 6px;
-  border-left: 2px solid #555;
-  overflow: hidden;
-}
-
-.connection-item.is-outgoing {
-  border-left-color: #ffd700;
-}
-
-.connection-item.is-incoming {
-  border-left-color: #00e5ff;
-}
-
-.conn-visual-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px;
-}
-
-.conn-node {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 45%;
-}
-
-.conn-mini-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  border: 1px solid #555;
-  border-radius: 2px;
-  background: #333;
-}
-
-.conn-node-text {
-  font-size: 11px;
-  color: #ccc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.conn-arrow {
-  font-size: 12px;
-  opacity: 0.6;
-}
-
-.conn-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.offset-input-wrapper {
-  display: flex;
-  align-items: center;
-  background: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 0 4px;
-  margin-left: 4px;
-  gap: 4px;
-  height: 22px;
-}
-
-.offset-label {
-  font-size: 10px;
-  color: #888;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.mini-offset-input {
-  width: 50px !important;
-  background: transparent !important;
-  border: none !important;
-  --text-color: #ffd700;
-  color: #ffd700 !important;
-  font-size: 10px !important;
-  text-align: center;
-  padding: 0 !important;
-  height: 100% !important;
-  line-height: 20px;
-}
-
-:deep(.mini-offset-input .value-display) {
-  padding: 0 2px !important;
-  text-align: center !important;
-}
-
-.consume-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #222;
-  border: 1px solid #444;
-  color: #666;
-  transition: all 0.2s;
-}
-
-.consume-toggle:hover {
-  border-color: #666;
-  color: #aaa;
-}
-
-.consume-toggle.is-active {
-  background: rgba(255, 215, 0, 0.15);
-  border-color: #ffd700;
-  color: #ffd700;
-  font-weight: bold;
-}
-
-.toggle-icon {
-  font-size: 12px;
-}
-
-.library-mode .attribute-editor {
-  border-color: #4a90e2;
-}
-
-.panel-desc {
-  font-size: 12px;
-  color: #aaa;
-  margin-bottom: 20px;
-  padding: 8px;
-  background: rgba(74, 144, 226, 0.1);
-  border-left: 2px solid #4a90e2;
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.add-bar-btn {
-  background: #00e5ff;
-  color: #000;
-  border: none;
-  border-radius: 4px;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font-size: 16px;
-  padding-bottom: -2px;
-}
-
-.add-bar-btn:hover {
-  background: #fff;
-}
-
-.custom-bar-item {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 6px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  border-left: 2px solid #00e5ff;
-}
-
-.bar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.bar-index {
-  font-size: 10px;
-  color: #00e5ff;
-  font-family: monospace;
-}
-
-.remove-bar-btn {
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 0;
-  line-height: 1;
-}
-
-.remove-bar-btn:hover {
-  color: #ff7875;
-}
-
-.row-delay-input {
-  display: flex;
-  align-items: center;
-  padding: 0 2px;
-  height: 22px;
-}
-
-.delay-icon {
-  color: #888;
-  font-size: 10px;
-  user-select: none;
-}
-
-.delay-num {
-  height: 100% !important;
-  font-size: 11px !important;
-  color: #ffd700 !important;
-}
-
-:deep(.delay-num .value-display) {
-  width: 20px !important;
-  min-width: 20px !important;
-  padding: 0 4px !important;
-}
-
-.delay-num:focus {
-  outline: none;
-}
-
-.delay-num::-webkit-outer-spin-button,
-.delay-num::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.consume-tag.active { border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.1); font-weight: bold; }
+.offset-mini { display: flex; align-items: center; gap: 2px; font-size: 9px; color: #666; }
+.spacer { flex: 1; }
+.btn-del-conn { background: none; border: none; color: #555; cursor: pointer; font-size: 14px; line-height: 1; }
+.btn-del-conn:hover { color: #ff4d4f; }
+.empty-hint { font-size: 12px; color: #555; text-align: center; padding: 10px; font-style: italic; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+:deep(.is-rotated) { transform: rotate(90deg); transition: transform 0.2s; }
 </style>

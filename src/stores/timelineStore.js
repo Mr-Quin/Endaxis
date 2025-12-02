@@ -213,7 +213,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             const rawDuration = activeChar[`${suffix}_duration`] || 1
             const rawCooldown = activeChar[`${suffix}_cooldown`] || 0
 
-            // 读取判定点数据，如果没有则给空数组
+            // 读取判定点数据
             const rawTicks = activeChar[`${suffix}_damage_ticks`]
                 ? JSON.parse(JSON.stringify(activeChar[`${suffix}_damage_ticks`]))
                 : []
@@ -233,13 +233,16 @@ export const useTimelineStore = defineStore('timeline', () => {
 
             const merged = { duration: rawDuration, cooldown: rawCooldown, ...defaults, ...globalOverride }
 
+            const specificElement = activeChar[`${suffix}_element`]
+            const derivedElement = specificElement || activeChar.element || 'physical'
+
             return {
-                id: globalId, type: type, name: name, element: derivedElement,
+                id: globalId, type: type, name: name,
+                element: derivedElement,
                 ...merged,
                 damageTicks: rawTicks,
                 allowedTypes: getAllowed(activeChar[`${suffix}_allowed_types`]),
                 physicalAnomaly: getAnomalies(activeChar[`${suffix}_anomalies`]),
-                anomalyRowDelays: getRowDelays(activeChar[`${suffix}_anomaly_delays`])
             }
         }
 
@@ -257,7 +260,6 @@ export const useTimelineStore = defineStore('timeline', () => {
                 id: globalId,
                 physicalAnomaly: getAnomalies(variant.physicalAnomaly),
                 allowedTypes: getAllowed(variant.allowedTypes),
-                anomalyRowDelays: getRowDelays(variant.anomalyRowDelays)
             }
         }
 
@@ -643,12 +645,12 @@ export const useTimelineStore = defineStore('timeline', () => {
                     })
                 }
                 if (action.physicalAnomaly) {
-                    const rowDelays = action.anomalyRowDelays || [];
                     action.physicalAnomaly.forEach((row, rowIndex) => {
-                        let currentTimeOffset = rowDelays[rowIndex] || 0;
                         row.forEach(effect => {
-                            if (effect.stagger > 0) events.push({ time: action.startTime + currentTimeOffset, change: effect.stagger, type: 'gain' });
-                            currentTimeOffset += (effect.duration || 0);
+                            const triggerTime = action.startTime + (Number(effect.offset) || 0);
+                            if (effect.stagger > 0) {
+                                events.push({ time: triggerTime, change: effect.stagger, type: 'gain' });
+                            }
                         });
                     });
                 }
@@ -688,12 +690,12 @@ export const useTimelineStore = defineStore('timeline', () => {
                     })
                 }
                 if (action.physicalAnomaly) {
-                    const rowDelays = action.anomalyRowDelays || [];
                     action.physicalAnomaly.forEach((row, rowIndex) => {
-                        let currentTimeOffset = rowDelays[rowIndex] || 0;
                         row.forEach(effect => {
-                            if (effect.sp > 0) events.push({ time: action.startTime + currentTimeOffset, valChange: effect.sp, type: 'gain' });
-                            currentTimeOffset += (effect.duration || 0);
+                            const triggerTime = action.startTime + (Number(effect.offset) || 0);
+                            if (effect.stagger > 0) {
+                                events.push({ time: triggerTime, change: effect.stagger, type: 'gain' });
+                            }
                         });
                     });
                 }
@@ -771,13 +773,13 @@ export const useTimelineStore = defineStore('timeline', () => {
         const isInstance = !!char.instanceId; const anomalyKey = isInstance ? 'physicalAnomaly' : `${skillType}_anomalies`; const allowedKey = isInstance ? 'allowedTypes' : `${skillType}_allowed_types`;
         if (!char[anomalyKey] || (char[anomalyKey].length > 0 && !Array.isArray(char[anomalyKey][0]))) { char[anomalyKey] = char[anomalyKey] || []; if (!Array.isArray(char[anomalyKey][0])) char[anomalyKey] = [char[anomalyKey]]; }
         const allowedList = char[allowedKey] || []; const defaultType = allowedList.length > 0 ? allowedList[0] : 'default';
-        char[anomalyKey].push([{ _id: uid(), type: defaultType, stacks: 1, duration: 0, sp: 0, stagger: 0 }]);
+        char[anomalyKey].push([{ _id: uid(), type: defaultType, stacks: 1, duration: 0, offset: 0, sp: 0, stagger: 0 }]);
         if (isInstance) commitState();
     }
     function addAnomalyToRow(char, skillType, rowIndex) {
         const isInstance = !!char.instanceId; const anomalyKey = isInstance ? 'physicalAnomaly' : `${skillType}_anomalies`; const allowedKey = isInstance ? 'allowedTypes' : `${skillType}_allowed_types`;
         const rows = char[anomalyKey] || []; const allowedList = char[allowedKey] || []; const defaultType = allowedList.length > 0 ? allowedList[0] : 'default';
-        if (rows[rowIndex]) rows[rowIndex].push({ _id: uid(), type: defaultType, stacks: 1, duration: 0, sp: 0, stagger: 0 });
+        if (rows[rowIndex]) rows[rowIndex].push({ _id: uid(), type: defaultType, stacks: 1, duration: 0, offset: 0, sp: 0, stagger: 0 });
         if (isInstance) commitState();
     }
 
