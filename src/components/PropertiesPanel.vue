@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
 import draggable from 'vuedraggable'
 import CustomNumberInput from './CustomNumberInput.vue'
@@ -398,55 +398,33 @@ function updateDamageTick(index, key, value) {
     <div class="attribute-editor">
       <div class="form-group">
         <label>持续时间</label>
-        <CustomNumberInput :model-value="selectedAction.duration"
-               @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.duration" @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
       </div>
-      <div class="form-group" v-if="currentSkillType !== 'execution'">
-        <label>失衡值</label>
-        <CustomNumberInput :model-value="selectedAction.stagger"
-               @update:model-value="val => updateActionProp('stagger', val)"
-               :border-color="HIGHLIGHT_COLORS.red" text-align="left"/>
-      </div>
+
       <div class="form-group" v-if="currentSkillType === 'link'">
         <label>冷却时间</label>
-        <CustomNumberInput :model-value="selectedAction.cooldown"
-               @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.cooldown" @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="left"/>
       </div>
       <div class="form-group" v-if="currentSkillType === 'link'">
         <label>触发窗口</label>
-        <CustomNumberInput :model-value="selectedAction.triggerWindow || 0"
-               @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :min="0"
-               :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.triggerWindow || 0" @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
       </div>
       <div class="form-group" v-if="currentSkillType === 'skill'">
         <label>技力消耗</label>
-        <CustomNumberInput :model-value="selectedAction.spCost"
-               @update:model-value="val => updateActionProp('spCost', val)" :min="0"
-               :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.spCost" @update:model-value="val => updateActionProp('spCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
       </div>
       <div class="form-group" v-if="currentSkillType === 'ultimate'">
         <label>充能消耗</label>
-        <CustomNumberInput :model-value="selectedAction.gaugeCost"
-               @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0"
-               :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.gaugeCost" @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
       </div>
-      <div class="form-group">
-        <label>技力回复</label>
-        <CustomNumberInput :model-value="selectedAction.spGain"
-               @update:model-value="val => updateActionProp('spGain', val)" :min="0"
-               :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
-      </div>
+
       <div class="form-group" v-if="!['attack', 'execution'].includes(currentSkillType)">
         <label>自身充能</label>
-        <CustomNumberInput :model-value="selectedAction.gaugeGain"
-               @update:model-value="val => updateActionGaugeWithLink(val)" :min="0"
-               :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.gaugeGain" @update:model-value="val => updateActionGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
       </div>
       <div class="form-group" v-if="currentSkillType === 'skill'">
         <label>队友充能</label>
-        <CustomNumberInput :model-value="selectedAction.teamGaugeGain"
-               @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0"
-               :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+        <CustomNumberInput :model-value="selectedAction.teamGaugeGain" @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
       </div>
 
       <hr class="divider"/>
@@ -533,14 +511,10 @@ function updateDamageTick(index, key, value) {
           </div>
           <div style="display: flex; gap: 6px;">
             <div style="flex: 1;">
-              <CustomNumberInput :model-value="bar.duration"
-                     @update:model-value="val => updateCustomBarItem(index, 'duration', val)"
-                     :step="0.5" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
+              <CustomNumberInput :model-value="bar.duration" @update:model-value="val => updateCustomBarItem(index, 'duration', val)" :step="0.5" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
             </div>
             <div style="flex: 1;">
-              <CustomNumberInput :model-value="bar.offset"
-                     @update:model-value="val => updateCustomBarItem(index, 'offset', val)"
-                     :step="0.1" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
+              <CustomNumberInput :model-value="bar.offset" @update:model-value="val => updateCustomBarItem(index, 'offset', val)" :step="0.1" :min="0" :border-color="HIGHLIGHT_COLORS.blue" style="width: 100%;" text-align="left"/>
             </div>
           </div>
         </div>
@@ -655,8 +629,7 @@ function updateDamageTick(index, key, value) {
 
       <div class="form-row full-width">
         <label>类型</label>
-        <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)"
-                   placeholder="选择状态" filterable size="small" class="effect-select">
+        <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)" placeholder="选择状态" filterable size="small" class="effect-select">
           <el-option-group v-for="group in iconOptions" :key="group.label" :label="group.label">
             <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -670,9 +643,7 @@ function updateDamageTick(index, key, value) {
 
       <div class="form-row">
         <label>层数</label>
-        <CustomNumberInput :model-value="editingEffectData.stacks"
-               @update:model-value="val => updateEffectProp('stacks', val)" :min="1" text-align="left"
-               :activeColor="HIGHLIGHT_COLORS.default"/>
+        <CustomNumberInput :model-value="editingEffectData.stacks" @update:model-value="val => updateEffectProp('stacks', val)" :min="1" text-align="left" :activeColor="HIGHLIGHT_COLORS.default"/>
       </div>
       <div class="form-row">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
@@ -685,24 +656,7 @@ function updateDamageTick(index, key, value) {
             隐藏时长条
           </label>
         </div>
-        <CustomNumberInput :model-value="editingEffectData.duration"
-               @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.1" text-align="left"
-               :activeColor="HIGHLIGHT_COLORS.default"/>
-      </div>
-
-      <div class="form-row-group" style="display: flex; gap: 10px; margin-bottom: 8px;">
-        <div class="form-row" style="flex: 1;">
-          <label style="color: #ffd700;">技力回复</label>
-          <CustomNumberInput :model-value="editingEffectData.sp || 0"
-                 @update:model-value="val => updateEffectProp('sp', val)"
-                 :border-color="HIGHLIGHT_COLORS.default" text-align="left"/>
-        </div>
-        <div class="form-row" style="flex: 1;">
-          <label style="color: #ff7875;">失衡值</label>
-          <CustomNumberInput :model-value="editingEffectData.stagger || 0"
-                 @update:model-value="val => updateEffectProp('stagger', val)"
-                 :border-color="HIGHLIGHT_COLORS.red" text-align="left"/>
-        </div>
+        <CustomNumberInput :model-value="editingEffectData.duration" @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.1" text-align="left" :activeColor="HIGHLIGHT_COLORS.default"/>
       </div>
 
       <div class="editor-footer">
@@ -724,12 +678,8 @@ function updateDamageTick(index, key, value) {
       此修改将同步更新所有同类技能（全局生效）。
     </div>
     <div class="attribute-editor">
-      <div class="form-group"><label>持续时间</label><CustomNumberInput :model-value="selectedLibrarySkill.duration"
-          @update:model-value="val => updateLibraryProp('duration', val)"
-          :min="0.5" :step="0.5" text-align="left"/></div>
-      <div class="form-group" v-if="currentSkillType !== 'execution'"><label>失衡值</label><CustomNumberInput
-          :model-value="selectedLibrarySkill.stagger"
-          @update:model-value="val => updateLibraryProp('stagger', val)" :border-color="HIGHLIGHT_COLORS.red" text-align="left"/></div>
+      <div class="form-group"><label>持续时间</label><CustomNumberInput :model-value="selectedLibrarySkill.duration" @update:model-value="val => updateLibraryProp('duration', val)" :min="0.5" :step="0.5" text-align="left"/></div>
+
       <div class="form-group" v-if="currentSkillType === 'link'"><label>冷却时间</label><CustomNumberInput
           :model-value="selectedLibrarySkill.cooldown"
           @update:model-value="val => updateLibraryProp('cooldown', val)"
@@ -741,18 +691,14 @@ function updateDamageTick(index, key, value) {
       <div class="form-group" v-if="currentSkillType === 'ultimate'"><label>充能消耗</label><CustomNumberInput
           :model-value="selectedLibrarySkill.gaugeCost"
           @update:model-value="val => updateLibraryProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/></div>
-      <div class="form-group"><label>技力回复</label><CustomNumberInput :model-value="selectedLibrarySkill.spGain"
-          @update:model-value="val => updateLibraryProp('spGain', val)"
-          :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="left"/></div>
+
       <div class="form-group" v-if="!['attack', 'execution'].includes(currentSkillType)">
         <label>自身充能 (联动队友)</label>
-        <CustomNumberInput :model-value="selectedLibrarySkill.gaugeGain"
-               @update:model-value="val => updateLibraryGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+        <CustomNumberInput :model-value="selectedLibrarySkill.gaugeGain" @update:model-value="val => updateLibraryGaugeWithLink(val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
       </div>
       <div class="form-group" v-if="currentSkillType === 'skill'">
         <label>队友充能</label>
-        <CustomNumberInput :model-value="selectedLibrarySkill.teamGaugeGain"
-               @update:model-value="val => updateLibraryProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
+        <CustomNumberInput :model-value="selectedLibrarySkill.teamGaugeGain" @update:model-value="val => updateLibraryProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="left"/>
       </div>
     </div>
   </div>

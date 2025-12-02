@@ -213,34 +213,22 @@ export const useTimelineStore = defineStore('timeline', () => {
             const rawDuration = activeChar[`${suffix}_duration`] || 1
             const rawCooldown = activeChar[`${suffix}_cooldown`] || 0
 
-            let derivedElement = activeChar.element || 'physical';
-            if (activeChar[`${suffix}_element`]) derivedElement = activeChar[`${suffix}_element`];
-            if (suffix === 'attack' || suffix === 'execution') derivedElement = 'physical';
-            if (suffix === 'link') derivedElement = null;
+            // 读取判定点数据，如果没有则给空数组
+            const rawTicks = activeChar[`${suffix}_damage_ticks`]
+                ? JSON.parse(JSON.stringify(activeChar[`${suffix}_damage_ticks`]))
+                : []
 
-            let defaults = { spCost: 0, spGain: 0, gaugeCost: 0, gaugeGain: 0, stagger: 0, teamGaugeGain: 0 }
+            let defaults = { spCost: 0, gaugeCost: 0, gaugeGain: 0, teamGaugeGain: 0 }
 
-            if (suffix === 'attack') {
-                defaults.spGain = activeChar.attack_spGain || 0
-                defaults.stagger = activeChar.attack_stagger || 0
-            } else if (suffix === 'skill') {
+            if (suffix === 'skill') {
                 defaults.spCost = activeChar.skill_spCost || systemConstants.value.skillSpCostDefault;
-                defaults.spGain = activeChar.skill_spGain || activeChar.skill_spReply || 0;
                 defaults.gaugeGain = activeChar.skill_gaugeGain || 0;
                 defaults.teamGaugeGain = activeChar.skill_teamGaugeGain || 0;
-                defaults.stagger = activeChar.skill_stagger || 0
             } else if (suffix === 'link') {
-                defaults.spGain = activeChar.link_spGain || 0
                 defaults.gaugeGain = activeChar.link_gaugeGain || 0
-                defaults.stagger = activeChar.link_stagger || 0
-                defaults.triggerWindow = 0
             } else if (suffix === 'ultimate') {
                 defaults.gaugeCost = activeChar.ultimate_gaugeMax || 100
-                defaults.spGain = activeChar.ultimate_spGain || activeChar.ultimate_spReply || 0
                 defaults.gaugeGain = activeChar.ultimate_gaugeReply || 0
-                defaults.stagger = activeChar.ultimate_stagger || 0
-            } else if (suffix === 'execution') {
-                defaults.spGain = activeChar.execution_spGain || 0;
             }
 
             const merged = { duration: rawDuration, cooldown: rawCooldown, ...defaults, ...globalOverride }
@@ -248,6 +236,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             return {
                 id: globalId, type: type, name: name, element: derivedElement,
                 ...merged,
+                damageTicks: rawTicks,
                 allowedTypes: getAllowed(activeChar[`${suffix}_allowed_types`]),
                 physicalAnomaly: getAnomalies(activeChar[`${suffix}_anomalies`]),
                 anomalyRowDelays: getRowDelays(activeChar[`${suffix}_anomaly_delays`])
