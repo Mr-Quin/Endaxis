@@ -213,15 +213,18 @@ function addEffectToRow(rowIndex) {
 }
 
 function removeEffect(r, c) {
-  const rows = JSON.parse(JSON.stringify(anomalyRows.value))
-  if (rows[r]) {
-    rows[r].splice(c, 1)
-    if (rows[r].length === 0) rows.splice(r, 1)
-    commitUpdate({ physicalAnomaly: rows })
-
-    if (isLibraryMode.value) localSelectedAnomalyId.value = null
-    else store.setSelectedAnomalyId(null)
+  if (isLibraryMode.value) {
+    const rows = JSON.parse(JSON.stringify(anomalyRows.value))
+    if (rows[r]) {
+      rows[r].splice(c, 1)
+      if (rows[r].length === 0) rows.splice(r, 1)
+      commitUpdate({ physicalAnomaly: rows })
+      localSelectedAnomalyId.value = null
+    }
+    return
   }
+  store.removeAnomaly(store.selectedActionId, r, c)
+  store.setSelectedAnomalyId(null)
 }
 
 function updateActionProp(key, value) {

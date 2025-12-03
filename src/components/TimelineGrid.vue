@@ -461,7 +461,9 @@ function onWindowMouseUp(evt) {
       if (store.isLinking) {
         store.confirmLinking(movingActionId.value)
       } else {
-        if (wasSelectedOnPress.value && !hadAnomalySelection.value) {
+        if (store.selectedAnomalyId) {
+          store.setSelectedAnomalyId(null)
+        } else if (wasSelectedOnPress.value) {
           store.selectAction(movingActionId.value)
         }
       }

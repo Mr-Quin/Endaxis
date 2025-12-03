@@ -250,7 +250,7 @@ function onIconClick(evt, item, flatIndex) {
 </script>
 
 <template>
-  <div :id="`action-${action.instanceId}`" class="action-item-wrapper" :style="style" @click.stop @dragstart.prevent>
+  <div :id="`action-${action.instanceId}`" class="action-item-wrapper" @mouseenter="store.setHoveredAction(action.instanceId)" @mouseleave="store.setHoveredAction(null)":style="style" @click.stop @dragstart.prevent>
 
     <div v-if="!isGhostMode" class="action-item-content drag-handle">{{ action.name }}</div>
 

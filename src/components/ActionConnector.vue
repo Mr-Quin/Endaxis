@@ -1,7 +1,6 @@
 <script setup>
 import { computed } from 'vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
-import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   connection: { type: Object, required: true },
@@ -13,10 +12,16 @@ const store = useTimelineStore()
 const gradientId = computed(() => `grad-${props.connection.id}`)
 const isSelected = computed(() => store.selectedConnectionId === props.connection.id)
 
-function onRightClick() {
-  store.removeConnection(props.connection.id)
-  ElMessage.success({ message: '已删除 1 条连线', duration: 1000 })
-}
+const isRelatedToHover = computed(() => {
+  const hoverId = store.hoveredActionId
+  if (!hoverId) return false
+  return props.connection.from === hoverId || props.connection.to === hoverId
+})
+
+const isDimmed = computed(() => {
+  return store.hoveredActionId && !isRelatedToHover.value && !isSelected.value
+})
+
 function onSelectClick(evt) {
   evt.stopPropagation()
   store.selectConnection(props.connection.id)
@@ -179,14 +184,19 @@ const pathInfo = computed(() => {
 </script>
 
 <template>
-  <g v-if="pathInfo" class="connector-group" :class="{ 'is-selected': isSelected }" @click="onSelectClick" @contextmenu.prevent="onRightClick">
+  <g
+      v-if="pathInfo"
+      class="connector-group"
+      :class="{ 'is-selected': isSelected, 'is-dimmed': isDimmed, 'is-highlighted': isRelatedToHover }"
+      @click="onSelectClick"
+  >
     <defs>
       <linearGradient :id="gradientId" gradientUnits="userSpaceOnUse" :x1="pathInfo.startPoint.x" :y1="pathInfo.startPoint.y" :x2="pathInfo.endPoint.x" :y2="pathInfo.endPoint.y">
         <stop offset="0%" :stop-color="pathInfo.colors.start" stop-opacity="0.8"/>
         <stop offset="100%" :stop-color="pathInfo.colors.end" stop-opacity="1"/>
       </linearGradient>
     </defs>
-    <path :d="pathInfo.d" fill="none" :stroke="pathInfo.colors.end" stroke-width="12" class="hover-zone"><title>左键选中+Delete / 右键 删除</title></path>
+    <path :d="pathInfo.d" fill="none" :stroke="pathInfo.colors.end" stroke-width="12" class="hover-zone"><title>左键选中后按 Delete 删除</title></path>
     <path :d="pathInfo.d" fill="none" :stroke="isSelected ? '#ffffff' : `url(#${gradientId})`" stroke-width="2" stroke-linecap="round" class="main-path"/>
     <circle r="2">
       <animateMotion :path="pathInfo.d" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1"/>
@@ -196,8 +206,30 @@ const pathInfo = computed(() => {
 </template>
 
 <style scoped>
-.connector-group { cursor: pointer; }
-.connector-group.is-selected .main-path { stroke-width: 3; filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)); z-index: 999; }
+.connector-group {
+  cursor: pointer;
+  transition: opacity 0.2s, filter 0.2s; /* 添加过渡效果让变化更平滑 */
+}
+
+/* 变淡状态 */
+.connector-group.is-dimmed {
+  opacity: 0.1; /* 大幅降低不相关连线的透明度 */
+  filter: grayscale(0.8);
+}
+
+/* 高亮状态 (相关连线) */
+.connector-group.is-highlighted .main-path {
+  stroke-width: 3; /* 稍微加粗 */
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
+}
+
+/* 选中状态 (保持最高优先级，但代码里样式叠加即可) */
+.connector-group.is-selected .main-path {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+  z-index: 999;
+}
+
 .hover-zone { pointer-events: stroke; transition: stroke-opacity 0.2s; stroke-opacity: 0; }
 .connector-group:hover .hover-zone { stroke-opacity: 0.4; }
 .main-path { pointer-events: none; filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5)); stroke-dasharray: 10, 5; animation: dash-flow 30s linear infinite; transition: stroke 0.2s; }

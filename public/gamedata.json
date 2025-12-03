@@ -44,7 +44,7 @@
       "attack_duration": 3.7,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 3.7,
           "sp": 20,
           "stagger": 18
         }
@@ -76,7 +76,7 @@
       "skill_gaugeGain": 16,
       "skill_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 0.4,
           "sp": 0,
           "stagger": 10
         }
@@ -93,7 +93,8 @@
             "stacks": 2,
             "duration": 0,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0.4
           }
         ]
       ],
@@ -106,7 +107,7 @@
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 0.8,
           "sp": 0,
           "stagger": 10
         }
@@ -121,7 +122,8 @@
             "stacks": 1,
             "duration": 4,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0.8
           }
         ]
       ],
@@ -190,7 +192,7 @@
       "attack_duration": 3.3,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 3.3,
           "sp": 20,
           "stagger": 18
         }
@@ -221,9 +223,9 @@
       "skill_gaugeGain": 0,
       "skill_damage_ticks": [
         {
-          "offset": 0,
-          "sp": 0,
-          "stagger": 0
+          "offset": 1.4,
+          "sp": 5,
+          "stagger": 5
         }
       ],
       "skill_allowed_types": [
@@ -238,28 +240,8 @@
             "stacks": 1,
             "duration": 0,
             "sp": 5,
-            "stagger": 10
-          },
-          {
-            "type": "armor_break",
-            "stacks": 2,
-            "duration": 0,
-            "sp": 10,
-            "stagger": 0
-          },
-          {
-            "type": "armor_break",
-            "stacks": 3,
-            "duration": 0,
-            "sp": 20,
-            "stagger": 0
-          },
-          {
-            "type": "armor_break",
-            "stacks": 4,
-            "duration": 0,
-            "sp": 30,
-            "stagger": 0
+            "stagger": 10,
+            "offset": 1.4
           }
         ]
       ],
@@ -272,9 +254,19 @@
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
-          "sp": 0,
-          "stagger": 0
+          "offset": 0.76,
+          "sp": 5,
+          "stagger": 3
+        },
+        {
+          "offset": 1.38,
+          "stagger": 4,
+          "sp": 7
+        },
+        {
+          "offset": 2.3,
+          "stagger": 9,
+          "sp": 13
         }
       ],
       "link_allowed_types": [],
@@ -302,35 +294,40 @@
             "stacks": 5,
             "duration": 0,
             "sp": 0,
-            "stagger": 10
+            "stagger": 10,
+            "offset": 0
           },
           {
             "type": "steel_oath",
             "stacks": 4,
             "duration": 0,
             "sp": 7.5,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0
           },
           {
             "type": "steel_oath",
             "stacks": 3,
             "duration": 0,
             "sp": 7.5,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0
           },
           {
             "type": "steel_oath",
             "stacks": 2,
             "duration": 0,
             "sp": 7.5,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0
           },
           {
             "type": "steel_oath",
             "stacks": 1,
             "duration": 0,
             "sp": 30,
-            "stagger": 15
+            "stagger": 15,
+            "offset": 0
           }
         ]
       ],
@@ -390,7 +387,7 @@
       "attack_duration": 4.3,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 4.3,
           "sp": 18,
           "stagger": 18
         }
@@ -421,7 +418,7 @@
       "skill_gaugeGain": 0,
       "skill_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.3,
           "sp": 0,
           "stagger": 10
         }
@@ -457,9 +454,14 @@
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
-          "sp": 0,
-          "stagger": 18
+          "offset": 0.8,
+          "stagger": 0,
+          "sp": 0
+        },
+        {
+          "offset": 2.6,
+          "stagger": 10,
+          "sp": 0
         }
       ],
       "link_allowed_types": [
@@ -474,7 +476,8 @@
             "stacks": 1,
             "duration": 10,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 2.6
           }
         ]
       ],
@@ -1221,7 +1224,7 @@
       "attack_duration": 3.2,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 3.2,
           "sp": 21,
           "stagger": 19
         }
@@ -1252,7 +1255,7 @@
       "skill_gaugeGain": 0,
       "skill_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.9,
           "sp": 0,
           "stagger": 10
         }
@@ -1267,17 +1270,19 @@
         [
           {
             "type": "knockdown",
-            "stacks": 1,
+            "stacks": 2,
             "duration": 0,
             "sp": 0,
-            "stagger": 0
-          },
+            "stagger": 0,
+            "offset": 1.9
+          }
+        ],
+        [
           {
             "type": "physical_weakness",
             "stacks": 1,
             "duration": 10,
-            "sp": 0,
-            "stagger": 0
+            "offset": 1.9
           }
         ]
       ],
@@ -1290,7 +1295,7 @@
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.6,
           "sp": 0,
           "stagger": 10
         }
@@ -1305,7 +1310,8 @@
             "stacks": 1,
             "duration": 20,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 1.6
           }
         ]
       ],
@@ -2023,7 +2029,7 @@
       "attack_duration": 3.5,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 3.5,
           "sp": 21,
           "stagger": 20
         }
@@ -2054,9 +2060,9 @@
       "skill_gaugeGain": 0,
       "skill_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.5,
           "sp": 0,
-          "stagger": 0
+          "stagger": 10
         }
       ],
       "skill_allowed_types": [
@@ -2071,7 +2077,8 @@
             "stacks": 2,
             "duration": 0,
             "stagger": 10,
-            "sp": 0
+            "sp": 0,
+            "offset": 1.5
           }
         ]
       ],
@@ -2084,9 +2091,9 @@
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.76,
           "sp": 0,
-          "stagger": 0
+          "stagger": 15
         }
       ],
       "link_allowed_types": [
@@ -2101,18 +2108,24 @@
             "stacks": 4,
             "duration": 0,
             "sp": 0,
-            "stagger": 15
+            "stagger": 15,
+            "offset": 1.76
           }
         ]
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 3,
       "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 1.5,
           "sp": 0,
           "stagger": 0
+        },
+        {
+          "offset": 2.7,
+          "stagger": 0,
+          "sp": 0
         }
       ],
       "ultimate_allowed_types": [
@@ -2129,14 +2142,16 @@
             "stacks": 1,
             "duration": 1.1,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 1.5
           },
           {
             "type": "knockdown",
-            "stacks": 1,
+            "stacks": 2,
             "duration": 0,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 2.7
           }
         ],
         [
@@ -2145,7 +2160,8 @@
             "stacks": 1,
             "duration": 0,
             "sp": 0,
-            "stagger": 0
+            "stagger": 0,
+            "offset": 0.5
           }
         ]
       ],
@@ -2478,7 +2494,7 @@
       "attack_duration": 3.2,
       "attack_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 3.2,
           "sp": 18,
           "stagger": 16
         }
@@ -2509,9 +2525,9 @@
       "skill_gaugeGain": 0,
       "skill_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 0.4,
           "sp": 0,
-          "stagger": 0
+          "stagger": 10
         }
       ],
       "skill_allowed_types": [
@@ -2526,7 +2542,8 @@
             "stacks": 2,
             "duration": 0,
             "stagger": 10,
-            "sp": 0
+            "sp": 0,
+            "offset": 0.4
           }
         ]
       ],
@@ -2536,12 +2553,12 @@
       "skill_teamGaugeGain": 0,
       "link_duration": 0.9,
       "link_cooldown": 16,
-      "link_gaugeGain": 0,
+      "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
-          "offset": 0,
+          "offset": 0.56,
           "sp": 0,
-          "stagger": 0
+          "stagger": 10
         }
       ],
       "link_allowed_types": [
@@ -2556,7 +2573,8 @@
             "stacks": 2,
             "duration": 0,
             "sp": 10,
-            "stagger": 10
+            "stagger": 10,
+            "offset": 0.56
           }
         ]
       ],
@@ -2581,14 +2599,16 @@
             "stacks": 1,
             "duration": 0,
             "sp": 0,
-            "stagger": 15
+            "stagger": 15,
+            "offset": 0
           },
           {
             "type": "default",
             "stacks": 1,
             "duration": 0,
             "sp": 0,
-            "stagger": 20
+            "stagger": 20,
+            "offset": 0
           }
         ]
       ],

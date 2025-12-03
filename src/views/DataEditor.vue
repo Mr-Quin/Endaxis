@@ -129,7 +129,6 @@ function addDamageTick(char, type) {
   const list = getDamageTicks(char, type)
   // 默认判定点：0秒时，造成0失衡，回复0技力
   list.push({ offset: 0, stagger: 0, sp: 0 })
-  list.sort((a, b) => a.offset - b.offset)
 }
 
 function removeDamageTick(char, type, index) {
@@ -334,7 +333,6 @@ function removeVariantEffect(variant, rowIndex, colIndex) {
 function addVariantDamageTick(variant) {
   if(!variant.damageTicks) variant.damageTicks = []
   variant.damageTicks.push({ offset: 0, stagger: 0, sp: 0 })
-  variant.damageTicks.sort((a,b)=>a.offset-b.offset)
 }
 function removeVariantDamageTick(variant, index) {
   if(variant.damageTicks) variant.damageTicks.splice(index, 1)

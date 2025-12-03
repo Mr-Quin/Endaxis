@@ -260,6 +260,10 @@ function increment() {
   padding: 0 8px;
   font-size: 13px;
   flex-grow: 1;
+  height: 100%;
+  line-height: 26px;
+  box-sizing: border-box;
+  display: block;
 }
 
 .value-display:focus {

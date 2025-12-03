@@ -78,6 +78,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     const linkingSourceId = ref(null)
     const linkingEffectIndex = ref(null)
     const linkingSourceEffectId = ref(null)
+    const hoveredActionId = ref(null)
 
     const isActionSelected = (id) => selectedActionId.value === id || multiSelectedIds.value.has(id)
 
@@ -351,6 +352,10 @@ export const useTimelineStore = defineStore('timeline', () => {
         selectedActionId.value = null
         multiSelectedIds.value.clear()
         selectedConnectionId.value = (selectedConnectionId.value === connId) ? null : connId
+    }
+
+    function setHoveredAction(id) {
+        hoveredActionId.value = id
     }
 
     function setMultiSelection(idsArray) {
@@ -773,33 +778,19 @@ export const useTimelineStore = defineStore('timeline', () => {
             characterRoster.value = data.characterRoster.sort((a, b) => (b.rarity || 0) - (a.rarity || 0)); iconDatabase.value = data.ICON_DATABASE; historyStack.value = []; historyIndex.value = -1; commitState();
         } catch (error) { console.error("Load failed:", error) } finally { isLoading.value = false }
     }
-    function exportProject() { const projectData = { version: '2.0.0', timestamp: Date.now(), tracks: tracks.value, connections: connections.value, characterOverrides: characterOverrides.value }; const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `endaxis_project_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(link.href) }
-    async function importProject(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (!data.tracks) throw new Error("Invalid"); tracks.value = data.tracks; connections.value = data.connections || []; characterOverrides.value = data.characterOverrides || {}; clearSelection(); historyStack.value = []; historyIndex.value = -1; commitState(); resolve(true) } catch (err) { reject(err) } }; reader.readAsText(file) }) }
-
-    function addAnomalyRow(char, skillType) {
-        const isInstance = !!char.instanceId; const anomalyKey = isInstance ? 'physicalAnomaly' : `${skillType}_anomalies`; const allowedKey = isInstance ? 'allowedTypes' : `${skillType}_allowed_types`;
-        if (!char[anomalyKey] || (char[anomalyKey].length > 0 && !Array.isArray(char[anomalyKey][0]))) { char[anomalyKey] = char[anomalyKey] || []; if (!Array.isArray(char[anomalyKey][0])) char[anomalyKey] = [char[anomalyKey]]; }
-        const allowedList = char[allowedKey] || []; const defaultType = allowedList.length > 0 ? allowedList[0] : 'default';
-        char[anomalyKey].push([{ _id: uid(), type: defaultType, stacks: 1, duration: 0, offset: 0, sp: 0, stagger: 0 }]);
-        if (isInstance) commitState();
-    }
-    function addAnomalyToRow(char, skillType, rowIndex) {
-        const isInstance = !!char.instanceId; const anomalyKey = isInstance ? 'physicalAnomaly' : `${skillType}_anomalies`; const allowedKey = isInstance ? 'allowedTypes' : `${skillType}_allowed_types`;
-        const rows = char[anomalyKey] || []; const allowedList = char[allowedKey] || []; const defaultType = allowedList.length > 0 ? allowedList[0] : 'default';
-        if (rows[rowIndex]) rows[rowIndex].push({ _id: uid(), type: defaultType, stacks: 1, duration: 0, offset: 0, sp: 0, stagger: 0 });
-        if (isInstance) commitState();
-    }
+    function exportProject() { const projectData = { timestamp: Date.now(), tracks: tracks.value, connections: connections.value, characterOverrides: characterOverrides.value, systemConstants: systemConstants.value }; const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `endaxis_project_${new Date().toISOString().slice(0, 10)}.json`; link.click(); URL.revokeObjectURL(link.href) }
+    async function importProject(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (!data.tracks) throw new Error("Invalid"); tracks.value = data.tracks; connections.value = data.connections || []; characterOverrides.value = data.characterOverrides || {}; if (data.systemConstants) { systemConstants.value = { ...systemConstants.value,  ...data.systemConstants }; } clearSelection(); historyStack.value = []; historyIndex.value = -1; commitState(); resolve(true) } catch (err) { reject(err) } }; reader.readAsText(file) }) }
 
     return {
         systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollLeft, globalDragOffset, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, multiSelectedIds, clipboard, isLinking, linkingSourceId, linkingEffectIndex, linkingSourceEffectId, showCursorGuide, isBoxSelectMode, cursorCurrentTime, snapStep,
         selectedAnomalyId, setSelectedAnomalyId,
-        teamTracksInfo, activeSkillLibrary, timeBlockWidth, ELEMENT_COLORS, getActionPositionInfo, getIncomingConnections, getCharacterElementColor, isActionSelected,
+        teamTracksInfo, activeSkillLibrary, timeBlockWidth, ELEMENT_COLORS, getActionPositionInfo, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction, removeAction,
         addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         startLinking, confirmLinking, cancelLinking, removeConnection, updateConnection, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
         removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly, getAnomalyIndexById,
-        findEffectIndexById, addAnomalyRow, addAnomalyToRow
+        findEffectIndexById,
     }
 })
