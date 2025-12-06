@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref, nextTick, computed } from 'vue'
+import { onMounted, onUnmounted, ref, nextTick, computed, watch } from 'vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
 import html2canvas from 'html2canvas'
 import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
@@ -74,9 +74,54 @@ function handleAddScenario() {
   store.addScenario()
 }
 
+// === 滚动遮罩逻辑 ===
+const tabsGroupRef = ref(null)
+const tabsMaskStyle = ref({})
+
+function updateScrollMask() {
+  const el = tabsGroupRef.value
+  if (!el) return
+
+  const tolerance = 2
+  const isAtStart = el.scrollLeft <= tolerance
+  const isAtEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - tolerance
+  const isNoScroll = el.scrollWidth <= el.clientWidth
+
+  if (isNoScroll) {
+    tabsMaskStyle.value = { maskImage: 'none', WebkitMaskImage: 'none' }
+    return
+  }
+
+  const startStr = isAtStart ? 'black 0%' : 'transparent 0px, black 20px'
+  const endStr = isAtEnd ? 'black 100%' : 'black calc(100% - 20px), transparent 100%'
+
+  const gradient = `linear-gradient(to right, ${startStr}, ${endStr})`
+
+  tabsMaskStyle.value = {
+    maskImage: gradient,
+    WebkitMaskImage: gradient
+  }
+}
+
+watch(() => store.scenarioList.length, async () => {
+  await nextTick()
+  updateScrollMask()
+})
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('resize', updateScrollMask) // 窗口缩放时重算
+  nextTick(() => updateScrollMask())
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('resize', updateScrollMask)
+})
+
 // === 关于弹窗逻辑 ===
 const aboutDialogVisible = ref(false)
-const CURRENT_NOTICE_VERSION = '2025-12-3-update'
+const CURRENT_NOTICE_VERSION = '2025-12-5-update'
 
 onMounted(() => {
   const lastSeenVersion = localStorage.getItem('endaxis_notice_version')
@@ -292,7 +337,12 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
 
           </div>
 
-          <div class="ts-tabs-group">
+          <div
+              class="ts-tabs-group"
+              ref="tabsGroupRef"
+              :style="tabsMaskStyle"
+              @scroll="updateScrollMask"
+          >
             <div
                 v-for="(sc, index) in store.scenarioList"
                 :key="sc.id"
@@ -413,29 +463,30 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
 .divider-vertical { width: 1px; height: 20px; background-color: #555; margin: 0 5px; }
 
 /* === 方案选择器样式 === */
-.tech-scenario-bar { display: flex; align-items: center; height: 36px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%); padding: 0 10px; margin-right: auto; position: relative; min-width: 600px; }
+.tech-scenario-bar { display: flex; align-items: center; height: 36px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%); padding: 0 10px; flex: 1; min-width: 0; margin-right: 20px; }
 
-.ts-header-group { display: flex; align-items: center; gap: 4px; position: relative; padding-right: 10px; max-width: 260px; overflow: hidden; }
+.ts-header-group { display: flex; align-items: center; gap: 4px; position: relative; padding-right: 10px; width: 260px; flex-shrink: 0; overflow: hidden; }
 
-.ts-tabs-group { display: flex; align-items: center; gap: 4px; background: transparent; padding: 0; border-radius: 0; position: absolute; left: 290px; top: 50%; transform: translateY(-50%); }
+.ts-tabs-group { display: flex; align-items: center; gap: 6px; background: transparent; padding: 0; border-radius: 0; flex-grow: 1; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; }
+.ts-tabs-group::-webkit-scrollbar { display: none; }
 
 .ts-icon-btn { width: 24px; height: 24px; background: transparent; border: 1px solid transparent; border-radius: 4px; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
 .ts-icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: #555; }
 .ts-icon-btn.danger:hover { background: rgba(255, 77, 79, 0.1); color: #ff4d4f; border-color: #ff4d4f; }
 
-.ts-title-wrapper { display: flex; align-items: baseline; color: #f0f0f0; font-size: 16px; font-weight: bold; font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px; margin-left: 4px; }
-.ts-deco-bracket { color: #666; font-weight: 300; margin: 0 2px; user-select: none; }
+.ts-title-wrapper { display: flex; align-items: baseline; color: #f0f0f0; font-size: 16px; font-weight: bold; font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px; margin-left: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ts-deco-bracket { color: #666; font-weight: 300; margin: 0 2px; user-select: none; flex-shrink: 0; }
 
-.ts-title-text { white-space: nowrap; cursor: pointer; border-bottom: 1px dashed transparent; }
+.ts-title-text { white-space: nowrap; cursor: pointer; border-bottom: 1px dashed transparent; overflow: hidden; text-overflow: ellipsis; }
 .ts-title-text:hover { border-bottom-color: #888; }
 
 .ts-title-input { background: transparent; border: none; border-bottom: 1px solid #ffd700; color: #ffd700; font-size: 16px; font-weight: bold; width: 120px; outline: none; padding: 0; }
 
-.ts-tab-item { min-width: 32px; height: 24px; display: flex; align-items: center; justify-content: center; font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: bold; color: #666; background-color: transparent; border-radius: 4px; cursor: pointer; transition: all 0.2s; user-select: none; }
-.ts-tab-item:hover { background-color: rgba(255, 255, 255, 0.05); color: #aaa; }
-.ts-tab-item.is-active { background-color: #d0d0d0; color: #111; box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
+.ts-tab-item { min-width: 40px; height: 24px; display: flex; align-items: center; justify-content: center; font-family: 'Roboto Mono', monospace; font-size: 12px; font-weight: bold; color: #aaa; background-color: rgba(255, 255, 255, 0.08); border-radius: 4px; cursor: pointer; transition: all 0.2s; user-select: none; flex-shrink: 0; }
+.ts-tab-item:hover { background-color: rgba(255, 255, 255, 0.15); color: #fff; }
+.ts-tab-item.is-active { background-color: #e0e0e0; color: #222; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
-.ts-add-btn { width: 24px; height: 24px; background: transparent; border: 1px dashed #555; color: #666; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 4px; font-size: 14px; transition: all 0.2s; }
+.ts-add-btn { width: 24px; height: 24px; background: transparent; border: 1px dashed #555; color: #666; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 4px; font-size: 14px; transition: all 0.2s; flex-shrink: 0; }
 .ts-add-btn:hover { border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.05); }
 .ts-add-btn.is-disabled { opacity: 0.3; cursor: not-allowed; border-color: #444; color: #444; }
 .ts-add-btn.is-disabled:hover { background: transparent; border-color: #444; color: #444; }

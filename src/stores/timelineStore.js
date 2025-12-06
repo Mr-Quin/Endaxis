@@ -19,7 +19,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     const BASE_BLOCK_WIDTH = 50
     const TOTAL_DURATION = 120
-    const MAX_SCENARIOS = 20
+    const MAX_SCENARIOS = 114514
 
     const ELEMENT_COLORS = {
         "blaze": "#ff4d4f", "cold": "#00e5ff", "emag": "#ffd700", "nature": "#52c41a", "physical": "#e0e0e0",
@@ -43,7 +43,7 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     const activeScenarioId = ref('default_sc')
     const scenarioList = ref([
-        { id: 'default_sc', name: '默认方案', data: null }
+        { id: 'default_sc', name: '方案 1', data: null }
     ])
 
     const tracks = ref([
