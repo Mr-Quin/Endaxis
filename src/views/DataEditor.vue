@@ -385,7 +385,7 @@ function saveData() {
       </div>
       <div class="sidebar-footer">
         <button class="btn-save" @click="saveData">
-          💾 保存数据 (Save Data)
+          💾 保存数据
         </button>
         <router-link to="/" class="btn-back">↩ 返回排轴器</router-link>
       </div>
