@@ -50,7 +50,7 @@ function handlePaste() {
 }
 
 function handleDelete() {
-  if (!store.isActionSelected(store.contextMenu.targetId)) {
+  if (!store.selectedConnectionId && !store.isActionSelected(store.contextMenu.targetId)) {
     store.selectAction(store.contextMenu.targetId)
   }
   const result = store.removeCurrentSelection()
