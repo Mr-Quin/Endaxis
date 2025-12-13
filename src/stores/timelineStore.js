@@ -1320,40 +1320,10 @@ export const useTimelineStore = defineStore('timeline', () => {
             if (!jsonString) return false;
 
             const data = JSON.parse(jsonString);
-            return mergeProjectData(data);
+            return loadProjectData(data);
         } catch (e) {
             console.error("Import share string failed:", e);
             return false;
-        }
-    }
-
-    function mergeProjectData(data) {
-        try {
-            if (!data.scenarioList || !Array.isArray(data.scenarioList)) return false
-
-            const newActiveId = ref(null)
-
-            data.scenarioList.forEach(sc => {
-                const newId = `sc_${uid()}`
-                const newSc = {
-                    ...sc,
-                    id: newId,
-                    name: `${sc.name} (Share)`
-                }
-
-                scenarioList.value.push(newSc)
-                if (!newActiveId.value) newActiveId.value = newId
-            })
-
-            if (newActiveId.value) {
-                switchScenario(newActiveId.value)
-            }
-
-            commitState()
-            return true
-        } catch (err) {
-            console.error("Merge project data failed:", err)
-            return false
         }
     }
 

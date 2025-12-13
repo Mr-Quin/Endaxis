@@ -12,7 +12,7 @@ import PropertiesPanel from '../components/PropertiesPanel.vue'
 import ResourceMonitor from '../components/ResourceMonitor.vue'
 
 const store = useTimelineStore()
-const { generateShareLink } = useShareProject()
+const { copyShareCode, importFromCode } = useShareProject()
 
 // === 方案管理逻辑 ===
 const editingScenarioId = ref(null)
@@ -266,6 +266,23 @@ function handleReset() {
   }).catch(() => {})
 }
 
+// === 接收分享码逻辑 ===
+const importShareDialogVisible = ref(false)
+const shareCodeInput = ref('')
+
+function openImportShareDialog() {
+  shareCodeInput.value = '' // 清空输入框
+  importShareDialogVisible.value = true
+}
+
+function handleImportShare() {
+  const success = importFromCode(shareCodeInput.value)
+  if (success) {
+    importShareDialogVisible.value = false
+    shareCodeInput.value = '' // 成功后清空
+  }
+}
+
 function handleGlobalKeydown(e) {
   const target = e.target
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) return
@@ -410,16 +427,21 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
             保存
           </button>
 
-          
-          <button class="control-btn share-btn" @click="generateShareLink" title="生成分享链接 (复制到剪贴板)">
-             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="5" r="3"></circle>
-              <circle cx="6" cy="12" r="3"></circle>
-              <circle cx="18" cy="19" r="3"></circle>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+
+          <button class="control-btn share-btn" @click="copyShareCode" title="复制当前方案的分享码">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
             </svg>
             分享
+          </button>
+          <button class="control-btn load-btn" @click="openImportShareDialog" title="粘贴分享码导入方案">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            接收
           </button>
         </div>
       </header>
@@ -438,6 +460,41 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
         <div class="form-item"><label>导出时长 (秒)</label><el-input-number v-model="exportForm.duration" :min="10" :max="store.TOTAL_DURATION" :step="10" size="large" style="width: 100%;"/><div class="hint">最大支持 {{ store.TOTAL_DURATION }}s</div></div>
       </div>
       <template #footer><span class="dialog-footer"><el-button @click="exportDialogVisible = false">取消</el-button><el-button type="primary" @click="processExport">开始导出</el-button></span></template>
+    </el-dialog>
+
+    <el-dialog
+        v-model="importShareDialogVisible"
+        title="导入分享方案"
+        width="500px"
+        align-center
+        class="custom-dialog"
+        :append-to-body="true"
+    >
+      <div class="share-import-container">
+        <p class="dialog-hint">请粘贴分享码（Endaxis Share Code）：</p>
+
+        <el-alert
+            title="警告：导入将覆盖当前所有工程数据，建议先保存。"
+            type="warning"
+            show-icon
+            :closable="false"
+            style="margin-bottom: 10px;"
+        />
+
+        <el-input
+            v-model="shareCodeInput"
+            type="textarea"
+            :rows="6"
+            placeholder="在此粘贴长字符串..."
+            resize="none"
+        />
+      </div>
+      <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="importShareDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleImportShare">确认覆盖并导入</el-button>
+      </span>
+      </template>
     </el-dialog>
 
     <el-dialog
@@ -594,6 +651,25 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
 .highlight-link { color: #00e5ff; text-decoration: none; border-bottom: 1px dashed rgba(0, 229, 255, 0.5); transition: all 0.2s; }
 .highlight-link:hover { color: #fff; border-bottom-style: solid; }
 
+.share-import-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dialog-hint {
+  color: #aaa;
+  font-size: 13px;
+  margin: 0;
+}
+:deep(.el-textarea__inner) {
+  background-color: #1f1f1f;
+  box-shadow: 0 0 0 1px #444 inset;
+  color: #e0e0e0;
+  border: none;
+}
+:deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #ffd700 inset;
+}
 /* Dark Mode Adapter for Element Plus Dialog */
 :deep(.el-dialog) { background-color: #2b2b2b; border: 1px solid #444; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 :deep(.el-dialog__header) { margin-right: 0; border-bottom: 1px solid #3a3a3a; padding: 15px 20px; }
