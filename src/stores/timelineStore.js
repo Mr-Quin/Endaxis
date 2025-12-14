@@ -62,10 +62,10 @@ export const useTimelineStore = defineStore('timeline', () => {
     const getColor = (key) => ELEMENT_COLORS[key] || ELEMENT_COLORS.default
 
     const ENEMY_TIERS = [
-        { label: '普通 (Normal)', value: 'normal', color: '#a0a0a0' },
-        { label: '进阶 (Elite)', value: 'elite', color: '#52c41a' },
-        { label: '精英 (Champion)', value: 'champion', color: '#d8b4fe' },
-        { label: '领袖 (Boss)', value: 'boss', color: '#ff4d4f' }
+        { label: '普通', value: 'normal', color: '#a0a0a0' },
+        { label: '进阶', value: 'elite', color: '#52c41a' },
+        { label: '精英', value: 'champion', color: '#d8b4fe' },
+        { label: '领袖', value: 'boss', color: '#ff4d4f' }
     ]
     // ===================================================================================
     // 核心数据状态

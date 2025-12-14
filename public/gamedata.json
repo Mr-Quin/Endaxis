@@ -68,7 +68,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.8,
       "skill_spCost": 100,
-      "skill_gaugeGain": 16,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0.4,
@@ -94,7 +94,7 @@
       "skill_anomaly_delays": [
         0.5
       ],
-      "skill_teamGaugeGain": 8,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.2,
       "link_cooldown": 16,
       "link_gaugeGain": 10,
@@ -136,13 +136,7 @@
       ],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "conductive",
         "emag_attach",
@@ -165,7 +159,8 @@
       ],
       "execution_anomalies": [],
       "accept_team_gauge": true,
-      "variants": []
+      "variants": [],
+      "ultimate_animationTime": 1.5
     },
     {
       "id": "POGRANICHNK",
@@ -211,7 +206,7 @@
       "attack_anomalies": [],
       "skill_duration": 1.7,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 1.4,
@@ -237,7 +232,7 @@
       "skill_anomaly_delays": [
         1.5
       ],
-      "skill_teamGaugeGain": 6,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 2.7,
       "link_cooldown": 18,
       "link_gaugeGain": 10,
@@ -314,13 +309,7 @@
         0.5
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "burning",
         "blaze_attach",
@@ -412,7 +401,7 @@
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2.5
     },
     {
       "id": "ARDELIA",
@@ -463,7 +452,7 @@
       "attack_anomalies": [],
       "skill_duration": 1.3,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 1.3,
@@ -492,7 +481,7 @@
       "skill_anomaly_delays": [
         1
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.2,
       "link_cooldown": 18,
       "link_gaugeGain": 10,
@@ -539,13 +528,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "conductive",
         "emag_attach",
@@ -569,7 +552,7 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2.7
     },
     {
       "id": "LASTRITE",
@@ -635,10 +618,10 @@
           }
         ]
       ],
-      "skill_teamGaugeGain": 8,
+      "skill_teamGaugeGain": 0,
       "link_duration": 0.8,
       "link_cooldown": 9,
-      "link_gaugeGain": 40,
+      "link_gaugeGain": 85,
       "link_damage_ticks": [
         {
           "offset": 0,
@@ -649,7 +632,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 240,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -661,13 +644,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "burning",
         "blaze_attach",
@@ -691,7 +668,7 @@
       "execution_anomalies": [],
       "accept_team_gauge": false,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2.9
     },
     {
       "id": "GILBERTA",
@@ -742,7 +719,7 @@
       "attack_anomalies": [],
       "skill_duration": 4,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -767,7 +744,7 @@
       "skill_anomaly_delays": [
         3.6
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 2,
       "link_cooldown": 20,
       "link_gaugeGain": 10,
@@ -838,13 +815,7 @@
         0
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "conductive",
         "emag_attach",
@@ -908,7 +879,7 @@
       "attack_anomalies": [],
       "skill_duration": 1.3,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -933,7 +904,7 @@
       "skill_anomaly_delays": [
         1
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.1,
       "link_cooldown": 22,
       "link_gaugeGain": 10,
@@ -989,13 +960,7 @@
         12
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "burning",
         "blaze_attach",
@@ -1051,7 +1016,7 @@
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2
     },
     {
       "id": "LAEVATAIN",
@@ -1230,13 +1195,7 @@
         3.5
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "magma_1",
         "magma_2",
@@ -1361,7 +1320,7 @@
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2
     },
     {
       "id": "LIFENG",
@@ -1412,7 +1371,7 @@
       "attack_anomalies": [],
       "skill_duration": 2.2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 1.9,
@@ -1447,7 +1406,7 @@
       "skill_anomaly_delays": [
         1.9
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 2,
       "link_cooldown": 16,
       "link_gaugeGain": 10,
@@ -1511,13 +1470,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -1597,7 +1550,7 @@
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.9
     },
     {
       "id": "EMBER",
@@ -1637,7 +1590,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -1662,7 +1615,7 @@
       "skill_anomaly_delays": [
         1.6
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.1,
       "link_cooldown": 19,
       "link_gaugeGain": 10,
@@ -1703,13 +1656,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -1733,7 +1680,7 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.7
     },
     {
       "id": "XAIHI",
@@ -1774,7 +1721,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.5,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -1784,7 +1731,7 @@
       ],
       "skill_allowed_types": [],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.2,
       "link_cooldown": 8,
       "link_gaugeGain": 10,
@@ -1813,7 +1760,7 @@
         1
       ],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 80,
+      "ultimate_gaugeMax": 72,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -1825,13 +1772,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -1854,7 +1795,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.5
     },
     {
       "id": "SNOWSHINE",
@@ -1895,7 +1836,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.5,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -1909,7 +1850,7 @@
         "cold_burst"
       ],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1,
       "link_cooldown": 25,
       "link_gaugeGain": 10,
@@ -1950,13 +1891,7 @@
         2
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -1979,7 +1914,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 2
     },
     {
       "id": "ARCLIGHT",
@@ -2020,7 +1955,7 @@
       "attack_anomalies": [],
       "skill_duration": 1,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -2030,7 +1965,7 @@
       ],
       "skill_allowed_types": [],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1,
       "link_cooldown": 3,
       "link_gaugeGain": 5,
@@ -2044,7 +1979,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 90,
+      "ultimate_gaugeMax": 76.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2073,13 +2008,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -2102,7 +2031,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.9
     },
     {
       "id": "AVYWENNA",
@@ -2143,7 +2072,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.5,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -2157,7 +2086,7 @@
         "emag_attach"
       ],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 2.5,
       "link_cooldown": 13,
       "link_gaugeGain": 10,
@@ -2171,7 +2100,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 85,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2191,13 +2120,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -2220,7 +2143,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.5
     },
     {
       "id": "DAPAN",
@@ -2267,7 +2190,7 @@
       "attack_anomalies": [],
       "skill_duration": 1.8,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 1.5,
@@ -2293,7 +2216,7 @@
       "skill_anomaly_delays": [
         1.5
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 2.1,
       "link_cooldown": 20,
       "link_gaugeGain": 10,
@@ -2320,7 +2243,7 @@
         ]
       ],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 90,
+      "ultimate_gaugeMax": 76.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2366,13 +2289,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -2396,7 +2313,7 @@
       "execution_anomalies": [],
       "variants": [],
       "attack_gaugeGain": 0,
-      "ultimate_animationTime": 0.5,
+      "ultimate_animationTime": 1.5,
       "ultimate_enhancementTime": 0
     },
     {
@@ -2438,7 +2355,7 @@
       "attack_anomalies": [],
       "skill_duration": 1.2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -2463,7 +2380,7 @@
       "skill_anomaly_delays": [
         0.9
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.2,
       "link_cooldown": 20,
       "link_gaugeGain": 10,
@@ -2492,7 +2409,7 @@
         0.9
       ],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 90,
+      "ultimate_gaugeMax": 76.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2516,13 +2433,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -2565,7 +2476,7 @@
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.5
     },
     {
       "id": "PERLICA",
@@ -2606,7 +2517,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.8,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -2631,7 +2542,7 @@
       "skill_anomaly_delays": [
         0.5
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.2,
       "link_cooldown": 20,
       "link_gaugeGain": 10,
@@ -2660,7 +2571,7 @@
         0.9
       ],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 80,
+      "ultimate_gaugeMax": 68,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2672,13 +2583,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -2701,7 +2606,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.6
     },
     {
       "id": "CHENQIANYU",
@@ -2741,7 +2646,7 @@
       "attack_anomalies": [],
       "skill_duration": 0.8,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0.4,
@@ -2767,7 +2672,7 @@
       "skill_anomaly_delays": [
         0.5
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 0.9,
       "link_cooldown": 16,
       "link_gaugeGain": 10,
@@ -2797,7 +2702,7 @@
         0.6
       ],
       "ultimate_duration": 2,
-      "ultimate_gaugeMax": 70,
+      "ultimate_gaugeMax": 59.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2809,13 +2714,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 2.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 30,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "blaze_attach",
@@ -2839,7 +2738,7 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.6
     },
     {
       "id": "ALESH",
@@ -2918,7 +2817,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 0.5,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 85,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -2942,13 +2841,7 @@
         ]
       ],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "frozen",
         "cold_attach",
@@ -2971,7 +2864,7 @@
       ],
       "execution_anomalies": [],
       "accept_team_gauge": true,
-      "ultimate_animationTime": 0.5,
+      "ultimate_animationTime": 1.6,
       "ultimate_enhancementTime": 0
     },
     {
@@ -3013,7 +2906,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -3042,7 +2935,7 @@
         "emag_burst"
       ],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
       "link_cooldown": 15,
       "link_gaugeGain": 10,
@@ -3056,7 +2949,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 72,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -3068,13 +2961,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -3097,7 +2984,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.3
     },
     {
       "id": "FLUORITE",
@@ -3138,7 +3025,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -3148,9 +3035,9 @@
       ],
       "skill_allowed_types": [],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
-      "link_cooldown": 15,
+      "link_cooldown": 25,
       "link_gaugeGain": 10,
       "link_damage_ticks": [
         {
@@ -3162,7 +3049,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 72,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -3174,13 +3061,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -3244,7 +3125,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -3254,7 +3135,7 @@
       ],
       "skill_allowed_types": [],
       "skill_anomalies": [],
-      "skill_teamGaugeGain": 6,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
       "link_cooldown": 15,
       "link_gaugeGain": 10,
@@ -3268,7 +3149,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -3280,13 +3161,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "break",
         "armor_break",
@@ -3309,7 +3184,7 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.4
     },
     {
       "id": "ESTELLA",
@@ -3349,7 +3224,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -3371,7 +3246,7 @@
           }
         ]
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
       "link_cooldown": 15,
       "link_gaugeGain": 10,
@@ -3402,7 +3277,7 @@
         ]
       ],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 63,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -3414,13 +3289,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "armor_break",
         "break",
@@ -3444,7 +3313,7 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 1.8
     },
     {
       "id": "AKEKURI",
@@ -3484,7 +3353,7 @@
       "attack_anomalies": [],
       "skill_duration": 2,
       "skill_spCost": 100,
-      "skill_gaugeGain": 0,
+      "skill_gaugeGain": 6.5,
       "skill_damage_ticks": [
         {
           "offset": 0,
@@ -3506,7 +3375,7 @@
           }
         ]
       ],
-      "skill_teamGaugeGain": 0,
+      "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
       "link_cooldown": 15,
       "link_gaugeGain": 10,
@@ -3520,7 +3389,7 @@
       "link_allowed_types": [],
       "link_anomalies": [],
       "ultimate_duration": 3,
-      "ultimate_gaugeMax": 100,
+      "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
         {
@@ -3532,13 +3401,7 @@
       "ultimate_allowed_types": [],
       "ultimate_anomalies": [],
       "execution_duration": 1.5,
-      "execution_damage_ticks": [
-        {
-          "offset": 0,
-          "sp": 20,
-          "stagger": 0
-        }
-      ],
+      "execution_damage_ticks": [],
       "execution_allowed_types": [
         "ice_shatter",
         "corrosion",
@@ -3561,7 +3424,7 @@
       ],
       "execution_anomalies": [],
       "accept_team_gauge": true,
-      "ultimate_animationTime": 0.5,
+      "ultimate_animationTime": 1.7,
       "ultimate_enhancementTime": 0
     }
   ],
@@ -3589,10 +3452,48 @@
       "executionRecovery": 100,
       "category": "裂地者",
       "tier": "boss"
+    },
+    {
+      "id": "eny_0053_hsmob",
+      "name": "莫留财",
+      "avatar": "/Endaxis/Icon_Enemy/eny_0053_hsmob.png",
+      "maxStagger": 80,
+      "staggerNodeCount": 0,
+      "staggerNodeDuration": 0,
+      "staggerBreakDuration": 6,
+      "executionRecovery": 25,
+      "category": "沧贼",
+      "tier": "normal"
+    },
+    {
+      "id": "eny_0093_hshog",
+      "name": "球刺兽",
+      "avatar": "/Endaxis/Icon_Enemy/eny_0093_hshog.png",
+      "maxStagger": 200,
+      "staggerNodeCount": 0,
+      "staggerNodeDuration": 0,
+      "staggerBreakDuration": 7,
+      "executionRecovery": 35,
+      "category": "野外生物",
+      "tier": "elite"
+    },
+    {
+      "id": "eny_0107_wgshoal2",
+      "name": "潮行天使δ",
+      "avatar": "/Endaxis/Icon_Enemy/eny_0107_wgshoal2.png",
+      "maxStagger": 320,
+      "staggerNodeCount": 1,
+      "staggerNodeDuration": 2,
+      "staggerBreakDuration": 9,
+      "executionRecovery": 50,
+      "category": "天使",
+      "tier": "champion"
     }
   ],
   "enemyCategories": [
     "天使",
-    "裂地者"
+    "裂地者",
+    "沧贼",
+    "野外生物"
   ]
 }
