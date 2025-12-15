@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import ConnectionPath from './ConnectionPath.vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
 import { useDragConnection } from '../composables/useDragConnection.js'
-import { PORT_DIRECTIONS } from './PortDirections.ts'
+import { PORT_DIRECTIONS } from './PortDirections.js'
 
 const props = defineProps({
   connection: { type: Object, required: true },
