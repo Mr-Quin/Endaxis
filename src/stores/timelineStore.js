@@ -77,6 +77,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     const enemyDatabase = ref([])
     const activeEnemyId = ref('custom')
     const enemyCategories = ref([])
+    const cycleBoundaries = ref([])
 
     const activeScenarioId = ref('default_sc')
     const scenarioList = ref([
@@ -202,6 +203,8 @@ export const useTimelineStore = defineStore('timeline', () => {
     const selectedLibrarySkillId = ref(null)
     const selectedAnomalyId = ref(null)
 
+    const selectedCycleBoundaryId = ref(null)
+
     const multiSelectedIds = ref(new Set())
     const isBoxSelectMode = ref(false)
     const clipboard = ref(null)
@@ -225,7 +228,8 @@ export const useTimelineStore = defineStore('timeline', () => {
         const snapshot = JSON.stringify({
             tracks: tracks.value,
             connections: connections.value,
-            characterOverrides: characterOverrides.value
+            characterOverrides: characterOverrides.value,
+            cycleBoundaries: cycleBoundaries.value
         })
         historyStack.value.push(snapshot)
         if (historyStack.value.length > MAX_HISTORY) {
@@ -253,6 +257,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         tracks.value = snapshot.tracks
         connections.value = snapshot.connections
         characterOverrides.value = snapshot.characterOverrides
+        cycleBoundaries.value = snapshot.cycleBoundaries || []
         clearSelection()
     }
 
@@ -267,7 +272,8 @@ export const useTimelineStore = defineStore('timeline', () => {
             characterOverrides: characterOverrides.value,
             systemConstants: systemConstants.value,
             activeEnemyId: activeEnemyId.value,
-            customEnemyParams: customEnemyParams.value
+            customEnemyParams: customEnemyParams.value,
+            cycleBoundaries: cycleBoundaries.value
         }))
     }
 
@@ -283,6 +289,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         if (data.customEnemyParams) {
             customEnemyParams.value = { ...customEnemyParams.value, ...data.customEnemyParams }
         }
+        cycleBoundaries.value = data.cycleBoundaries ? JSON.parse(JSON.stringify(data.cycleBoundaries)) : []
         clearSelection()
     }
 
@@ -496,18 +503,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         return effect._id
     }
 
-    const getEffectByIndex = (action, flatIndex) => {
-        if (!action || !action.physicalAnomaly) return null
-        let current = 0
-        for (const row of action.physicalAnomaly) {
-            if (flatIndex < current + row.length) {
-                return row[flatIndex - current]
-            }
-            current += row.length
-        }
-        return null
-    }
-
     const getAnomalyIndexById = (actionId, effectId) => {
         if (!actionId || !effectId) return null
         const track = tracks.value.find(t => t.actions.some(a => a.instanceId === actionId))
@@ -659,34 +654,32 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     function selectTrack(trackId) {
         activeTrackId.value = trackId
-        selectedLibrarySkillId.value = null
-        selectedConnectionId.value = null
         clearSelection()
     }
 
     function selectLibrarySkill(skillId) {
-        selectedActionId.value = null;
-        multiSelectedIds.value.clear();
-        selectedConnectionId.value = null
-        selectedLibrarySkillId.value = (selectedLibrarySkillId.value === skillId) ? null : skillId
+        const isSame = (selectedLibrarySkillId.value === skillId)
+        clearSelection()
+        if (!isSame) {
+            selectedLibrarySkillId.value = skillId
+        }
     }
 
     function selectAction(instanceId) {
-        selectedLibrarySkillId.value = null
-        selectedConnectionId.value = null
-        selectedAnomalyId.value = null
-        selectedActionId.value = (instanceId === selectedActionId.value) ? null : instanceId
-        multiSelectedIds.value.clear()
-        if (selectedActionId.value) { multiSelectedIds.value.add(selectedActionId.value) }
+        const isSame = (instanceId === selectedActionId.value)
+        clearSelection()
+        if (!isSame) {
+            selectedActionId.value = instanceId
+            multiSelectedIds.value.add(instanceId)
+        }
     }
 
     function setSelectedAnomalyId(id) { selectedAnomalyId.value = id }
 
     function selectAnomaly(instanceId, rowIndex, colIndex) {
-        selectedLibrarySkillId.value = null
-        selectedConnectionId.value = null
+        clearSelection()
+
         selectedActionId.value = instanceId
-        multiSelectedIds.value.clear()
         multiSelectedIds.value.add(instanceId)
 
         const track = tracks.value.find(t => t.actions.some(a => a.instanceId === instanceId))
@@ -702,10 +695,34 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function selectConnection(connId) {
-        selectedLibrarySkillId.value = null
-        selectedActionId.value = null
-        multiSelectedIds.value.clear()
-        selectedConnectionId.value = (selectedConnectionId.value === connId) ? null : connId
+        const isSame = (selectedConnectionId.value === connId)
+        clearSelection()
+        if (!isSame) {
+            selectedConnectionId.value = connId
+        }
+    }
+
+    function selectCycleBoundary(id) {
+        const isSame = (selectedCycleBoundaryId.value === id)
+        clearSelection()
+        if (!isSame) {
+            selectedCycleBoundaryId.value = id
+        }
+    }
+
+    function addCycleBoundary(time) {
+        cycleBoundaries.value.push({
+            id: `cb_${uid()}`,
+            time: time
+        })
+        commitState()
+    }
+
+    function updateCycleBoundary(id, time) {
+        const boundary = cycleBoundaries.value.find(b => b.id === id)
+        if (boundary) {
+            boundary.time = time
+        }
     }
 
     function setHoveredAction(id) { hoveredActionId.value = id }
@@ -719,7 +736,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         selectedActionId.value = null
         selectedConnectionId.value = null
         selectedAnomalyId.value = null
+        selectedCycleBoundaryId.value = null
         multiSelectedIds.value.clear()
+        selectedLibrarySkillId.value = null
     }
 
     function addSkillToTrack(trackId, skill, startTime) {
@@ -733,6 +752,14 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function removeCurrentSelection() {
+
+        if (selectedCycleBoundaryId.value) {
+            cycleBoundaries.value = cycleBoundaries.value.filter(b => b.id !== selectedCycleBoundaryId.value)
+            selectedCycleBoundaryId.value = null
+            commitState()
+            return { total: 1 }
+        }
+
         let actionCount = 0
         let connCount = 0
         const targets = new Set(multiSelectedIds.value)
@@ -1074,7 +1101,7 @@ export const useTimelineStore = defineStore('timeline', () => {
                     })
                 }
                 if (action.physicalAnomaly) {
-                    action.physicalAnomaly.forEach((row, rowIndex) => {
+                    action.physicalAnomaly.forEach((row) => {
                         row.forEach(effect => {
                             const triggerTime = action.startTime + (Number(effect.offset) || 0);
                             if (effect.stagger > 0) {
@@ -1354,8 +1381,8 @@ export const useTimelineStore = defineStore('timeline', () => {
     const STORAGE_KEY = 'endaxis_autosave'
 
     function initAutoSave() {
-        watch([tracks, connections, characterOverrides, systemConstants, scenarioList, activeScenarioId, activeEnemyId, customEnemyParams],
-            ([newTracks, newConns, newOverrides, newSys, newScList, newActiveId, newEnemyId, newCustomParams]) => {
+        watch([tracks, connections, characterOverrides, systemConstants, scenarioList, activeScenarioId, activeEnemyId, customEnemyParams, cycleBoundaries],
+            ([newTracks, newConns, newOverrides, newSys, newScList, newActiveId, newEnemyId, newCustomParams, newBoundaries]) => {
 
                 if (isLoading.value) return
 
@@ -1369,7 +1396,8 @@ export const useTimelineStore = defineStore('timeline', () => {
                         characterOverrides: newOverrides,
                         systemConstants: newSys,
                         activeEnemyId: newEnemyId,
-                        customEnemyParams: newCustomParams
+                        customEnemyParams: newCustomParams,
+                        cycleBoundaries: newBoundaries
                     }
                 }
 
@@ -1419,6 +1447,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         tracks.value = [{ id: null, actions: [] }, { id: null, actions: [] }, { id: null, actions: [] }, { id: null, actions: [] }];
         connections.value = [];
         characterOverrides.value = {};
+        cycleBoundaries.value = [];
 
         systemConstants.value = { ...DEFAULT_SYSTEM_CONSTANTS };
 
@@ -1431,6 +1460,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         historyIndex.value = -1;
         commitState();
     }
+
 
     async function fetchGameData() {
         try {
@@ -1578,18 +1608,8 @@ export const useTimelineStore = defineStore('timeline', () => {
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
         removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly, getAnomalyIndexById,
         findEffectIndexById, alignActionToTarget, getDomNodeIdByNodeId, moveTrack,
-        findEffectIndexById, alignActionToTarget, getDomNodeIdByNodeId,
-        connectionMap,
-        actionMap,
-        effectsMap,
-        getConnectionById,
-        getActionById,
-        getEffectById,
-        resolveNode,
-        getNodesOfConnection,
-        connectionDragState,
-        connectionSnapState,
-        createConnection,
+        connectionMap, actionMap, effectsMap, getConnectionById, resolveNode, getNodesOfConnection, connectionDragState, connectionSnapState, createConnection,
+        cycleBoundaries, selectedCycleBoundaryId, addCycleBoundary, updateCycleBoundary, selectCycleBoundary,
         contextMenu, openContextMenu, closeContextMenu,
         toggleActionLock, toggleActionDisable, setActionColor,
         enemyDatabase, activeEnemyId, applyEnemyPreset, ENEMY_TIERS, enemyCategories,

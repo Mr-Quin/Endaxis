@@ -109,6 +109,12 @@ function handleSetPort(type, direction) {
     close()
   }
 }
+
+function handleAddCycleBoundary() {
+  store.addCycleBoundary(store.contextMenu.time)
+  close()
+}
+
 </script>
 
 <template>
@@ -257,13 +263,24 @@ function handleSetPort(type, direction) {
 
     <template v-else>
       <div class="menu-header">全局操作</div>
+
       <div class="menu-item" @click="handlePaste" :class="{ disabled: !store.clipboard }">
-        <span class="icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-        </span>
         <span class="label">粘贴</span>
         <span class="shortcut-hint">Ctrl+V</span>
       </div>
+
+      <div class="divider"></div>
+
+      <div class="menu-item" @click="handleAddCycleBoundary">
+        <span class="icon">
+           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </span>
+        <span class="label">添加循环分界线</span>
+      </div>
+
     </template>
 
   </div>

@@ -40,11 +40,13 @@ const initialMouseX = ref(0)
 const initialMouseY = ref(0)
 const dragThreshold = 5
 const wasSelectedOnPress = ref(false)
+const wasCycleSelectedOnPress = ref(false)
 const dragStartTimes = new Map()
 const hadAnomalySelection = ref(false)
 const isAltDown = ref(false)
 const isShiftDown = ref(false)
 const hoveredContext = ref(null)
+const draggingCycleBoundaryId = ref(null)
 
 // === 边缘自动滚动相关状态 ===
 const autoScrollSpeed = ref(0)
@@ -258,17 +260,21 @@ function updateScrollbarHeight() {
   }
 }
 
-function calculateTimeFromEvent(evt) {
+function calculateTimeFromEvent(evt, fixedStep = null) {
   const trackRect = tracksContentRef.value.getBoundingClientRect()
   const scrollLeft = tracksContentRef.value.scrollLeft
   const mouseX = evt.clientX
   const activeOffset = store.globalDragOffset || 0
   const mouseXInTrack = (mouseX - activeOffset) - trackRect.left + scrollLeft
+
   const rawTime = mouseXInTrack / TIME_BLOCK_WIDTH.value
-  const step = store.snapStep
+
+  const step = fixedStep !== null ? fixedStep : store.snapStep
+
   const inverse = 1 / step
   let startTime = Math.round(rawTime * inverse) / inverse
   if (startTime < 0) startTime = 0
+
   return startTime
 }
 
@@ -355,6 +361,26 @@ function onContentMouseDown(evt) {
     return
   }
   onBackgroundClick(evt)
+}
+
+function onCycleLineMouseDown(evt, boundaryId) {
+  evt.stopPropagation()
+
+  wasCycleSelectedOnPress.value = (store.selectedCycleBoundaryId === boundaryId)
+
+  if (!wasCycleSelectedOnPress.value) {
+    store.selectCycleBoundary(boundaryId)
+  }
+
+  store.setDragOffset(0)
+  draggingCycleBoundaryId.value = boundaryId
+  initialMouseX.value = evt.clientX
+  initialMouseY.value = evt.clientY
+  isDragStarted.value = false
+  isMouseDown.value = true
+
+  window.addEventListener('mousemove', onWindowMouseMove)
+  window.addEventListener('mouseup', onWindowMouseUp)
 }
 
 function onBoxMouseMove(evt) {
@@ -602,7 +628,7 @@ function updateDragPosition(clientX) {
   const timeDelta = newLeaderTime - leaderOriginalTime
 
   let isValidMove = true
-  for (const [id, originalTime] of dragStartTimes) {
+  for (const originalTime of dragStartTimes.values()) {
     if (originalTime + timeDelta < 0) { isValidMove = false; break }
   }
 
@@ -637,6 +663,20 @@ function performAutoScroll() {
 }
 
 function onWindowMouseMove(evt) {
+  if (draggingCycleBoundaryId.value) {
+    if (!isDragStarted.value) {
+      const dist = Math.sqrt(Math.pow(evt.clientX - initialMouseX.value, 2) + Math.pow(evt.clientY - initialMouseY.value, 2))
+      if (dist > dragThreshold) {
+        isDragStarted.value = true
+      } else {
+        return
+      }
+    }
+    let newTime = calculateTimeFromEvent(evt, 0.1)
+    if (newTime > store.TOTAL_DURATION) newTime = store.TOTAL_DURATION
+    store.updateCycleBoundary(draggingCycleBoundaryId.value, newTime)
+    return
+  }
   if (!isMouseDown.value) return
   if (evt.buttons === 0) { onWindowMouseUp(evt); return }
   const target = evt.target
@@ -679,9 +719,28 @@ function onGlobalWindowMouseUp(event) {
   }
 }
 
-function onWindowMouseUp(evt) {
+function onWindowMouseUp(event) {
   autoScrollSpeed.value = 0
   if (autoScrollRaf) { cancelAnimationFrame(autoScrollRaf); autoScrollRaf = null }
+
+  if (draggingCycleBoundaryId.value) {
+
+    if (!isDragStarted.value && wasCycleSelectedOnPress.value) {
+      store.selectCycleBoundary(draggingCycleBoundaryId.value)
+    }
+
+    if (isDragStarted.value) {
+      store.commitState()
+    }
+
+    isDragStarted.value = false
+    draggingCycleBoundaryId.value = null
+    window.removeEventListener('mousemove', onWindowMouseMove)
+    window.removeEventListener('mouseup', onWindowMouseUp)
+    window.removeEventListener('blur', onWindowMouseUp)
+    isMouseDown.value = false
+    return
+  }
 
   const _wasDragging = isDragStarted.value
   try {
@@ -721,7 +780,7 @@ function handleKeyDown(event) {
   const target = event.target
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return
 
-  const hasSelection = store.selectedActionId || store.multiSelectedIds.size > 0 || store.selectedConnectionId
+  const hasSelection = store.selectedActionId || store.multiSelectedIds.size > 0 || store.selectedConnectionId || store.selectedCycleBoundaryId
   if (!hasSelection) return
 
   if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -899,6 +958,18 @@ onUnmounted(() => {
         <div class="guide-stagger-label">失衡: {{ currentStaggerValue }}</div>
       </div>
 
+      <div v-for="boundary in store.cycleBoundaries"
+           :key="boundary.id"
+           class="cycle-guide"
+           :class="{ 'is-selected': boundary.id === store.selectedCycleBoundaryId }"
+           :style="{ left: `${boundary.time * TIME_BLOCK_WIDTH}px` }"
+           @mousedown="onCycleLineMouseDown($event, boundary.id)">
+
+        <div class="cycle-label-time">{{ boundary.time }}s</div>
+        <div class="cycle-label-text">循环分界线</div>
+        <div class="cycle-hit-area"></div>
+      </div>
+
       <div v-if="alignGuide.visible" class="align-guide-layer">
         <div class="target-highlight-box"
              :style="{
@@ -1016,6 +1087,8 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ==========================================================================
@@ -1797,6 +1870,91 @@ onUnmounted(() => {
   box-shadow: 0 0 8px currentColor;
 }
 
+/* ==========================================================================
+   11. Cycle Guide Styles
+   ========================================================================== */
+.cycle-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #d3adff;
+  box-shadow: 0 0 6px #d3adff;
+  pointer-events: auto;
+  cursor: col-resize;
+  z-index: 4;
+  transition: background-color 0.1s, box-shadow 0.1s;
+}
+
+.cycle-guide:hover {
+  width: 2px;
+  background: #e0c4ff;
+  box-shadow: 0 0 8px #e0c4ff;
+}
+
+.cycle-guide.is-selected {
+  background: #fff;
+  box-shadow: 0 0 8px #fff, 0 0 12px rgba(255, 255, 255, 0.5);
+  z-index: 30;
+  width: 2px;
+}
+
+.cycle-guide.is-selected .cycle-label-time {
+  background: #fff;
+  color: #000;
+}
+
+.cycle-guide.is-selected .cycle-label-text {
+  color: #fff;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+}
+
+.cycle-label-time {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: fit-content;
+  background: #d3adff;
+  color: #222;
+  font-size: 10px;
+  font-weight: bold;
+  font-family: monospace;
+  padding: 2px 4px;
+  border-radius: 0 4px 4px 0;
+  white-space: nowrap;
+  line-height: 1;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.cycle-label-text {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  width: fit-content;
+  color: #d3adff;
+  font-size: 10px;
+  font-weight: bold;
+  font-family: monospace;
+  padding: 2px 4px;
+  white-space: nowrap;
+  line-height: 1;
+  text-shadow: 0 0 2px rgba(211, 173, 255, 0.5);
+  writing-mode: horizontal-tb;
+  letter-spacing: normal;
+  pointer-events: none;
+}
+
+.cycle-hit-area {
+  position: absolute;
+  left: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 20;
+}
 @keyframes pulse-border {
   0% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 0.8; transform: scale(1.02); }
