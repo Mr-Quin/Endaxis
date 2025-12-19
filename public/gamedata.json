@@ -121,7 +121,7 @@
       "link_anomaly_delays": [
         0.8
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.5,
       "ultimate_gaugeMax": 80,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -259,7 +259,7 @@
       "link_anomaly_delays": [
         0.7
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2.5,
       "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -517,7 +517,7 @@
       "link_anomaly_delays": [
         2.6
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2.7,
       "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -634,7 +634,7 @@
       ],
       "link_allowed_types": [],
       "link_anomalies": [],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2.9,
       "ultimate_gaugeMax": 240,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -937,7 +937,7 @@
       "link_anomaly_delays": [
         4.2
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2,
       "ultimate_gaugeMax": 200,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1152,7 +1152,7 @@
       "link_anomaly_delays": [
         1.3
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2,
       "ultimate_gaugeMax": 300,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1438,7 +1438,7 @@
       "link_anomaly_delays": [
         0.7
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.9,
       "ultimate_gaugeMax": 90,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1648,7 +1648,7 @@
       "link_anomaly_delays": [
         0.9
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.7,
       "ultimate_gaugeMax": 100,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1764,7 +1764,7 @@
       "link_anomaly_delays": [
         1
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.5,
       "ultimate_gaugeMax": 72,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1868,7 +1868,7 @@
       ],
       "link_allowed_types": [],
       "link_anomalies": [],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 2,
       "ultimate_gaugeMax": 80,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -1983,7 +1983,7 @@
       ],
       "link_allowed_types": [],
       "link_anomalies": [],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.9,
       "ultimate_gaugeMax": 76.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -2104,7 +2104,7 @@
       ],
       "link_allowed_types": [],
       "link_anomalies": [],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.5,
       "ultimate_gaugeMax": 85,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -2413,7 +2413,7 @@
       "link_anomaly_delays": [
         0.9
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.5,
       "ultimate_gaugeMax": 76.5,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -2575,7 +2575,7 @@
       "link_anomaly_delays": [
         0.9
       ],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.6,
       "ultimate_gaugeMax": 68,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [
@@ -2821,7 +2821,7 @@
       ],
       "link_allowed_types": [],
       "link_anomalies": [],
-      "ultimate_duration": 0.5,
+      "ultimate_duration": 1.6,
       "ultimate_gaugeMax": 85,
       "ultimate_gaugeReply": 0,
       "ultimate_damage_ticks": [

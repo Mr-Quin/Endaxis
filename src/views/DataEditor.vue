@@ -174,7 +174,7 @@ function addNewCharacter() {
     attack_duration: 2.5, attack_gaugeGain: 0, attack_allowed_types: allGlobalEffects, attack_anomalies: [], attack_damage_ticks: [],
     skill_duration: 2, skill_spCost: 100, skill_gaugeGain: 0, skill_teamGaugeGain: 0, skill_allowed_types: [], skill_anomalies: [], skill_damage_ticks: [],
     link_duration: 1.5, link_cooldown: 15, link_gaugeGain: 0, link_allowed_types: [], link_anomalies: [], link_damage_ticks: [],
-    ultimate_duration: 3, ultimate_gaugeMax: 100, ultimate_gaugeReply: 0, ultimate_enhancementTime: 0, ultimate_allowed_types: [], ultimate_anomalies: [], ultimate_damage_ticks: [], ultimate_animationTime: 0.5,
+    ultimate_duration: 3, ultimate_gaugeMax: 100, ultimate_gaugeReply: 0, ultimate_enhancementTime: 0, ultimate_allowed_types: [], ultimate_anomalies: [], ultimate_damage_ticks: [], ultimate_animationTime: 1.5,
     execution_duration: 1.5, execution_allowed_types: allGlobalEffects, execution_anomalies: [], execution_damage_ticks: [],
 
     variants: []

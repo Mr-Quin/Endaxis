@@ -748,44 +748,68 @@ export const useTimelineStore = defineStore('timeline', () => {
         const newAction = { ...skill, instanceId: `inst_${uid()}`, physicalAnomaly: clonedAnomalies, startTime }
         track.actions.push(newAction);
         track.actions.sort((a, b) => a.startTime - b.startTime)
+        if (skill.type === 'link' || skill.type === 'ultimate') {
+            const amount = skill.type === 'link' ? 0.5 : (Number(skill.animationTime) || 1.5);
+            pushSubsequentActions(startTime, amount, newAction.instanceId);
+        }
         commitState()
     }
 
     function removeCurrentSelection() {
+        const itemsToPull = [];
+
+        const targets = new Set(multiSelectedIds.value);
+        if (selectedActionId.value) targets.add(selectedActionId.value);
+
+        targets.forEach(id => {
+            const actionWrap = getActionById(id);
+            const action = actionWrap ? actionWrap.node : null;
+
+            if (action && (action.type === 'link' || action.type === 'ultimate')) {
+                const amount = action.type === 'link' ? 0.5 : (Number(action.animationTime) || 1.5);
+                itemsToPull.push({ time: action.startTime, amount });
+            }
+        });
 
         if (selectedCycleBoundaryId.value) {
-            cycleBoundaries.value = cycleBoundaries.value.filter(b => b.id !== selectedCycleBoundaryId.value)
-            selectedCycleBoundaryId.value = null
-            commitState()
-            return { total: 1 }
+            cycleBoundaries.value = cycleBoundaries.value.filter(b => b.id !== selectedCycleBoundaryId.value);
+            selectedCycleBoundaryId.value = null;
+            commitState();
+            return { total: 1 };
         }
 
-        let actionCount = 0
-        let connCount = 0
-        const targets = new Set(multiSelectedIds.value)
-        if (selectedActionId.value) targets.add(selectedActionId.value)
+        let actionCount = 0;
+        let connCount = 0;
 
         if (targets.size > 0) {
             tracks.value.forEach(track => {
-                if (!track.actions || track.actions.length === 0) return
-                const initialLen = track.actions.length
-                track.actions = track.actions.filter(a => !targets.has(a.instanceId))
-                if (track.actions.length < initialLen) actionCount += (initialLen - track.actions.length)
-            })
-            connections.value = connections.value.filter(c => !targets.has(c.from) && !targets.has(c.to))
-        }
-        if (selectedConnectionId.value) {
-            const initialLen = connections.value.length
-            connections.value = connections.value.filter(c => c.id !== selectedConnectionId.value)
-            if (connections.value.length < initialLen) connCount++
-            selectedConnectionId.value = null
+                if (!track.actions || track.actions.length === 0) return;
+                const initialLen = track.actions.length;
+                track.actions = track.actions.filter(a => !targets.has(a.instanceId));
+                if (track.actions.length < initialLen) {
+                    actionCount += (initialLen - track.actions.length);
+                }
+            });
+            connections.value = connections.value.filter(c => !targets.has(c.from) && !targets.has(c.to));
         }
 
-        if (actionCount + connCount > 0) {
-            clearSelection()
-            commitState()
+        if (selectedConnectionId.value) {
+            const initialLen = connections.value.length;
+            connections.value = connections.value.filter(c => c.id !== selectedConnectionId.value);
+            if (connections.value.length < initialLen) connCount++;
+            selectedConnectionId.value = null;
         }
-        return { actionCount, connCount, total: actionCount + connCount }
+
+        itemsToPull.sort((a, b) => b.time - a.time).forEach(item => {
+            pullSubsequentActions(item.time, item.amount);
+        });
+
+        if (actionCount + connCount > 0) {
+            clearSelection();
+            commitState();
+        }
+
+        return { actionCount, connCount, total: actionCount + connCount };
     }
 
     function moveTrack(fromIndex, toIndex) {
@@ -864,10 +888,34 @@ export const useTimelineStore = defineStore('timeline', () => {
         if (conn) { Object.assign(conn, payload); commitState(); }
     }
 
-    function updateAction(instanceId, newProperties) {
-        for (const track of tracks.value) {
-            const action = track.actions.find(a => a.instanceId === instanceId);
-            if (action) { Object.assign(action, newProperties); commitState(); return; }
+    function updateAction(actionId, patch) {
+        let found = null;
+        let trackRef = null;
+
+        tracks.value.forEach(t => {
+            const idx = t.actions.findIndex(a => a.instanceId === actionId);
+            if (idx !== -1) {
+                found = t.actions[idx];
+                trackRef = t;
+            }
+        });
+
+        if (found) {
+            const isTimeStopAction = (found.type === 'link' || found.type === 'ultimate');
+            const oldStartTime = found.startTime;
+            const amount = found.type === 'link' ? 0.5 : (Number(found.animationTime) || 1.5);
+            if (isTimeStopAction && patch.startTime !== undefined && patch.startTime !== oldStartTime) {
+                pullSubsequentActions(oldStartTime, amount);
+                Object.assign(found, patch);
+                pushSubsequentActions(found.startTime, amount, actionId);
+            } else {
+                Object.assign(found, patch);
+            }
+            if (patch.startTime !== undefined) {
+                trackRef.actions.sort((a, b) => a.startTime - b.startTime);
+            }
+
+            commitState();
         }
     }
 
@@ -1078,6 +1126,143 @@ export const useTimelineStore = defineStore('timeline', () => {
     // 监控数据计算 (Monitor Data)
     // ===================================================================================
 
+    // 获取全局所有的时停延长点
+    const globalExtensions = computed(() => {
+        const sources = [];
+        tracks.value.forEach(track => {
+            track.actions.forEach(action => {
+                if (action.isDisabled) return;
+                // 收集所有冻屏源
+                if (action.type === 'link' || action.type === 'ultimate') {
+                    sources.push({
+                        startTime: action.startTime,
+                        type: action.type,
+                        instanceId: action.instanceId,
+                        animationTime: Number(action.animationTime) || 1.5
+                    });
+                }
+            });
+        });
+        // 必须按当前的物理开始时间排序
+        sources.sort((a, b) => a.startTime - b.startTime);
+
+        const extensions = [];
+        for (let i = 0; i < sources.length; i++) {
+            const current = sources[i];
+            const next = sources[i + 1];
+            let amount = 0;
+
+            if (current.type === 'ultimate') {
+                // 终结技：固定动画时长，不被打断
+                amount = current.animationTime;
+            } else {
+                // 连携：计算到下一个源的间距
+                if (next) {
+                    const gap = next.startTime - current.startTime;
+                    // 最小留 0.1s，最大 0.5s
+                    amount = Math.min(0.5, Math.max(0.1, Math.round(gap * 10) / 10));
+                } else {
+                    amount = 0.5;
+                }
+            }
+            extensions.push({ time: current.startTime, amount: amount, sourceId: current.instanceId });
+        }
+        return extensions;
+    });
+
+    function getCleanStartTime(shiftedTime, excludeActionId = null) {
+        let cleanTime = shiftedTime;
+        const extensions = [...globalExtensions.value]
+            .filter(ext => ext.sourceId !== excludeActionId)
+            .sort((a, b) => b.time - a.time);
+
+        extensions.forEach(ext => {
+            if (cleanTime > ext.time) {
+                cleanTime = Math.max(ext.time, cleanTime - ext.amount);
+            }
+        });
+        return Math.round(cleanTime * 10) / 10;
+    }
+
+    function refreshAllActionShifts(excludeIds = []) {
+        const excludeSet = new Set(Array.isArray(excludeIds) ? excludeIds : [excludeIds]);
+
+        const allActions = tracks.value.flatMap(t => t.actions).sort((a, b) => a.startTime - b.startTime);
+        // 找出所有生效的时停源
+        const stopSources = allActions.filter(a => (a.type === 'link' || a.type === 'ultimate') && !a.isDisabled);
+
+        stopSources.forEach((source, index) => {
+            const nextSource = stopSources[index + 1];
+            let amount = 0;
+
+            if (source.type === 'ultimate') {
+                amount = Number(source.animationTime) || 1.5;
+            } else {
+                // 连携逻辑：根据与下一个源的物理间距决定推多少
+                if (nextSource) {
+                    const gap = nextSource.startTime - source.startTime;
+                    amount = Math.min(0.5, Math.max(0.1, Math.round(gap * 10) / 10));
+                } else {
+                    amount = 0.5;
+                }
+            }
+
+            allActions.forEach(target => {
+                // 如果 target 在 source 物理时间之后，则推后
+                if (target.startTime >= source.startTime &&
+                    target.instanceId !== source.instanceId &&
+                    !excludeSet.has(target.instanceId)) {
+                    target.startTime = Math.round((target.startTime + amount) * 10) / 10;
+                }
+            });
+        });
+
+        tracks.value.forEach(t => t.actions.sort((a, b) => a.startTime - b.startTime));
+    }
+
+    function getShiftedEndTime(startTime, duration, excludeActionId = null) {
+        let currentTimeLimit = startTime + duration;
+        let processedExtensions = new Set();
+        let changed = true;
+        while (changed) {
+            changed = false;
+            globalExtensions.value.forEach(ext => {
+                if (ext.sourceId !== excludeActionId && !processedExtensions.has(ext.sourceId) &&
+                    ext.time >= startTime && ext.time < currentTimeLimit) {
+                    currentTimeLimit += ext.amount;
+                    processedExtensions.add(ext.sourceId);
+                    changed = true;
+                }
+            });
+        }
+        return currentTimeLimit;
+    }
+
+    function pushSubsequentActions(triggerTime, amount, excludeIds = []) {
+        const excludeSet = new Set(Array.isArray(excludeIds) ? excludeIds : [excludeIds]);
+        tracks.value.forEach(track => {
+            track.actions.forEach(action => {
+                if (!excludeSet.has(action.instanceId) && action.startTime >= triggerTime) {
+                    action.startTime += amount;
+                }
+            });
+            track.actions.sort((a, b) => a.startTime - b.startTime);
+        });
+    }
+
+    function pullSubsequentActions(triggerTime, amount, excludeIds = []) {
+        if (amount <= 0) return;
+        const excludeSet = new Set(Array.isArray(excludeIds) ? excludeIds : [excludeIds]);
+        tracks.value.forEach(track => {
+            track.actions.forEach(action => {
+                if (!excludeSet.has(action.instanceId) && action.startTime >= triggerTime) {
+                    action.startTime = Math.max(0, action.startTime - amount);
+                }
+            });
+            track.actions.sort((a, b) => a.startTime - b.startTime);
+        });
+    }
+
     function calculateGlobalStaggerData() {
         const {
             maxStagger,
@@ -1085,292 +1270,256 @@ export const useTimelineStore = defineStore('timeline', () => {
             staggerNodeDuration,
             staggerBreakDuration
         } = systemConstants.value;
-        const events = []
+
+        const events = [];
         tracks.value.forEach(track => {
-            if (!track.actions) return
+            if (!track.actions) return;
             track.actions.forEach(action => {
-                if (action.isDisabled) return
-                if (action.stagger > 0) events.push({ time: action.startTime + action.duration, change: action.stagger, type: 'gain' })
+                if (action.isDisabled) return;
+                // 收集所有失衡值变动事件
+                if (action.stagger > 0) {
+                    const actualEndTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
+                    events.push({ time: actualEndTime, change: action.stagger });
+                }
                 if (action.damageTicks) {
                     action.damageTicks.forEach(tick => {
-                        const staggerVal = Number(tick.stagger) || 0
+                        const staggerVal = Number(tick.stagger) || 0;
                         if (staggerVal > 0) {
-                            const tickTime = action.startTime + (Number(tick.offset) || 0)
-                            events.push({ time: tickTime, change: staggerVal, type: 'gain' })
+                            const actualTickTime = getShiftedEndTime(action.startTime, Number(tick.offset) || 0, action.instanceId);
+                            events.push({ time: actualTickTime, change: staggerVal });
                         }
-                    })
-                }
-                if (action.physicalAnomaly) {
-                    action.physicalAnomaly.forEach((row) => {
-                        row.forEach(effect => {
-                            const triggerTime = action.startTime + (Number(effect.offset) || 0);
-                            if (effect.stagger > 0) {
-                                events.push({ time: triggerTime, change: effect.stagger, type: 'gain' });
-                            }
-                        });
                     });
                 }
-            })
-        })
-        events.sort((a, b) => a.time - b.time)
-        const points = []; const lockSegments = []; const nodeSegments = []; let currentVal = 0; let currentTime = 0; let lockedUntil = -1; const nodeStep = maxStagger / (staggerNodeCount + 1); const hasNodes = staggerNodeCount > 0; points.push({ time: 0, val: 0 });
-        const advanceTime = (targetTime) => { if (targetTime > currentTime) { points.push({ time: targetTime, val: currentVal }); currentTime = targetTime; } }
-        events.forEach(ev => {
-            advanceTime(ev.time)
-            if (currentTime >= lockedUntil) {
-                const prevVal = currentVal
-                currentVal += ev.change
-                if (currentVal >= maxStagger) {
-                    currentVal = 0
-                    const endLock = currentTime + staggerBreakDuration
-                    lockedUntil = endLock
-                    lockSegments.push({ start: currentTime, end: endLock })
-                    points.push({ time: currentTime, val: 0 })
-                }
-                else if (hasNodes) {
-                    const prevNodeIdx = Math.floor(prevVal / nodeStep)
-                    const currNodeIdx = Math.floor(currentVal / nodeStep)
+            });
+        });
 
+        events.sort((a, b) => a.time - b.time);
+
+        const points = [{ time: 0, val: 0 }];
+        const lockSegments = [];
+        const nodeSegments = [];
+        let currentVal = 0;
+        let currentTime = 0;
+        let lockedUntil = -1;
+        const nodeStep = maxStagger / (staggerNodeCount + 1);
+        const hasNodes = staggerNodeCount > 0;
+
+        const advanceTime = (targetTime) => {
+            if (targetTime > currentTime) {
+                points.push({ time: targetTime, val: currentVal });
+                currentTime = targetTime;
+            }
+        };
+
+        events.forEach(ev => {
+            advanceTime(ev.time);
+
+            // 只有在非击破状态下才处理失衡值增加
+            if (currentTime >= lockedUntil) {
+                const prevVal = currentVal;
+                currentVal += ev.change;
+
+                // 触发击破 (Break)
+                if (currentVal >= maxStagger) {
+                    currentVal = 0;
+                    // 击破时长受现实时间延长逻辑影响
+                    lockedUntil = getShiftedEndTime(currentTime, staggerBreakDuration);
+
+                    lockSegments.push({ start: currentTime, end: lockedUntil });
+                    points.push({ time: currentTime, val: 0 });
+                }
+                // 触发节点锁定 (Node Lock)
+                else if (hasNodes) {
+                    const prevNodeIdx = Math.floor(prevVal / nodeStep);
+                    const currNodeIdx = Math.floor(currentVal / nodeStep);
                     if (currNodeIdx > prevNodeIdx) {
+                        // 节点锁定时间同样受延长逻辑影响
+                        const nodeEnd = getShiftedEndTime(currentTime, staggerNodeDuration);
                         nodeSegments.push({
                             start: currentTime,
-                            end: currentTime + staggerNodeDuration,
+                            end: nodeEnd,
                             thresholdVal: currNodeIdx * nodeStep
-                        })
+                        });
                     }
                 }
             }
-            points.push({ time: currentTime, val: currentVal })
-        })
-        if (currentTime < TOTAL_DURATION) advanceTime(TOTAL_DURATION)
-        return { points, lockSegments, nodeSegments, nodeStep }
+            points.push({ time: currentTime, val: currentVal });
+        });
+
+        if (currentTime < TOTAL_DURATION) advanceTime(TOTAL_DURATION);
+        return { points, lockSegments, nodeSegments, nodeStep };
     }
 
     function calculateGlobalSpData() {
         const { maxSp, spRegenRate, initialSp, executionRecovery } = systemConstants.value;
 
-        const instantEvents = []
-        const pauseWindows = []
+        const instantEvents = [];
+        const pauseWindows = [];
 
+        // 收集暂停回能的区间
         tracks.value.forEach(track => {
-            if (!track.actions) return
             track.actions.forEach(action => {
-                if (action.isDisabled) return
+                if (action.isDisabled) return;
 
-                if (action.spCost > 0) {
-                    instantEvents.push({ time: action.startTime, change: -action.spCost, type: 'cost' })
+                // 战技触发：停止 0.5s
+                if (action.type === 'skill') {
+                    pauseWindows.push({ start: action.startTime, end: action.startTime + 0.5 });
                 }
 
-                if (['skill', 'link'].includes(action.type)) {
-                    pauseWindows.push({ start: action.startTime, end: action.startTime + 0.5 })
-                }
-
+                // 收集即时回能/耗能事件（如处决回能、伤害点回能）
+                if (action.spCost > 0) instantEvents.push({ time: action.startTime, change: -action.spCost });
                 if (action.spGain > 0) {
-                    instantEvents.push({ time: action.startTime + action.duration, change: action.spGain, type: 'gain' })
+                    const actualEndTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
+                    instantEvents.push({ time: actualEndTime, change: action.spGain });
                 }
-
                 if (action.type === 'execution') {
-                    const rec = Number(executionRecovery) || 0
-                    if (rec > 0) {
-                        instantEvents.push({ time: action.startTime + action.duration, change: rec, type: 'gain' })
-                    }
+                    const actualEndTime = getShiftedEndTime(action.startTime, action.duration, action.instanceId);
+                    instantEvents.push({ time: actualEndTime, change: Number(executionRecovery) || 0 });
                 }
-
                 if (action.damageTicks) {
                     action.damageTicks.forEach(tick => {
-                        const spVal = Number(tick.sp) || 0
-                        if (spVal > 0) {
-                            const tickTime = action.startTime + (Number(tick.offset) || 0)
-                            instantEvents.push({ time: tickTime, change: spVal, type: 'gain' })
+                        if (tick.sp > 0) {
+                            const actualTickTime = getShiftedEndTime(action.startTime, tick.offset, action.instanceId);
+                            instantEvents.push({ time: actualTickTime, change: tick.sp });
                         }
-                    })
+                    });
                 }
-            })
-        })
+            });
+        });
 
-        const criticalTimes = new Set([0, TOTAL_DURATION])
-        instantEvents.forEach(e => criticalTimes.add(e.time))
-        pauseWindows.forEach(w => { criticalTimes.add(w.start); criticalTimes.add(w.end) })
+        // 将所有时停延长点加入暂停回能区间
+        globalExtensions.value.forEach(ext => {
+            pauseWindows.push({ start: ext.time, end: ext.time + ext.amount });
+        });
 
-        const sortedTimes = Array.from(criticalTimes).sort((a, b) => a - b)
+        const criticalTimes = new Set([0, TOTAL_DURATION]);
+        instantEvents.forEach(e => criticalTimes.add(e.time));
+        pauseWindows.forEach(w => { criticalTimes.add(w.start); criticalTimes.add(w.end) });
+
+        const sortedTimes = Array.from(criticalTimes).sort((a, b) => a - b);
 
         const isPausedInterval = (t1, t2) => {
-            const mid = (t1 + t2) / 2
-            return pauseWindows.some(w => mid >= w.start && mid < w.end)
-        }
+            const mid = (t1 + t2) / 2;
+            return pauseWindows.some(w => mid >= w.start && mid < w.end);
+        };
 
-        const points = []
-        const parsedInit = Number(initialSp)
-        let currentSp = isNaN(parsedInit) ? 200 : parsedInit
-        let prevTime = 0
+        const points = [];
+        const parsedInit = Number(initialSp);
+        let currentSp = isNaN(parsedInit) ? 200 : parsedInit;
+        let prevTime = 0;
 
         for (let i = 0; i < sortedTimes.length; i++) {
-            const now = sortedTimes[i]
+            const now = sortedTimes[i];
+            const dt = now - prevTime;
 
-            const dt = now - prevTime
             if (dt > 0) {
                 if (!isPausedInterval(prevTime, now)) {
                     if (currentSp < maxSp) {
-                        const needed = maxSp - currentSp
-                        const potentialGain = dt * spRegenRate
-
+                        const needed = maxSp - currentSp;
+                        const potentialGain = dt * spRegenRate;
                         if (potentialGain > needed) {
-                            const timeToCap = needed / spRegenRate
-                            const capTime = prevTime + timeToCap
-
-                            points.push({ time: capTime, sp: maxSp })
-
-                            currentSp = maxSp
+                            const timeToCap = needed / spRegenRate;
+                            points.push({ time: prevTime + timeToCap, sp: maxSp });
+                            currentSp = maxSp;
                         } else {
-                            currentSp += potentialGain
+                            currentSp += potentialGain;
                         }
                     }
                 }
             }
 
-            points.push({ time: now, sp: currentSp })
+            points.push({ time: now, sp: currentSp });
 
-            const eventsNow = instantEvents.filter(e => Math.abs(e.time - now) < 0.0001)
+            // 处理时刻上的即时事件
+            const eventsNow = instantEvents.filter(e => Math.abs(e.time - now) < 0.0001);
             if (eventsNow.length > 0) {
-                let netChange = 0
-                eventsNow.forEach(e => netChange += e.change)
-
-                currentSp += netChange
-                points.push({ time: now, sp: currentSp })
+                eventsNow.forEach(e => currentSp += e.change);
+                if (currentSp < 0) currentSp = 0;
+                if (currentSp > maxSp) currentSp = maxSp;
+                points.push({ time: now, sp: currentSp });
             }
-
-            prevTime = now
+            prevTime = now;
         }
 
-        return points
-    }
-
-    function calculateCdReduction(myStartTime, myRawCooldown, myInstanceId) {
-        const startT = Number(myStartTime)
-        const rawCd = Number(myRawCooldown)
-
-        if (rawCd <= 0) return 0
-
-        let freezeEvents = []
-
-        tracks.value.forEach(track => {
-            if (!track.actions) return
-            track.actions.forEach(other => {
-                if (other.isDisabled) return
-
-                const isSelf = other.instanceId === myInstanceId
-                if (isSelf && other.type !== 'link') return
-
-                let duration = 0
-                if (other.type === 'link') {
-                    duration = 0.5
-                } else if (other.type === 'ultimate') {
-                    duration = Number(other.animationTime) || 0.5
-                }
-
-                if (duration > 0) {
-                    if (other.startTime + duration <= startT) return
-
-                    freezeEvents.push({
-                        start: other.startTime,
-                        end: other.startTime + duration
-                    })
-                }
-            })
-        })
-
-        if (freezeEvents.length === 0) return 0
-
-        freezeEvents.sort((a, b) => a.start - b.start)
-
-        const mergedEvents = []
-        if (freezeEvents.length > 0) {
-            let currentEvent = freezeEvents[0]
-            for (let i = 1; i < freezeEvents.length; i++) {
-                const nextEvent = freezeEvents[i]
-                if (nextEvent.start < currentEvent.end) {
-                    currentEvent.end = Math.max(currentEvent.end, nextEvent.end)
-                } else {
-                    mergedEvents.push(currentEvent)
-                    currentEvent = nextEvent
-                }
-            }
-            mergedEvents.push(currentEvent)
-        }
-
-        let visualDuration = rawCd
-
-        for (const freeze of mergedEvents) {
-            const validStart = Math.max(startT, freeze.start)
-            const validEnd = freeze.end
-
-            if (validEnd <= validStart) continue
-
-            if (validStart >= startT + visualDuration) break
-
-            const freezeLen = validEnd - validStart
-
-            const remaining = (startT + visualDuration) - validStart
-            const reduction = Math.min(freezeLen, remaining)
-
-            visualDuration -= reduction
-        }
-
-        return rawCd - visualDuration
+        return points;
     }
 
     function calculateGaugeData(trackId) {
-        const track = tracks.value.find(t => t.id === trackId); if (!track) return [];
-        const charInfo = characterRoster.value.find(c => c.id === trackId); if (!charInfo) return [];
+        const track = tracks.value.find(t => t.id === trackId);
+        if (!track) return [];
+        const charInfo = characterRoster.value.find(c => c.id === trackId);
+        if (!charInfo) return [];
+
         const canAcceptTeamGauge = (charInfo.accept_team_gauge !== false);
-        const libId = `${trackId}_ultimate`; const override = characterOverrides.value[libId];
-        const GAUGE_MAX = (track.maxGaugeOverride && track.maxGaugeOverride > 0) ? track.maxGaugeOverride : ((override && override.gaugeCost) ? override.gaugeCost : (charInfo.ultimate_gaugeMax || 100));
-        const blockWindows = []
+        const libId = `${trackId}_ultimate`;
+        const override = characterOverrides.value[libId];
+        const GAUGE_MAX = (track.maxGaugeOverride && track.maxGaugeOverride > 0)
+            ? track.maxGaugeOverride
+            : ((override && override.gaugeCost) ? override.gaugeCost : (charInfo.ultimate_gaugeMax || 100));
+
+        // 识别大招封禁区间（大招动画及强化期间通常不涨能）
+        const blockWindows = [];
         if (track.actions) {
             track.actions.forEach(action => {
                 if (action.type === 'ultimate') {
-                    const start = action.startTime
-                    const end = start + Number(action.duration || 0) + Number(action.enhancementTime || 0)
-                    if (end > start) {
-                        blockWindows.push({ start, end })
-                    }
+                    const start = action.startTime;
+                    // 结束时间需要经过时停偏移计算
+                    const end = getShiftedEndTime(start, Number(action.duration || 0) + Number(action.enhancementTime || 0));
+                    blockWindows.push({ start, end });
                 }
-            })
+            });
         }
+
         const isBlocked = (time) => {
-            const epsilon = 0.0001
-            return blockWindows.some(w => time > w.start + epsilon && time < w.end - epsilon)
-        }
+            const epsilon = 0.0001;
+            return blockWindows.some(w => time > w.start + epsilon && time < w.end - epsilon);
+        };
+
         const events = [];
         tracks.value.forEach(sourceTrack => {
             if (!sourceTrack.actions) return;
             sourceTrack.actions.forEach(action => {
-                if (action.isDisabled) return
+                if (action.isDisabled) return;
+
+                // 自身动作产能
                 if (sourceTrack.id === trackId) {
-                    if (action.gaugeCost > 0) events.push({ time: action.startTime, change: -action.gaugeCost });
+                    // 消耗能量（通常在动作开始瞬间）
+                    if (action.gaugeCost > 0) {
+                        events.push({ time: action.startTime, change: -action.gaugeCost });
+                    }
+                    // 获得能量
                     if (action.gaugeGain > 0) {
-                        const triggerTime = action.startTime + action.duration
+                        // 计算受时停影响后的能量实际到账时间
+                        const triggerTime = getShiftedEndTime(action.startTime, action.duration);
                         if (!isBlocked(triggerTime)) {
                             events.push({ time: triggerTime, change: action.gaugeGain });
                         }
                     }
                 }
-                if (sourceTrack.id !== trackId && action.teamGaugeGain > 0 && canAcceptTeamGauge) {
-                    const triggerTime = action.startTime + action.duration
+                // 队友动作产能（全队回能）
+                else if (action.teamGaugeGain > 0 && canAcceptTeamGauge) {
+                    const triggerTime = getShiftedEndTime(action.startTime, action.duration);
                     if (!isBlocked(triggerTime)) {
                         events.push({ time: triggerTime, change: action.teamGaugeGain });
                     }
                 }
-            })
+            });
         });
+
         events.sort((a, b) => a.time - b.time);
-        const initialGauge = track.initialGauge || 0; let currentGauge = initialGauge > GAUGE_MAX ? GAUGE_MAX : initialGauge;
-        const points = []; points.push({ time: 0, val: currentGauge, ratio: currentGauge / GAUGE_MAX });
+
+        const initialGauge = track.initialGauge || 0;
+        let currentGauge = initialGauge > GAUGE_MAX ? GAUGE_MAX : initialGauge;
+        const points = [{ time: 0, val: currentGauge, ratio: currentGauge / GAUGE_MAX }];
+
         events.forEach(ev => {
             points.push({ time: ev.time, val: currentGauge, ratio: currentGauge / GAUGE_MAX });
-            currentGauge += ev.change; if (currentGauge > GAUGE_MAX) currentGauge = GAUGE_MAX; if (currentGauge < 0) currentGauge = 0;
+            currentGauge += ev.change;
+            if (currentGauge > GAUGE_MAX) currentGauge = GAUGE_MAX;
+            if (currentGauge < 0) currentGauge = 0;
             points.push({ time: ev.time, val: currentGauge, ratio: currentGauge / GAUGE_MAX });
         });
+
         points.push({ time: TOTAL_DURATION, val: currentGauge, ratio: currentGauge / GAUGE_MAX });
         return points;
     }
@@ -1606,7 +1755,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         selectedAnomalyId, setSelectedAnomalyId,
         teamTracksInfo, activeSkillLibrary, timeBlockWidth, ELEMENT_COLORS, getActionPositionInfo, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction,
-        addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, calculateGlobalSpData, calculateCdReduction, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
+        addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, setCursorPosition, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
         removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly, getAnomalyIndexById,
@@ -1615,6 +1764,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         cycleBoundaries, selectedCycleBoundaryId, addCycleBoundary, updateCycleBoundary, selectCycleBoundary,
         contextMenu, openContextMenu, closeContextMenu,
         toggleActionLock, toggleActionDisable, setActionColor,
+        globalExtensions, getShiftedEndTime, getCleanStartTime, refreshAllActionShifts,
         enemyDatabase, activeEnemyId, applyEnemyPreset, ENEMY_TIERS, enemyCategories,
         scenarioList, activeScenarioId, switchScenario, addScenario, duplicateScenario, deleteScenario,
     }

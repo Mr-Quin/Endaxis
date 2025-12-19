@@ -542,6 +542,8 @@ function onBackgroundContextMenu(evt) {
   store.openContextMenu(evt, null, clickTime)
 }
 
+const dragCleanStartTimes = new Map();
+
 function onActionMouseDown(evt, track, action) {
   evt.stopPropagation()
 
@@ -598,19 +600,22 @@ function onActionMouseDown(evt, track, action) {
       store.selectAction(action.instanceId)
     }
 
-    isMouseDown.value = true;
+    isMouseDown.value = true
     isDragStarted.value = false
-    movingActionId.value = action.instanceId;
+    movingActionId.value = action.instanceId
     movingTrackId.value = track.id
-    initialMouseX.value = clientX;
+    initialMouseX.value = clientX
     initialMouseY.value = clientY
 
     dragStartTimes.clear()
+    dragCleanStartTimes.clear()
+
     store.tracks.forEach(t => {
       t.actions.forEach(a => {
-        if (store.multiSelectedIds.has(a.instanceId)) dragStartTimes.set(a.instanceId, a.startTime)
-      })
-    })
+        dragStartTimes.set(a.instanceId, a.startTime);
+        dragCleanStartTimes.set(a.instanceId, store.getCleanStartTime(a.startTime));
+      });
+    });
 
     store.setDragOffset(offset)
 
@@ -621,36 +626,33 @@ function onActionMouseDown(evt, track, action) {
 }
 
 function updateDragPosition(clientX) {
-  if (!isDragStarted.value || !movingActionId.value) return
+  if (!isDragStarted.value || !movingActionId.value) return;
 
-  const fakeEvent = { clientX: clientX }
-  const newLeaderTime = calculateTimeFromEvent(fakeEvent)
-  const leaderOriginalTime = dragStartTimes.get(movingActionId.value)
-  if (leaderOriginalTime === undefined) return
+  const currentMouseTime = calculateTimeFromEvent({ clientX });
+  const leaderCleanOrg = dragCleanStartTimes.get(movingActionId.value);
+  if (leaderCleanOrg === undefined) return;
+  const timeDelta = currentMouseTime - leaderCleanOrg;
 
-  const timeDelta = newLeaderTime - leaderOriginalTime
+  const selectedIds = store.multiSelectedIds;
+  const actuallyMovingIds = [];
 
-  let isValidMove = true
-  for (const originalTime of dragStartTimes.values()) {
-    if (originalTime + timeDelta < 0) { isValidMove = false; break }
-  }
+  store.tracks.forEach(t => {
+    t.actions.forEach(a => {
+      const cleanOrg = dragCleanStartTimes.get(a.instanceId);
+      if (cleanOrg === undefined) return;
 
-  if (isValidMove) {
-    let hasChanged = false
-    store.tracks.forEach(t => {
-      let trackChanged = false
-      t.actions.forEach(a => {
-        if (store.multiSelectedIds.has(a.instanceId)) {
-          if (a.isLocked) return
-          const original = dragStartTimes.get(a.instanceId)
-          const targetTime = Math.max(0, original + timeDelta)
-          if (a.startTime !== targetTime) { a.startTime = targetTime; trackChanged = true; hasChanged = true }
-        }
-      })
-      if (trackChanged) t.actions.sort((a, b) => a.startTime - b.startTime)
-    })
-    if (hasChanged) nextTick(() => forceSvgUpdate())
-  }
+      if (selectedIds.has(a.instanceId) && !a.isLocked) {
+        a.startTime = Math.max(0, Math.round((cleanOrg + timeDelta) * 10) / 10);
+        actuallyMovingIds.push(a.instanceId);
+      } else {
+        a.startTime = cleanOrg;
+      }
+    });
+  });
+
+  store.refreshAllActionShifts(actuallyMovingIds);
+
+  nextTick(() => forceSvgUpdate());
 }
 
 function performAutoScroll() {
@@ -828,6 +830,15 @@ function handleGlobalKeyDownWrapper(e) {
   }
   handleKeyDown(e)
 }
+
+const activeFreezeRegions = computed(() => {
+  const selectedIds = store.multiSelectedIds
+  const hoveredId = store.hoveredActionId
+  if (selectedIds.size === 0 && !hoveredId) return []
+  return store.globalExtensions.filter(ext => {
+    return ext.sourceId === hoveredId || selectedIds.has(ext.sourceId)
+  })
+})
 
 watch(() => store.timeBlockWidth, () => { nextTick(() => { forceSvgUpdate(); updateScrollbarHeight() }) })
 watch(() => [store.tracks, store.connections], () => { nextTick(() => { forceSvgUpdate() }) }, { deep: true })
@@ -1034,6 +1045,19 @@ onUnmounted(() => {
                 @contextmenu.prevent.stop="onActionContextMenu($event, action)"
                 :class="{ 'is-moving': isDragStarted && store.isActionSelected(action.instanceId) }"
               />
+            </div>
+          </div>
+        </div>
+
+        <div class="global-freeze-layer">
+          <div v-for="(ext, idx) in activeFreezeRegions"
+               :key="idx"
+               class="freeze-region-dim"
+               :style="{
+               left: `${ext.time * TIME_BLOCK_WIDTH}px`,
+               width: `${ext.amount * TIME_BLOCK_WIDTH}px`}">
+            <div class="freeze-duration-label">
+              {{ ext.amount.toFixed(1) }}s
             </div>
           </div>
         </div>
@@ -2022,4 +2046,54 @@ onUnmounted(() => {
   line-height: 1;
 }
 
+.global-freeze-layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.freeze-region-dim {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 1px dashed rgba(255, 255, 255, 0.2);
+  border-right: 1px dashed rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out;
+  transition: left 0.1s, width 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.freeze-duration-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0;
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 30px) {
+  .freeze-duration-label {
+    font-size: 10px;
+    opacity: 0.1;
+  }
+}
 </style>

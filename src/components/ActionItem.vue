@@ -22,7 +22,7 @@ const themeColor = computed(() => {
   if (props.action.customColor) return props.action.customColor
   if (props.action.type === 'link') return store.getColor('link')
   if (props.action.type === 'execution') return store.getColor('execution')
-  if (props.action.type === 'attack') return store.getColor('physical')
+  if (props.action.type === 'attack') return store.getColor('attack')
   if (props.action.element) return store.getColor(props.action.element)
 
   let charId = null
@@ -40,7 +40,7 @@ const themeColor = computed(() => {
 const style = computed(() => {
   const widthUnit = store.timeBlockWidth
   const left = (props.action.startTime || 0) * widthUnit
-  const width = (props.action.duration || 1) * widthUnit
+  const width = shiftedDuration.value * widthUnit
   const finalWidth = width < 2 ? 2 : width
   const color = themeColor.value
 
@@ -52,6 +52,15 @@ const style = computed(() => {
     width: `${finalWidth}px`,
     boxSizing: 'border-box',
     zIndex: isSelected.value ? 20 : 10,
+  }
+
+  let borderStyle = ''
+  if (isSelected.value) {
+    borderStyle = `2px dashed #ffffff`
+  } else if (props.action.type === 'attack') {
+    borderStyle = `1.5px solid ${hexToRgba(color, 0.4)}`
+  } else {
+    borderStyle = `2px dashed ${color}`
   }
 
   if (props.action.isDisabled) {
@@ -79,7 +88,7 @@ const style = computed(() => {
 
   return {
     ...layoutStyle,
-    border: `2px dashed ${isSelected.value ? '#ffffff' : color}`,
+    border: borderStyle,
     backgroundColor: hexToRgba(color, 0.15),
     backdropFilter: 'blur(4px)',
     color: isSelected.value ? '#ffffff' : color,
@@ -87,15 +96,27 @@ const style = computed(() => {
   }
 })
 
+const shiftedDuration = computed(() => {
+  const end = store.getShiftedEndTime(
+      props.action.startTime,
+      props.action.duration,
+      props.action.instanceId
+  );
+  return end - props.action.startTime
+})
+
 // 冷却条样式
 const cdStyle = computed(() => {
   const widthUnit = store.timeBlockWidth
   const rawCd = props.action.cooldown || 0
   if (rawCd <= 0) return { display: 'none' }
-  const reduction = store.calculateCdReduction(props.action.startTime, rawCd, props.action.instanceId)
-  const visualCd = Math.max(0, rawCd - reduction)
-  const width = visualCd * widthUnit
-  return { width: `${width}px`, bottom: '-8px', left: '-2px', opacity: 0.6, transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1)' }
+  const width = rawCd * widthUnit
+  return {
+    width: `${width}px`,
+    bottom: '-8px',
+    left: '-2px',
+    opacity: 0.6
+  }
 })
 
 // 强化时间样式
@@ -125,19 +146,42 @@ const customBarsToRender = computed(() => {
   const bars = props.action.customBars || []
   return bars.map((bar, index) => {
     const duration = bar.duration || 0
-    const offset = bar.offset || 0
+    const originalOffset = bar.offset || 0
     if (duration <= 0) return null
-    const width = duration * widthUnit
-    const left = (offset * widthUnit) - 2
+
+    // 起始点位置需要偏移
+    const shiftedStartTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
+    const shiftedOffset = shiftedStartTimestamp - props.action.startTime
+
+    // 条的长度也需要计算期间发生的时停
+    const shiftedEndTimestamp = store.getShiftedEndTime(shiftedStartTimestamp, duration, props.action.instanceId)
+    const shiftedDuration = shiftedEndTimestamp - shiftedStartTimestamp
+
+    const left = (shiftedOffset * widthUnit) - 2
+    const width = shiftedDuration * widthUnit
     const bottomOffset = -24 - (index * 16)
+
     return {
       style: { width: `${width}px`, left: `${left}px`, bottom: `${bottomOffset}px`, position: 'absolute', pointerEvents: 'none', opacity: 0.6, zIndex: 5 - index },
       text: bar.text,
-      duration: bar.duration
+      duration: Number(shiftedDuration.toFixed(1)) // 显示受影响后的时长
     }
   }).filter(item => item !== null)
 })
 
+// 计算动画时间的视觉宽度
+const animationTimeWidth = computed(() => {
+  const widthUnit = store.timeBlockWidth
+
+  // 从 Store 的计算结果中找到属于自己的那一项
+  const myExtension = store.globalExtensions.find(ext => ext.sourceId === props.action.instanceId)
+
+  if (myExtension) {
+    return myExtension.amount * widthUnit
+  }
+
+  return 0
+})
 // 辅助函数
 function getEffectColor(type) { return store.getColor(type) }
 function getIconPath(type) {
@@ -179,7 +223,11 @@ const renderableTicks = computed(() => {
   const widthUnit = store.timeBlockWidth
 
   return ticks.map(tick => {
-    const left = (tick.offset || 0) * widthUnit
+    const originalOffset = tick.offset || 0
+    const shiftedTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
+    const shiftedOffset = shiftedTimestamp - props.action.startTime
+
+    const left = shiftedOffset * widthUnit
     return {
       style: { left: `${left}px` },
       data: tick
@@ -190,89 +238,57 @@ const renderableTicks = computed(() => {
 const renderableAnomalies = computed(() => {
   const raw = props.action.physicalAnomaly || []
   if (raw.length === 0) return []
-
   const rows = Array.isArray(raw[0]) ? raw : [raw]
   const widthUnit = store.timeBlockWidth
   const ICON_SIZE = 20
   const BAR_MARGIN = 2
-
   const resultRows = []
-
-  // 获取从本动作出发的所有连线
   const myConnections = store.connections.filter(c => c.from === props.action.instanceId)
-
   let globalFlatIndex = 0
 
   rows.forEach((row, rowIndex) => {
-    const processedRow = row.map((effect, colIndex) => {
+    row.forEach((effect, colIndex) => {
       const myEffectIndex = globalFlatIndex++
+      const originalOffset = Number(effect.offset) || 0
 
-      const offsetTime = Number(effect.offset) || 0
-      const currentLeft = offsetTime * widthUnit
+      // 计算图标的起始现实位置
+      const shiftedStartTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
+      const shiftedOffset = shiftedStartTimestamp - props.action.startTime
+      const currentLeft = shiftedOffset * widthUnit
 
-      let displayDuration = effect.duration || 0
+      // 计算 Buff 的偏移后总时长
+      let finalDuration = store.getShiftedEndTime(shiftedStartTimestamp, effect.duration, props.action.instanceId) - shiftedStartTimestamp
       let isConsumed = false
 
       // 连线消耗逻辑
-      let conn = null
-      if (effect._id) {
-        conn = myConnections.find(c => c.fromEffectId === effect._id)
-      }
-      if (!conn) {
-        conn = myConnections.find(c => !c.fromEffectId && c.fromEffectIndex === myEffectIndex)
-      }
+      let conn = myConnections.find(c => (effect._id && c.fromEffectId === effect._id) || (!c.fromEffectId && c.fromEffectIndex === myEffectIndex))
 
       if (conn && conn.isConsumption) {
         const targetTrack = store.tracks.find(t => t.actions.some(a => a.instanceId === conn.to))
         const targetAction = targetTrack?.actions.find(a => a.instanceId === conn.to)
-
         if (targetAction) {
-          const visualAbsStartTime = props.action.startTime + offsetTime
-
-          const offset = conn.consumptionOffset || 0
-          const consumptionTime = targetAction.startTime - offset
-
-          const cutDuration = consumptionTime - visualAbsStartTime
+          const consumptionTime = targetAction.startTime - (conn.consumptionOffset || 0)
+          const cutDuration = consumptionTime - shiftedStartTimestamp
           const snappedCutDuration = Math.round(cutDuration * 10) / 10
-
           if (snappedCutDuration >= 0) {
-            displayDuration = snappedCutDuration
+            finalDuration = Math.min(finalDuration, snappedCutDuration)
             isConsumed = true
           }
         }
       }
 
-      // 计算时长条的像素宽度
-      let finalBarWidth = displayDuration > 0 ? (displayDuration * widthUnit) : 0
-      if (finalBarWidth > 0) {
-        finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE)
-      }
-      if (finalBarWidth > 0) {
-        finalBarWidth = Math.max(0, finalBarWidth - BAR_MARGIN)
-      }
+      let finalBarWidth = finalDuration > 0 ? (finalDuration * widthUnit) : 0
+      if (finalBarWidth > 0) finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE - BAR_MARGIN)
 
-      const itemLayout = {
-        data: effect,
-        rowIndex,
-        colIndex,
-        flatIndex: myEffectIndex,
-        style: {
-          left: `${currentLeft}px`,
-          bottom: `${100 + (rowIndex * 50)}%`,
-          position: 'absolute',
-          zIndex: 15 + rowIndex
-        },
-        barWidth: finalBarWidth,
-        isConsumed,
-        displayDuration,
-        originalDuration: effect.duration
-      }
-
-      return itemLayout
+      resultRows.push({
+        data: effect, rowIndex, colIndex, flatIndex: myEffectIndex,
+        style: { left: `${currentLeft}px`, bottom: `${100 + (rowIndex * 50)}%`, position: 'absolute', zIndex: 15 + rowIndex },
+        barWidth: finalBarWidth, isConsumed, displayDuration: finalDuration,
+        extensionAmount: Math.round((finalDuration - effect.duration) * 10) / 10
+      })
     })
-    resultRows.push(processedRow)
   })
-  return resultRows.flat()
+  return resultRows
 })
 
 function onIconClick(evt, item, flatIndex) {
@@ -315,11 +331,11 @@ function handleEffectDrop(effectId) {
 </script>
 
 <template>
-  <div :id="`action-${action.instanceId}`" ref="actionElRef" class="action-item-wrapper" 
-       @mouseenter="store.setHoveredAction(action.instanceId)" 
-       @mouseleave="store.setHoveredAction(null)" 
-       :style="style" 
-       @click.stop 
+  <div :id="`action-${action.instanceId}`" ref="actionElRef" class="action-item-wrapper"
+       @mouseenter="store.setHoveredAction(action.instanceId)"
+       @mouseleave="store.setHoveredAction(null)"
+       :style="style"
+       @click.stop
        @dragstart.prevent>
 
 
@@ -328,10 +344,6 @@ function handleEffectDrop(effectId) {
 
       <span class="cd-text" :style="{ color: themeColor }">
       {{ action.cooldown }}s
-        <span v-if="store.calculateCdReduction(action.startTime, action.cooldown, action.instanceId) > 0"
-          style="font-size:9px; opacity: 0.8;">
-          (-{{ store.calculateCdReduction(action.startTime, action.cooldown, action.instanceId).toFixed(1) }})
-        </span>
       </span>
 
       <div class="cd-end-mark"
@@ -390,7 +402,14 @@ function handleEffectDrop(effectId) {
       </svg>
     </div>
 
-    <div v-if="!isGhostMode" class="action-item-content drag-handle">{{ action.name }}</div>
+    <div v-if="!isGhostMode" class="action-item-content drag-handle">
+      {{ action.name }}
+      <div v-if="animationTimeWidth > 0"
+           class="animation-phase-overlay"
+           :style="{ width: `${animationTimeWidth}px` }">
+        <div class="anim-shimmer"></div>
+      </div>
+    </div>
 
     <ActionLinkPorts @drop="handleConnectionDrop" @snap="handleConnectionSnap"
       @drag-start="handleActionDragStart" @clear-snap="connectionHandler.clearSnap"
@@ -424,6 +443,9 @@ function handleEffectDrop(effectId) {
           <div class="striped-bg"></div>
           <span class="duration-text">
             {{ item.isConsumed ? item.displayDuration.toFixed(1) + 's' : item.data.duration + 's' }}
+            <span v-if="!item.isConsumed && item.extensionAmount > 0" class="extension-label">
+              (+{{ item.extensionAmount }}s)
+            </span>
           </span>
 
           <div v-if="item.isConsumed"
@@ -601,4 +623,35 @@ function handleEffectDrop(effectId) {
 .tw-separator { position: absolute; right: 0; top: -2px; width: 1px; height: 8px; background-color: var(--tw-color); transform: translateX(50%); }
 .tw-dot { position: absolute; left: 0; top: 50%; width: 1px; height: 8px; background-color: var(--tw-color); border-radius: 0; z-index: 6; transform: translate(-50%, -50%); }
 
+.animation-phase-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 1;
+}
+
+.anim-shimmer {
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 300%;
+  height: 100%;
+  background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.25) 50%,
+      transparent
+  );
+  animation: shimmer-swipe 3s infinite ease-in-out;
+}
+
+@keyframes shimmer-swipe {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
 </style>
