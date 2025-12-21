@@ -425,7 +425,7 @@ function handleEffectDrop(effectId) {
       </svg>
     </div>
 
-    <div v-if="!isGhostMode" class="action-item-content drag-handle">
+    <div v-if="!isGhostMode" class="action-item-content drag-handle" :class="{ 'is-link-target-invalid': !isActionValidConnectionTarget && connectionSourceActionId !== action.instanceId }">
       {{ action.name }}
       <div v-if="animationTimeWidth > 0"
            class="animation-phase-overlay"
@@ -447,7 +447,7 @@ function handleEffectDrop(effectId) {
 
         <div :id="`anomaly-${action.instanceId}-${index}`"
              class="anomaly-icon-box"
-             :class="{ 'is-link-target': connectionHandler.isNodeValid(item.data._id) }"
+             :class="{ 'is-linking': connectionHandler.isDragging.value, 'is-link-target-valid': connectionHandler.isNodeValid(item.data._id) }"
              @mousedown.stop="handleEffectDragStart($event, item.data._id)"
              @mouseover.stop="handleEffectSnap($event, item.data._id)"
              @mouseup.stop="handleEffectDrop(item.data._id)"
@@ -507,7 +507,13 @@ function handleEffectDrop(effectId) {
   transition: transform 0.1s, border-color 0.1s, box-shadow 0.2s;
 }
 .anomaly-icon-box:hover { border-color: #ffd700; transform: scale(1.2); z-index: 20; }
-.anomaly-icon-box.is-link-target {
+.anomaly-icon-box.is-linking {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.anomaly-icon-box.is-linking.is-link-target-valid {
+  opacity: 1;
+  pointer-events: auto;
   border-color: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
   transform: scale(1.1); animation: pulse-target 1s infinite; z-index: 100;
 }
@@ -533,6 +539,12 @@ function handleEffectDrop(effectId) {
 }
 .mute-icon {
   right: 2px;
+}
+
+.action-item-content {
+  &.is-link-target-invalid {
+    opacity: 0.5;
+  }
 }
 
 /* 伤害节点样式 */
