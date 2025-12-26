@@ -102,7 +102,12 @@ function handleInput(event) {
   // Allow only numbers and a single decimal point
   const regex = /^-?\d*\.?\d*$/;
   if (regex.test(value)) {
-    emit('update:modelValue', value);
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue) && !value.endsWith('.')) {
+      emit('update:modelValue', numericValue);
+    } else {
+      emit('update:modelValue', value);
+    }
   } else {
     // If invalid char, revert to old value immediately
     event.target.value = props.modelValue;

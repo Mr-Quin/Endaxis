@@ -1882,7 +1882,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         contextMenu, openContextMenu, closeContextMenu,
         switchEvents, selectedSwitchEventId, addSwitchEvent, updateSwitchEvent, selectSwitchEvent,
         toggleActionLock, toggleActionDisable, setActionColor,
-        globalExtensions, getShiftedEndTime,  refreshAllActionShifts,
+        globalExtensions, getShiftedEndTime,  refreshAllActionShifts, getActionById,
         enemyDatabase, activeEnemyId, applyEnemyPreset, ENEMY_TIERS, enemyCategories,
         scenarioList, activeScenarioId, switchScenario, addScenario, duplicateScenario, deleteScenario,
     }

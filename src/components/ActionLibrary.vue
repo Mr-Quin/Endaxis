@@ -371,16 +371,16 @@ function onNativeDragEnd() {
 }
 
 /* Slider 自定义 */
-:deep(.el-slider__runway) { background-color: rgba(255,255,255,0.05) !important; height: 2px !important; }
-:deep(.el-slider__bar) { height: 4px; }
-:deep(.el-slider__button) { width: 10px; height: 10px; background: #1a1a1a; border-width: 2px; }
-
+:deep(.el-slider) { height: 32px; display: flex; align-items: center; }
+:deep(.el-slider__runway) { height: 4px !important; background-color: rgba(255, 255, 255, 0.1) !important; border-radius: 2px; margin: 0 !important; flex: 1; }
+:deep(.el-slider__bar) { height: 4px !important; border-radius: 2px; }
+:deep(.el-slider__button-wrapper) { height: 100% !important; top: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; width: 36px !important; background-color: transparent !important; }
+:deep(.el-slider__button) { width: 12px !important; height: 12px !important; background-color: #1a1a1a !important; border: 2px solid currentColor !important; box-shadow: 0 0 8px currentColor; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+:deep(.el-slider__button:hover) { transform: scale(1.2); }
+.cyan-theme { color: #00e5ff; }
 .cyan-theme :deep(.el-slider__bar) { background-color: #00e5ff; }
-.cyan-theme :deep(.el-slider__button) { border-color: #00e5ff; }
-
+.gold-theme { color: #ffd700; }
 .gold-theme :deep(.el-slider__bar) { background-color: #ffd700; }
-.gold-theme :deep(.el-slider__button) { border-color: #ffd700; }
-
+.green-theme { color: #52c41a; }
 .green-theme :deep(.el-slider__bar) { background-color: #52c41a; }
-.green-theme :deep(.el-slider__button) { border-color: #52c41a; }
 </style>

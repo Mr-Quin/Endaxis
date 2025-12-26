@@ -65,7 +65,7 @@ const fullSegments = computed(() => {
 
   for (let i = 0; i < points.length - 1; i++) {
     // 判定连续两点均为满能量状态
-    if (points[i].ratio >= 0.99 && points[i + 1].ratio >= 0.99) {
+    if (points[i].ratio >= 1 && points[i + 1].ratio >= 1) {
       const x1 = points[i].time * currentBlockWidth
       const x2 = points[i + 1].time * currentBlockWidth
       if (x2 > x1) segments.push({x1, x2})

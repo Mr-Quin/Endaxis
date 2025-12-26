@@ -147,15 +147,14 @@ const editingEffectData = computed(() => {
   return anomalyRows.value[coords.rowIndex]?.[coords.colIndex]
 })
 
-const currentFlatIndex = computed(() => {
-  const coords = currentSelectedCoords.value
-  if (!coords) return null
-  let flatIndex = 0
-  for (let i = 0; i < coords.rowIndex; i++) {
-    if (anomalyRows.value[i]) flatIndex += anomalyRows.value[i].length
-  }
-  flatIndex += coords.colIndex
-  return flatIndex
+const totalStagger = computed(() => {
+  if (!targetData.value || !targetData.value.damageTicks) return 0
+  return targetData.value.damageTicks.reduce((acc, tick) => acc + (Number(tick.stagger) || 0), 0)
+})
+
+const totalSpGain = computed(() => {
+  if (!targetData.value || !targetData.value.damageTicks) return 0
+  return targetData.value.damageTicks.reduce((acc, tick) => acc + (Number(tick.sp) || 0), 0)
 })
 
 function isEditing(r, c) {
@@ -164,7 +163,7 @@ function isEditing(r, c) {
 }
 
 // ===================================================================================
-// 3. 动作与更新逻辑
+// 3. 技能与更新逻辑
 // ===================================================================================
 
 function toggleEditEffect(r, c) {
@@ -350,10 +349,13 @@ const iconOptions = computed(() => {
   return groups
 })
 
-function getIconPath(type) {
+function getIconPath(type, charId = null) {
   if (store.iconDatabase[type]) return store.iconDatabase[type]
-  if (currentCharacter.value && currentCharacter.value.exclusive_buffs) {
-    const exclusive = currentCharacter.value.exclusive_buffs.find(b => b.key === type)
+  const targetChar = charId
+      ? store.characterRoster.find(c => c.id === charId)
+      : currentCharacter.value
+  if (targetChar && targetChar.exclusive_buffs) {
+    const exclusive = targetChar.exclusive_buffs.find(b => b.key === type)
     if (exclusive) return exclusive.path
   }
   return store.iconDatabase['default'] || ''
@@ -361,6 +363,8 @@ function getIconPath(type) {
 
 const relevantConnections = computed(() => {
   if (isLibraryMode.value || !store.selectedActionId) return []
+  const myActionWrap = store.getActionById(store.selectedActionId)
+  const myCharId = myActionWrap?.trackId
 
   return store.connections
       .filter(c => c.from === store.selectedActionId || c.to === store.selectedActionId)
@@ -368,16 +372,10 @@ const relevantConnections = computed(() => {
         const isOutgoing = conn.from === store.selectedActionId
         const otherActionId = isOutgoing ? conn.to : conn.from
 
-        let otherActionName = '未知动作'
-        let otherAction = null
-        for (const track of store.tracks) {
-          const action = track.actions.find(a => a.instanceId === otherActionId)
-          if (action) {
-            otherActionName = action.name
-            otherAction = action
-            break
-          }
-        }
+        const otherActionWrap = store.getActionById(otherActionId)
+        const otherAction = otherActionWrap?.node
+        const otherCharId = otherActionWrap?.trackId
+        const otherActionName = otherAction?.name || '未知技能'
 
         let myIconPath = null
         if (targetData.value) {
@@ -390,7 +388,7 @@ const relevantConnections = computed(() => {
           if (realIndex !== -1) {
             const allEffects = (targetData.value.physicalAnomaly || []).flat()
             const effect = allEffects[realIndex]
-            if (effect) myIconPath = getIconPath(effect.type)
+            if (effect) myIconPath = getIconPath(effect.type, myCharId)
           }
         }
 
@@ -405,7 +403,7 @@ const relevantConnections = computed(() => {
           if (realIndex !== -1) {
             const allEffects = (otherAction.physicalAnomaly || []).flat()
             const effect = allEffects[realIndex]
-            if (effect) otherIconPath = getIconPath(effect.type)
+            if (effect) otherIconPath = getIconPath(effect.type, otherCharId)
           }
         }
 
@@ -438,297 +436,329 @@ function handleStartConnection(id) {
   if (!domNode) {
     return
   }
-  
+
   connectionHandler.newConnectionFrom(getRectPos(domNode.getBoundingClientRect(), 'right'), id, 'right')
 }
 </script>
 
 <template>
-  <div v-if="targetData" class="properties-panel">
+  <div class="properties-panel">
+
     <div class="panel-header">
       <div class="header-main-row">
         <div class="left-group">
           <div class="header-icon-bar"></div>
-          <h3 class="char-name">{{ targetData.name }}</h3>
-          <span v-if="isLibraryMode" class="mode-badge">全局模式</span>
+          <h3 class="char-name">
+            {{ targetData ? targetData.name : '未选中技能' }}
+          </h3>
+          <span v-if="targetData && isLibraryMode" class="mode-badge">全局模式</span>
         </div>
 
         <div class="right-group">
-          <div class="skill-type-minimal">{{ getFullTypeName(targetData.type) }}</div>
+          <div v-if="targetData" class="skill-type-minimal">
+            {{ getFullTypeName(targetData.type) }}
+          </div>
         </div>
       </div>
       <div class="header-divider"></div>
     </div>
 
-    <div class="section-container tech-style">
-      <div class="panel-tag-mini">基础属性</div>
-      <div class="attribute-grid">
-        <div class="form-group compact">
-          <label>持续时间(s)</label>
-          <CustomNumberInput :model-value="targetData.duration" @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'link'">
-          <label>冷却时间(s)</label>
-          <CustomNumberInput :model-value="targetData.cooldown" @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'link' && !isLibraryMode">
-          <label>触发窗口(s)</label>
-          <CustomNumberInput :model-value="targetData.triggerWindow || 0" @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'skill'">
-          <label>技力消耗</label>
-          <CustomNumberInput :model-value="targetData.spCost" @update:model-value="val => updateActionProp('spCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'ultimate'">
-          <label>充能消耗</label>
-          <CustomNumberInput :model-value="targetData.gaugeCost" @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="!['execution'].includes(currentSkillType)">
-          <label>自身充能</label>
-          <CustomNumberInput :model-value="targetData.gaugeGain" @update:model-value="val => updateActionProp('gaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'skill'">
-          <label>队友充能</label>
-          <CustomNumberInput :model-value="targetData.teamGaugeGain" @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
-        </div>
-
-        <div class="form-group compact" v-if="currentSkillType === 'ultimate'">
-          <label>强化时间(s)</label>
-          <CustomNumberInput :model-value="targetData.enhancementTime || 0" @update:model-value="val => updateActionProp('enhancementTime', val)" :step="0.5" :min="0" activeColor="#b37feb" border-color="#b37feb" text-align="center"/></div>
-      </div>
-    </div>
-
-    <div class="section-container border-red">
-      <div class="section-header clickable" @click="isTicksExpanded = !isTicksExpanded">
-        <div class="header-left">
-          <label style="color: #ff7875;">伤害判定点 ({{ (targetData.damageTicks || []).length }})</label>
-        </div>
-        <div class="header-right">
-          <button class="icon-btn-add" @click.stop="addDamageTick">+</button>
-          <el-icon :class="{ 'is-rotated': isTicksExpanded }" style="margin-left:5px"><ArrowRight /></el-icon>
-        </div>
-      </div>
-
-      <div v-if="isTicksExpanded" class="section-content">
-        <div v-if="!targetData.damageTicks || targetData.damageTicks.length === 0" class="empty-hint">暂无判定点</div>
-        <div v-for="(tick, index) in (targetData.damageTicks || [])" :key="index" class="tick-item">
-          <div class="tick-header">
-            <span class="tick-idx">HIT {{ index + 1 }}</span>
-            <button class="remove-btn" @click="removeDamageTick(index)">×</button>
-          </div>
-          <div class="tick-row">
-            <div class="tick-col">
-              <label>触发时间(s)</label>
-              <CustomNumberInput :model-value="tick.offset" @update:model-value="val => updateDamageTick(index, 'offset', val)" :step="0.1" :min="0" border-color="#ff7875" />
-            </div>
-            <div class="tick-col">
-              <label>失衡值</label>
-              <CustomNumberInput :model-value="tick.stagger" @update:model-value="val => updateDamageTick(index, 'stagger', val)" :step="1" :min="0" border-color="#ff7875" text-align="center"/>
-            </div>
-            <div class="tick-col">
-              <label>技力回复</label>
-              <CustomNumberInput :model-value="tick.sp || 0" @update:model-value="val => updateDamageTick(index, 'sp', val)" :step="1" :min="0" border-color="#ffd700" text-align="center"/>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-container border-blue">
-      <div class="section-header clickable" @click="isBarsExpanded = !isBarsExpanded">
-        <div class="header-left">
-          <label style="color: #00e5ff;">自定义时间条 ({{ customBarsList.length }})</label>
-        </div>
-        <div class="header-right">
-          <button class="icon-btn-add cyan" @click.stop="addCustomBar">+</button>
-          <el-icon :class="{ 'is-rotated': isBarsExpanded }" style="margin-left:5px"><ArrowRight /></el-icon>
-        </div>
-      </div>
-      <div v-if="isBarsExpanded" class="section-content">
-        <div v-if="customBarsList.length === 0" class="empty-hint">暂无时间条</div>
-        <div v-for="(bar, index) in customBarsList" :key="index" class="tick-item blue-theme">
-          <div class="tick-header">
-            <input type="text" :value="bar.text" @input="e => updateCustomBarItem(index, 'text', e.target.value)" placeholder="条目名称..." class="simple-input">
-            <button class="remove-btn" @click="removeCustomBar(index)">×</button>
-          </div>
-          <div class="tick-row">
-            <div class="tick-col">
-              <label>持续时间(s)</label>
-              <CustomNumberInput :model-value="bar.duration" @update:model-value="val => updateCustomBarItem(index, 'duration', val)" :step="0.5" :min="0" border-color="#00e5ff" />
-            </div>
-            <div class="tick-col">
-              <label>偏移(s)</label>
-              <CustomNumberInput :model-value="bar.offset" @update:model-value="val => updateCustomBarItem(index, 'offset', val)" :step="0.1" :min="0" border-color="#00e5ff" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="section-container no-border">
-      <div class="section-label">状态效果与排布</div>
-      <div class="anomalies-editor-container">
-        <draggable v-model="anomalyRows" item-key="rowIndex" class="rows-container" handle=".row-handle" :animation="200">
-          <template #item="{ element: row, index: rowIndex }">
-            <div class="anomaly-editor-row">
-              <div class="row-handle">⋮</div>
-              <draggable :list="row" item-key="_id" class="row-items-list" :group="{ name: 'effects' }" :animation="150"
-                         @change="() => commitUpdate({ physicalAnomaly: anomalyRows })">
-                <template #item="{ element: effect, index: colIndex }">
-                  <div class="icon-wrapper" :class="{ 'is-editing': isEditing(rowIndex, colIndex) }"
-                       @click="toggleEditEffect(rowIndex, colIndex)">
-                    <img :src="getIconPath(effect.type)" class="mini-icon"/>
-                    <div v-if="effect.stacks > 1" class="mini-stacks">{{ effect.stacks }}</div>
-                  </div>
-                </template>
-              </draggable>
-              <button class="add-to-row-btn" @click="addEffectToRow(rowIndex)" title="追加">+</button>
-            </div>
-          </template>
-        </draggable>
-        <button class="add-effect-bar" @click="addRow">+ 添加新行</button>
-      </div>
-
-      <div v-if="editingEffectData && currentSelectedCoords" class="effect-detail-editor-embedded">
-        <div class="editor-arrow"></div>
-        <div class="editor-header-mini">
-          <span>编辑 R{{ currentSelectedCoords.rowIndex + 1 }} : C{{ currentSelectedCoords.colIndex + 1 }}</span>
-          <button class="close-btn" @click="isLibraryMode ? (localSelectedAnomalyId = null) : store.setSelectedAnomalyId(null)">关闭</button>
-        </div>
-
-        <div class="editor-grid">
-          <div class="full-width-col">
-            <label>类型</label>
-            <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)" placeholder="选择状态" filterable size="small" class="effect-select-dark">
-              <el-option-group v-for="group in iconOptions" :key="group.label" :label="group.label">
-                <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
-                  <div class="opt-row">
-                    <img :src="item.path" /><span>{{ item.label }}</span>
-                  </div>
-                </el-option>
-              </el-option-group>
-            </el-select>
-          </div>
-
-          <div>
-            <label>触发时间(s)</label>
-            <CustomNumberInput :model-value="editingEffectData.offset || 0" @update:model-value="val => updateEffectProp('offset', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default"/>
-          </div>
-          <div>
+    <div v-if="targetData" class="scrollable-content">
+      <div class="section-container tech-style">
+        <div class="panel-tag-mini">基础属性</div>
+        <div class="attribute-grid">
+          <div class="form-group compact">
             <label>持续时间(s)</label>
-            <CustomNumberInput :model-value="editingEffectData.duration" @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.5" :activeColor="HIGHLIGHT_COLORS.default"/>
+            <CustomNumberInput :model-value="targetData.duration" @update:model-value="val => updateActionProp('duration', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
           </div>
-          <div>
-            <label>层数</label>
-            <CustomNumberInput :model-value="editingEffectData.stacks" @update:model-value="val => updateEffectProp('stacks', val)" :min="1" :activeColor="HIGHLIGHT_COLORS.default"/>
-          </div>
-        </div>
 
-        <div class="editor-actions">
-          <button v-if="!isLibraryMode" class="action-btn link-style" @click.stop="handleStartConnection(activeAnomalyId)"
-                  :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === activeAnomalyId }">
-            连线
+          <div class="form-group compact" v-if="currentSkillType === 'link'">
+            <label>冷却时间(s)</label>
+            <CustomNumberInput :model-value="targetData.cooldown" @update:model-value="val => updateActionProp('cooldown', val)" :min="0" :activeColor="HIGHLIGHT_COLORS.default" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="currentSkillType === 'link' && !isLibraryMode">
+            <label>触发窗口(s)</label>
+            <CustomNumberInput :model-value="targetData.triggerWindow || 0" @update:model-value="val => updateActionProp('triggerWindow', val)" :step="0.1" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="currentSkillType === 'skill'">
+            <label>技力消耗</label>
+            <CustomNumberInput :model-value="targetData.spCost" @update:model-value="val => updateActionProp('spCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.default" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="currentSkillType === 'ultimate'">
+            <label>充能消耗</label>
+            <CustomNumberInput :model-value="targetData.gaugeCost" @update:model-value="val => updateActionProp('gaugeCost', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="!['execution'].includes(currentSkillType)">
+            <label>自身充能</label>
+            <CustomNumberInput :model-value="targetData.gaugeGain" @update:model-value="val => updateActionProp('gaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="currentSkillType === 'skill'">
+            <label>队友充能</label>
+            <CustomNumberInput :model-value="targetData.teamGaugeGain" @update:model-value="val => updateActionProp('teamGaugeGain', val)" :min="0" :border-color="HIGHLIGHT_COLORS.blue" text-align="center"/>
+          </div>
+
+          <div class="form-group compact" v-if="currentSkillType === 'ultimate'">
+            <label>强化时间(s)</label>
+            <CustomNumberInput :model-value="targetData.enhancementTime || 0" @update:model-value="val => updateActionProp('enhancementTime', val)" :step="0.5" :min="0" activeColor="#b37feb" border-color="#b37feb" text-align="center"/></div>
+        </div>
+      </div>
+
+      <div class="section-container tech-style border-red" @click="isTicksExpanded = !isTicksExpanded" style="cursor: pointer;">
+        <div class="panel-tag-mini red">伤害判定点 ({{ (targetData.damageTicks || []).length }})</div>
+
+        <div class="section-header-tech">
+          <div class="module-deco">
+            <span class="module-code">判定系统</span>
+            <span class="module-label">失衡: {{ totalStagger }} | 技力: {{ totalSpGain }}</span>
+          </div>
+          <div class="spacer"></div>
+          <button class="icon-btn-add red" @click.stop="addDamageTick">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
-          <button class="action-btn delete-style" @click="removeEffect(currentSelectedCoords.rowIndex, currentSelectedCoords.colIndex)">删除</button>
+          <el-icon :class="{ 'is-rotated': isTicksExpanded }" class="toggle-arrow"><ArrowRight /></el-icon>
+        </div>
+
+        <div v-if="isTicksExpanded" class="section-content-tech" @click.stop>
+          <div v-if="!targetData.damageTicks || targetData.damageTicks.length === 0" class="empty-hint">暂无判定点</div>
+            <div v-for="(tick, index) in (targetData.damageTicks || [])" :key="index" class="tick-item red-theme">
+              <div class="tick-header">
+                <span class="tick-idx">HIT {{ index + 1 }}</span>
+                <button class="remove-btn" @click="removeDamageTick(index)">×</button>
+              </div>
+              <div class="tick-row">
+                <div class="tick-col">
+                  <label>触发时间</label>
+                  <CustomNumberInput :model-value="tick.offset" @update:model-value="val => updateDamageTick(index, 'offset', val)" :step="0.1" :min="0" border-color="#ff7875" />
+                </div>
+                <div class="tick-col">
+                  <label>失衡值</label>
+                  <CustomNumberInput :model-value="tick.stagger" @update:model-value="val => updateDamageTick(index, 'stagger', val)" :step="1" :min="0" border-color="#ff7875" text-align="center"/>
+                </div>
+                <div class="tick-col">
+                  <label>技力回复</label>
+                  <CustomNumberInput :model-value="tick.sp || 0" @update:model-value="val => updateDamageTick(index, 'sp', val)" :step="1" :min="0" border-color="#ffd700" text-align="center"/>
+                </div>
+              </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="!isLibraryMode" class="section-container no-border" style="margin-top: 20px;">
-      <div class="connection-header-group">
-        <div class="section-label">动作连线关系</div>
-        <button class="main-link-btn" @click.stop="handleStartConnection(store.selectedActionId)"
-                :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === store.selectedActionId }">
-          {{ (connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === store.selectedActionId) ? '选择目标...' : '+ 新建连线' }}
-        </button>
+      <div class="section-container tech-style border-blue" @click="isBarsExpanded = !isBarsExpanded" style="cursor: pointer;">
+        <div class="panel-tag-mini blue">自定义时间条 ({{ customBarsList.length }})</div>
+
+        <div class="section-header-tech">
+          <div class="module-deco">
+            <span class="module-code">时序系统</span>
+            <span class="module-label">活跃条目: {{ customBarsList.length }}</span>
+          </div>
+          <div class="spacer"></div>
+          <button class="icon-btn-add cyan" @click.stop="addCustomBar">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <el-icon :class="{ 'is-rotated': isBarsExpanded }" class="toggle-arrow"><ArrowRight /></el-icon>
+        </div>
+
+        <div v-if="isBarsExpanded" class="section-content-tech" @click.stop>
+          <div v-if="customBarsList.length === 0" class="empty-hint">暂无时间条</div>
+            <div v-for="(bar, index) in customBarsList" :key="index" class="tick-item blue-theme">
+              <div class="tick-header">
+                <input type="text" :value="bar.text" @input="e => updateCustomBarItem(index, 'text', e.target.value)" placeholder="条目名称" class="simple-input">
+                <button class="remove-btn" @click="removeCustomBar(index)">×</button>
+              </div>
+              <div class="tick-row">
+                <div class="tick-col">
+                  <label>触发时间(s)</label>
+                  <CustomNumberInput :model-value="bar.offset" @update:model-value="val => updateCustomBarItem(index, 'offset', val)" :step="0.1" :min="0" border-color="#00e5ff" />
+                </div>
+                <div class="tick-col">
+                  <label>持续时间(s)</label>
+                  <CustomNumberInput :model-value="bar.duration" @update:model-value="val => updateCustomBarItem(index, 'duration', val)" :step="0.5" :min="0" border-color="#00e5ff" />
+                </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div v-if="relevantConnections.length === 0" class="empty-hint">无连线</div>
-
-      <div class="connections-list">
-        <div v-for="conn in relevantConnections" :key="conn.id" class="connection-card"
-             :class="{ 'outgoing': conn.isOutgoing, 'incoming': !conn.isOutgoing }">
-
-          <div class="conn-vis">
-            <div class="node">
-              <img v-if="conn.isOutgoing ? conn.myIconPath : conn.otherIconPath"
-                   :src="conn.isOutgoing ? conn.myIconPath : conn.otherIconPath" class="icon-s"/>
-              <span class="text-s">{{ conn.isOutgoing ? (targetData.name || '本动作') : conn.otherActionName }}</span>
-            </div>
-            <span class="arrow">→</span>
-            <div class="node right">
-              <span class="text-s">{{ conn.isOutgoing ? conn.otherActionName : (targetData.name || '本动作') }}</span>
-              <img v-if="conn.isOutgoing ? conn.otherIconPath : conn.myIconPath"
-                   :src="conn.isOutgoing ? conn.otherIconPath : conn.myIconPath" class="icon-s"/>
-            </div>
-          </div>
-
-          <div class="conn-row-ports">
-            <div class="port-config">
-              <div class="port-select-wrapper" title="出点位置">
-                <span class="port-label">出</span>
-                <select class="mini-select"
-                        :value="conn.rawConnection.sourcePort || 'right'"
-                        @change="(e) => updateConnPort(conn.id, 'source', e)">
-                  <option v-for="opt in PORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                </select>
-              </div>
-              <span class="port-arrow">→</span>
-              <div class="port-select-wrapper" title="入点位置">
-                <span class="port-label">入</span>
-                <select class="mini-select"
-                        :value="conn.rawConnection.targetPort || 'left'"
-                        @change="(e) => updateConnPort(conn.id, 'target', e)">
-                  <option v-for="opt in PORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="conn-row-actions">
-            <template v-if="conn.isOutgoing && conn.rawConnection.fromEffectIndex != null">
-              <div class="consume-tag"
-                   :class="{ 'active': conn.rawConnection.isConsumption }"
-                   @click="store.updateConnection(conn.id, { isConsumption: !conn.rawConnection.isConsumption })">
-                {{ conn.rawConnection.isConsumption ? '被消耗' : '消耗' }}
-              </div>
-
-              <div v-if="conn.rawConnection.isConsumption" class="offset-mini">
-                <span style="color: #666; font-size: 10px; margin-right: 4px; white-space: nowrap;">提前</span>
-                <CustomNumberInput
-                    :model-value="conn.rawConnection.consumptionOffset || 0"
-                    @update:model-value="val => store.updateConnection(conn.id, { consumptionOffset: val })"
-                    :step="0.1" :min="0" :max="10"
-                    active-color="#ffd700"
-                    style="width: 70px;"
-                />
+      <div class="section-container tech-style">
+        <div class="panel-tag-mini">状态效果与排布</div>
+        <div class="anomalies-editor-container" style="background: transparent; border-color: rgba(255,255,255,0.1); margin-top: 10px;">
+          <draggable v-model="anomalyRows" item-key="rowIndex" class="rows-container" handle=".row-handle" :animation="200">
+            <template #item="{ element: row, index: rowIndex }">
+              <div class="anomaly-editor-row">
+                <div class="row-handle">⋮</div>
+                <draggable :list="row" item-key="_id" class="row-items-list" :group="{ name: 'effects' }" :animation="150"
+                           @change="() => commitUpdate({ physicalAnomaly: anomalyRows })">
+                  <template #item="{ element: effect, index: colIndex }">
+                    <div class="icon-wrapper" :class="{ 'is-editing': isEditing(rowIndex, colIndex) }"
+                         @click="toggleEditEffect(rowIndex, colIndex)">
+                      <img :src="getIconPath(effect.type)" class="mini-icon"/>
+                      <div v-if="effect.stacks > 1" class="mini-stacks">{{ effect.stacks }}</div>
+                    </div>
+                  </template>
+                </draggable>
+                <button class="add-to-row-btn" @click="addEffectToRow(rowIndex)" title="追加">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
               </div>
             </template>
+          </draggable>
+          <button class="add-effect-bar" @click="addRow">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>添加新状态行</span>
+          </button>
+        </div>
 
+        <div v-if="editingEffectData && currentSelectedCoords" class="effect-detail-editor-embedded">
+          <div class="editor-arrow"></div>
+          <div class="editor-header-mini">
+            <div class="header-tag"></div> <span>编辑 [ 行{{ currentSelectedCoords.rowIndex + 1 }} : 列{{ currentSelectedCoords.colIndex + 1 }} ]</span>
             <div class="spacer"></div>
-            <button class="btn-del-conn" @click="store.removeConnection(conn.id)">×</button>
+            <button class="close-btn" @click="isLibraryMode ? (localSelectedAnomalyId = null) : store.setSelectedAnomalyId(null)">关闭</button>
           </div>
 
+          <div class="editor-grid">
+            <div class="full-width-col">
+              <label>类型</label>
+              <el-select :model-value="editingEffectData.type" @update:model-value="(val) => updateEffectProp('type', val)" placeholder="选择状态" filterable size="small" class="effect-select-dark">
+                <el-option-group v-for="group in iconOptions" :key="group.label" :label="group.label">
+                  <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value">
+                    <div class="opt-row">
+                      <img :src="item.path" /><span>{{ item.label }}</span>
+                    </div>
+                  </el-option>
+                </el-option-group>
+              </el-select>
+            </div>
+
+            <div>
+              <label>触发时间</label>
+              <CustomNumberInput :model-value="editingEffectData.offset || 0" @update:model-value="val => updateEffectProp('offset', val)" :step="0.1" :min="0" :activeColor="HIGHLIGHT_COLORS.default"/>
+            </div>
+            <div>
+              <label>层数</label>
+              <CustomNumberInput :model-value="editingEffectData.stacks" @update:model-value="val => updateEffectProp('stacks', val)" :min="1" :activeColor="HIGHLIGHT_COLORS.default"/>
+            </div>
+            <div>
+              <label>持续时间</label>
+              <CustomNumberInput :model-value="editingEffectData.duration" @update:model-value="val => updateEffectProp('duration', val)" :min="0" :step="0.5" :activeColor="HIGHLIGHT_COLORS.default"/>
+            </div>
+          </div>
+
+          <div class="editor-actions">
+            <button v-if="!isLibraryMode" class="action-btn link-style" @click.stop="handleStartConnection(activeAnomalyId)"
+                    :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === activeAnomalyId }">
+              连线
+            </button>
+            <button class="action-btn delete-style" @click="removeEffect(currentSelectedCoords.rowIndex, currentSelectedCoords.colIndex)">删除</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!isLibraryMode" class="section-container tech-style">
+        <div class="panel-tag-mini">技能连线关系</div>
+
+        <div class="connection-header-group">
+          <div class="link-ctrl-deco">
+            <div class="ctrl-bar"></div>
+            <div class="ctrl-info">
+              <span class="ctrl-label">连线控制系统</span>
+              <span class="ctrl-count">当前连线: {{ relevantConnections.length }}</span>
+            </div>
+          </div>
+
+          <div class="spacer"></div>
+
+          <button class="main-link-btn" @click.stop="handleStartConnection(store.selectedActionId)" :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === store.selectedActionId }">
+            <span class="plus-icon"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
+            {{ (connectionHandler.isDragging.value) ? '选择目标技能' : '新建连线' }}
+          </button>
+        </div>
+
+        <div v-if="relevantConnections.length === 0" class="empty-hint">无连线</div>
+
+        <div class="connections-list">
+          <div v-for="conn in relevantConnections" :key="conn.id" class="connection-card"
+               :class="{ 'outgoing': conn.isOutgoing, 'incoming': !conn.isOutgoing }">
+
+            <div class="conn-vis">
+              <div class="node">
+                <img v-if="conn.isOutgoing ? conn.myIconPath : conn.otherIconPath" :src="conn.isOutgoing ? conn.myIconPath : conn.otherIconPath" class="icon-s"/>
+                <span class="text-s">{{ conn.isOutgoing ? (targetData.name || '本技能') : conn.otherActionName }}</span>
+              </div>
+              <div class="direction-tag" :class="conn.isOutgoing ? 'to' : 'from'">
+                {{ conn.direction }}
+              </div>
+              <div class="node right">
+                <span class="text-s">{{ conn.isOutgoing ? conn.otherActionName : (targetData.name || '本技能') }}</span>
+                <img v-if="conn.isOutgoing ? conn.otherIconPath : conn.myIconPath" :src="conn.isOutgoing ? conn.otherIconPath : conn.myIconPath" class="icon-s"/>
+              </div>
+            </div>
+
+            <div class="conn-row-ports">
+              <div class="port-config">
+                <div class="port-select-wrapper">
+                  <span class="port-label">出</span>
+                  <select class="mini-select" :value="conn.rawConnection.sourcePort || 'right'" @change="(e) => updateConnPort(conn.id, 'source', e)">
+                    <option v-for="opt in PORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  </select>
+                </div>
+                <span class="port-arrow">>></span>
+                <div class="port-select-wrapper">
+                  <span class="port-label">入</span>
+                  <select class="mini-select" :value="conn.rawConnection.targetPort || 'left'" @change="(e) => updateConnPort(conn.id, 'target', e)">
+                    <option v-for="opt in PORT_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="conn-row-actions">
+              <template v-if="conn.isOutgoing && conn.rawConnection.fromEffectIndex != null">
+                <div class="consume-tag"
+                     :class="{ 'active': conn.rawConnection.isConsumption }"
+                     @click="store.updateConnection(conn.id, { isConsumption: !conn.rawConnection.isConsumption })">
+                  {{ conn.rawConnection.isConsumption ? '被消耗' : '消耗' }}
+                </div>
+
+                <div v-if="conn.rawConnection.isConsumption" class="offset-mini">
+                  <span style="color: #666; font-size: 10px; margin-right: 2px; white-space: nowrap;">提前</span>
+                  <CustomNumberInput
+                      :model-value="conn.rawConnection.consumptionOffset || 0"
+                      @update:model-value="val => store.updateConnection(conn.id, { consumptionOffset: val })"
+                      :step="0.1"
+                      :min="-10"
+                      :max="10"
+                      active-color="#ffd700"
+                      style="width: 50px;"
+                  />
+                </div>
+              </template>
+
+              <div class="spacer"></div>
+              <button class="btn-del-conn" @click="store.removeConnection(conn.id)">×</button>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
-
-  </div>
-
-  <div v-else class="properties-panel empty">
-    <p>请选中一个动作或技能</p>
   </div>
 </template>
 
 <style scoped>
 /* Base & Layout */
-.properties-panel { padding: 20px; background-color: #252525; display: flex; flex-direction: column; gap: 20px; height: 100%; box-sizing: border-box; overflow-y: auto; font-size: 13px; color: #e0e0e0; transition: background-color 0.3s ease; }
+.properties-panel { padding: 20px; background-color: #252525; display: flex; flex-direction: column; gap: 20px; height: 100%; box-sizing: border-box; overflow-y: auto; font-size: 13px; color: #e0e0e0; transition: background-color 0.3s ease; scrollbar-width: thin; scrollbar-color: #444 transparent; }
 .panel-header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 0; }
 .header-main-row { display: flex; justify-content: space-between; align-items: center; }
 .left-group { display: flex; align-items: center; gap: 8px; }
@@ -740,71 +770,81 @@ function handleStartConnection(id) {
 
 /* Sections */
 .section-container { margin-bottom: 0; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
-.section-container.tech-style { background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%) !important; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1) !important; border-left: 3px solid rgba(255, 255, 255, 0.2) !important;border-radius: 4px; padding: 16px 10px 10px 10px; position: relative; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); overflow: visible; }
-.panel-tag-mini { position: absolute; right: 0; top: -12px; background: #1a1a1a; border: 1px solid #444; border-bottom: none; font-size: 10px; color: #aaa; padding: 2px 10px; font-family: 'Inter', sans-serif; letter-spacing: 1px; text-transform: uppercase; clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); z-index: 5; }
+.section-container.tech-style { background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-left: 3px solid rgba(255, 255, 255, 0.2); padding: 16px 10px 10px 10px; position: relative; overflow: visible !important; flex-shrink: 0; margin-top: 10px !important; }
+.section-container.tech-style.border-red { border-left-color: #ff7875 !important; }
+.section-container.tech-style.border-blue { border-left-color: #00e5ff !important; }
 .section-container.tech-style::before { content: ""; position: absolute; bottom: 4px; right: 4px; width: 10px; height: 10px; border-right: 1px solid rgba(255,255,255,0.3); border-bottom: 1px solid rgba(255,255,255,0.3); pointer-events: none; }
-.tech-style .section-label { display: none; }
+.module-deco { display: flex; flex-direction: column; line-height: 1.1; opacity: 0.4; pointer-events: none; border-left: 2px solid currentColor; padding-left: 6px; margin-left: 2px; }
+.module-code { font-size: 10px; font-weight: 900; font-family: 'Inter', sans-serif; color: currentColor; letter-spacing: 1px; }
+.module-label { font-size: 9px; color: rgba(255, 255, 255, 0.7); transform: none; opacity: 1; margin-top: 2px; white-space: nowrap; }
+.section-header-tech { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; height: 26px; padding: 0 4px; }
+.panel-tag-mini { position: absolute; right: 0; top: -12px; background: #1a1a1a; border: 1px solid #444; border-bottom: none; font-size: 10px; color: #aaa; padding: 2px 10px; font-family: 'Inter', sans-serif; letter-spacing: 1px; text-transform: uppercase; clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); z-index: 5; }
+.panel-tag-mini.red { color: #ff7875; border-color: rgba(255, 120, 117, 0.4); }
+.panel-tag-mini.blue { color: #00e5ff; border-color: rgba(0, 229, 255, 0.4); }
+.toggle-arrow { color: #666; font-size: 14px; transition: transform 0.2s; }
+.section-content-tech { margin-top: 10px; animation: fadeIn 0.2s ease; }
 .tech-style .form-group.compact label { font-size: 11px !important; color: rgba(255, 255, 255, 0.5) !important; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px !important; font-family: 'Inter', sans-serif; display: block; }
 .tech-style .attribute-grid { gap: 16px 12px !important; padding: 12px 8px !important; }
-
-.section-container.no-border { background: transparent; border: none; overflow: visible; }
-.section-container.border-red { border-left: 3px solid #ff7875; }
-.section-container.border-blue { border-left: 3px solid #00e5ff; }
-.section-label { font-size: 12px; font-weight: bold; color: #888; margin-bottom: 8px; display: block; }
-.section-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(0,0,0,0.2); cursor: pointer; transition: background 0.2s; }
-.section-header:hover { background: rgba(0,0,0,0.4); }
-.section-content { padding: 8px; background: rgba(0,0,0,0.1); border-top: 1px solid #444; }
 .attribute-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }
 .form-group.compact label { font-size: 10px; color: #999; margin-bottom: 2px; display: block; }
 .header-left label { font-size: 12px; font-weight: bold; cursor: pointer; }
-.header-right { display: flex; align-items: center; }
 .empty-hint { font-size: 12px; color: #555; text-align: center; padding: 10px; font-style: italic; }
 
 /* Buttons & Inputs */
-.icon-btn-add { background: #ff7875; color: #000; border: none; width: 18px; height: 18px; border-radius: 2px; font-weight: bold; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-.icon-btn-add.cyan { background: #00e5ff; }
+.icon-btn-add { background: rgba(255, 255, 255, 0.05) !important; color: inherit !important; border: 1px solid currentColor !important; width: 22px; height: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 !important; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); clip-path: polygon(0 0, 100% 0, 100% 80%, 80% 100%, 0 100%); }
+.icon-btn-add:hover { filter: brightness(1.2); cursor: pointer; }
+.icon-btn-add.red { color: #ff7875 !important; border-color: #ff7875 !important; background: rgba(255, 120, 117, 0.1) !important; }
+.icon-btn-add.cyan { color: #00e5ff !important; border-color: #00e5ff !important; background: rgba(0, 229, 255, 0.1) !important; }
+.icon-btn-add.red:hover { background: rgba(255, 120, 117, 0.3) !important; box-shadow: 0 0 12px rgba(255, 120, 117, 0.5); }
+.icon-btn-add.cyan:hover { background: rgba(0, 229, 255, 0.3) !important; box-shadow: 0 0 12px rgba(0, 229, 255, 0.5); }
 .remove-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; }
 .remove-btn:hover { color: #fff; }
 .simple-input { background: transparent; border: none; border-bottom: 1px solid #555; color: #ccc; width: 100%; font-size: 12px; padding: 0 0 2px 0; }
 .simple-input:focus { outline: none; border-color: #00e5ff; }
-.action-btn { flex: 1; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 12px; border: 1px solid; background: transparent; }
-.action-btn.link-style { border-color: #ffd700; color: #ffd700; }
-.action-btn.link-style:hover { background: rgba(255, 215, 0, 0.1); }
-.action-btn.link-style.is-linking { background: #ffd700; color: #000; }
-.action-btn.delete-style { border-color: #ff4d4f; color: #ff4d4f; }
-.action-btn.delete-style:hover { background: rgba(255, 77, 79, 0.1); }
+.action-btn { flex: 1; padding: 5px 12px; cursor: pointer; font-size: 11px; border: 1px solid; background: transparent; transition: all 0.2s; font-weight: bold; text-transform: uppercase; }
+.action-btn.link-style { border-color: rgba(255, 215, 0, 0.5); color: #ffd700; clip-path: polygon(0 0, 85% 0, 100% 30%, 100% 100%, 0 100%); }
+.action-btn.link-style:hover { background: rgba(255, 215, 0, 0.15); border-color: #ffd700; }
+.action-btn.link-style.is-linking { background: #ffd700; color: #000; border-color: #ffd700; }
+.action-btn.delete-style { border-color: rgba(255, 77, 79, 0.4); color: #ff4d4f; clip-path: polygon(0 0, 100% 0, 100% 100%, 15% 100%, 0 70%); }
+.action-btn.delete-style:hover { background: rgba(255, 77, 79, 0.15); border-color: #ff4d4f; }
 
 /* Ticks & Anomalies List */
-.tick-item { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #444; }
-.tick-item:last-child { margin-bottom: 0; border-bottom: none; padding-bottom: 0; }
-.tick-header { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
-.tick-idx { font-size: 10px; color: #ff7875; font-family: monospace; }
-.blue-theme .tick-idx { color: #00e5ff; }
-.tick-row { display: flex; gap: 6px; }
-.tick-col label { font-size: 9px; color: #777; display: block; margin-bottom: 1px; }
-.anomalies-editor-container { background: #252525; padding: 8px; border-radius: 4px; border: 1px solid #444; }
-.anomaly-editor-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; background: #2f2f2f; padding: 2px; border-radius: 4px; }
+.tick-item { background: rgba(255, 255, 255, 0.02) !important; border: 1px solid rgba(255, 255, 255, 0.05) !important; border-left: 3px solid rgba(255, 255, 255, 0.2) !important; padding: 10px !important; margin-bottom: 10px !important; position: relative; backdrop-filter: blur(5px); transition: all 0.2s; clip-path: polygon(0 0, 100% 0, 100% 90%, 97% 100%, 0 100%); }
+.tick-item.red-theme { border-left-color: #ff7875 !important; background: linear-gradient(90deg, rgba(255, 120, 117, 0.08) 0%, transparent 100%) !important; }
+.tick-item.blue-theme { border-left-color: #00e5ff !important; background: linear-gradient(90deg, rgba(0, 229, 255, 0.08) 0%, transparent 100%) !important; }
+.tick-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 4px; }
+.tick-idx { font-size: 10px; font-weight: 900; font-family: 'Inter', monospace; letter-spacing: 1px; text-transform: uppercase; }
+.tick-row { display: flex; gap: 2px; align-items: flex-end; }
+.tick-col label { font-size: 9px !important; color: rgba(255, 255, 255, 0.3) !important; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px !important; }
+.anomalies-editor-container { padding: 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.anomaly-editor-row { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.02); padding: 6px; border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid rgba(255, 255, 255, 0.15); border-radius: 2px; position: relative; transition: all 0.2s; clip-path: polygon(0 0, 100% 0, 100% 85%, 98% 100%, 0 100%); }
+.anomaly-editor-row:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); }
 .row-handle { color: #555; cursor: grab; padding: 0 2px; }
 .row-items-list { display: flex; flex-wrap: wrap; gap: 4px; flex-grow: 1; }
-.add-to-row-btn { background: #333; border: 1px dashed #555; color: #777; width: 20px; height: 20px; cursor: pointer; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
-.add-to-row-btn:hover { color: #ffd700; border-color: #ffd700; }
-.add-effect-bar { width: 100%; background: #333; border: 1px dashed #444; color: #777; font-size: 11px; padding: 4px; cursor: pointer; margin-top: 4px; border-radius: 2px; }
-.add-effect-bar:hover { border-color: #888; color: #ccc; }
-.icon-wrapper { width: 28px; height: 28px; background: #3a3a3a; border: 1px solid #555; border-radius: 3px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
-.icon-wrapper:hover { border-color: #999; background: #444; }
-.icon-wrapper.is-editing { border-color: #ffd700; box-shadow: 0 0 0 1px #ffd700; z-index: 5; }
-.mini-icon { width: 20px; height: 20px; object-fit: contain; }
+.add-to-row-btn { background: rgba(255, 255, 255, 0.05) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #888; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; clip-path: polygon(0 0, 100% 0, 100% 100%, 25% 100%, 0 75%); }
+.add-to-row-btn:hover { color: #ffd700; border-color: #ffd700; background: rgba(255, 215, 0, 0.1) !important; }
+.add-effect-bar { width: 100%; background: rgba(255, 255, 255, 0.03) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; color: #888 !important; font-size: 11px !important; padding: 8px !important; margin-top: 10px; border-radius: 0 !important; cursor: pointer; transition: all 0.2s; position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.add-effect-bar:hover { background: rgba(255, 255, 255, 0.08) !important; color: #ccc !important; border-color: #ffd700 !important; }
+.add-effect-bar::before, .add-effect-bar::after { content: ''; position: absolute; width: 4px; height: 100%; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.2s; }
+.add-effect-bar::before { left: 0; border-right: none; }
+.add-effect-bar::after { right: 0; border-left: none; }
+.add-effect-bar:hover::before, .add-effect-bar:hover::after { border-color: #ffd700; width: 6px; }
+.icon-wrapper { width: 24px; height: 24px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: all 0.2s; }
+.icon-wrapper:hover { border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.05); }
+.icon-wrapper.is-editing { border-color: #ffd700; background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 8px rgba(255, 215, 0, 0.2); }
+.mini-icon { width: 18px; height: 18px; object-fit: contain; }
 .mini-stacks { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 0 2px; line-height: 1; }
 
 /* Embedded Editor */
-.effect-detail-editor-embedded { margin-top: 10px; background: #1f1f1f; border: 1px solid #555; border-radius: 6px; padding: 10px; position: relative; animation: fadeIn 0.2s ease; }
-.editor-arrow { position: absolute; top: -6px; left: 20px; width: 10px; height: 10px; background: #1f1f1f; border-left: 1px solid #555; border-top: 1px solid #555; transform: rotate(45deg); }
-.editor-header-mini { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; color: #ffd700; font-weight: bold; }
+.effect-detail-editor-embedded { margin-top: 12px; background: rgba(30, 30, 30, 0.9) !important; border: 1px solid rgba(255, 215, 0, 0.3); padding: 12px; position: relative; animation: fadeIn 0.2s ease; backdrop-filter: blur(8px); clip-path: polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%); }
+.editor-arrow { position: absolute; top: -6px; left: 24px; width: 10px; height: 10px; background: rgba(30, 30, 30, 0.9); border-left: 1px solid rgba(255, 215, 0, 0.3); border-top: 1px solid rgba(255, 215, 0, 0.3); transform: rotate(45deg); }
+.editor-header-mini { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 10px; color: #ffd700; font-weight: 800; letter-spacing: 1px; }
+.header-tag { width: 3px; height: 10px; background: #ffd700; }
 .close-btn { background: none; border: none; color: #666; font-size: 11px; cursor: pointer; text-decoration: underline; }
-.editor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.editor-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 16px; margin-bottom: 10px; }
 .full-width-col { grid-column: 1 / -1; }
-.editor-grid label { font-size: 10px; color: #888; display: block; margin-bottom: 2px; }
-.effect-select-dark { width: 100%; }
+.editor-grid label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.effect-select-dark { width: 100%; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2px; }
 :deep(.effect-select-dark .el-input__wrapper) { background-color: #111; box-shadow: none; border: 1px solid #444; }
 .opt-row { display: flex; align-items: center; gap: 6px; }
 .opt-row img { width: 16px; height: 16px; }
@@ -812,35 +852,45 @@ function handleStartConnection(id) {
 
 /* Connection Cards - Optimized */
 .connection-header-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.main-link-btn { background: transparent; border: 1px dashed #ffd700; color: #ffd700; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
-.main-link-btn:hover { background: rgba(255, 215, 0, 0.1); }
+.main-link-btn { min-width: 80px; justify-content: center; background: rgba(255, 215, 0, 0.1) !important; border: 1px solid rgba(255, 215, 0, 0.4) !important; color: #ffd700 !important; padding: 6px 12px !important; font-size: 11px !important; clip-path: polygon(0 0, 92% 0, 100% 25%, 100% 100%, 8% 100%, 0 75%); }
+.main-link-btn:hover { background: rgba(255, 215, 0, 0.2) !important; border-color: #ffd700 !important; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); transform: translateY(-1px); }
 .main-link-btn.is-linking { background: #ffd700; color: #000; border-style: solid; animation: pulse 1s infinite; }
-.connection-card { background: #222; border-left: 3px solid #666; margin-bottom: 6px; border-radius: 4px; padding: 6px 8px; display: flex; flex-direction: column; gap: 6px; }
-.connection-card.outgoing { border-left-color: #ffd700; }
-.connection-card.incoming { border-left-color: #00e5ff; }
-.conn-vis { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #ccc; }
-.node { display: flex; align-items: center; gap: 4px; width: 45%; overflow: hidden; }
+.connections-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.link-ctrl-deco { display: flex; align-items: center; gap: 8px; opacity: 0.8; flex-shrink: 0; min-width: 65px; }
+.link-ctrl-deco .ctrl-bar { width: 3px; height: 20px; background: #ffd700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); flex-shrink: 0; }
+.link-ctrl-deco .ctrl-info { display: flex; flex-direction: column; line-height: 1.2; white-space: nowrap; }
+.link-ctrl-deco .ctrl-label { font-size: 11px; font-weight: 900; color: #fff; letter-spacing: 1px; display: block; width: 100%; }
+.link-ctrl-deco .ctrl-count { font-size: 9px; color: #ffd700; font-family: 'Roboto Mono', monospace; margin-top: 1px; display: block; }
+.connection-card { background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%) !important; border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid #666; padding: 10px; position: relative; backdrop-filter: blur(5px); clip-path: polygon(0 0, 100% 0, 100% 90%, 97% 100%, 0 100%); transition: all 0.2s; }
+.connection-card:hover { background: rgba(255, 255, 255, 0.06) !important; border-color: rgba(255, 255, 255, 0.1); }
+.connection-card.outgoing { border-left-color: #ffd700 !important; }
+.connection-card.incoming { border-left-color: #00e5ff !important; }
+.conn-vis { display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px; }
+.direction-tag { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px; min-width: 40px; text-align: center; opacity: 0.8; border: 1px solid transparent; }
+.direction-tag.to { color: #ffd700; background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.2); }
+.direction-tag.from { color: #00e5ff; background: rgba(0, 229, 255, 0.1); border-color: rgba(0, 229, 255, 0.2); }
+.node { display: flex; align-items: center; gap: 6px; width: 38% !important; overflow: hidden; }
 .node.right { justify-content: flex-end; }
-.icon-s { width: 16px; height: 16px; border: 1px solid #444; border-radius: 2px; }
-.text-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.arrow { color: #666; font-size: 10px; }
+.node.right .text-s { text-align: right; margin-right: 0; }
+.text-s { font-size: 11px; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; min-width: 0; }
+.icon-s { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; }
 
 /* Connection Tools Rows */
-.conn-row-ports { padding-top: 4px; border-top: 1px solid #333; display: flex; justify-content: flex-start; }
-.conn-row-actions { display: flex; align-items: center; gap: 8px; height: 24px; }
-.port-config { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 4px; border: 1px solid #444; width: 100%; box-sizing: border-box; justify-content: center; }
-.port-select-wrapper { display: flex; align-items: center; gap: 2px; }
-.port-label { font-size: 9px; color: #666; font-weight: bold; }
-.mini-select { background: transparent; border: none; color: #ccc; font-size: 10px; width: 40px; appearance: none; cursor: pointer; padding: 0; text-align: center; font-family: sans-serif; }
-.mini-select:hover { color: #fff; text-decoration: underline; }
-.mini-select:focus { outline: none; background: #333; }
-.mini-select::-ms-expand { display: none; }
-.port-arrow { color: #555; font-size: 9px; margin: 0 2px; }
-.consume-tag { font-size: 10px; padding: 0 8px; border: 1px solid #444; border-radius: 4px; color: #888; cursor: pointer; height: 22px; line-height: 20px; transition: all 0.2s; background-color: rgba(255, 255, 255, 0.05); }
-.consume-tag.active { border-color: #ffd700; color: #ffd700; background: rgba(255,215,0,0.1); font-weight: bold; }
-.offset-mini { display: flex; align-items: center; gap: 2px; font-size: 9px; color: #666; }
-.btn-del-conn { background: none; border: none; color: #555; cursor: pointer; font-size: 16px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
-.btn-del-conn:hover { background: #333; color: #ff4d4f; }
+.conn-row-ports { padding: 4px 0 2px 0; display: flex; justify-content: center; }
+.conn-row-actions { display: flex; align-items: center; gap: 4px; height: 24px; margin-top: 2px; }
+.port-config { display: flex; align-items: center; gap: 12px; background: rgba(0, 0, 0, 0.4) !important; padding: 2px 10px !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; border-radius: 12px; width: fit-content; }
+.port-select-wrapper { display: flex; align-items: center; gap: 4px; }
+.mini-select { font-family: 'Inter', sans-serif; font-weight: bold; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+.port-label { font-size: 9px; color: #666; font-weight: bold; text-transform: uppercase; }
+.mini-select { background: transparent; border: none; color: #aaa; font-size: 10px; font-weight: bold; cursor: pointer; padding: 0 2px; text-align: center; appearance: none; outline: none; transition: color 0.2s; }
+.mini-select:hover { color: #ffd700; }
+.mini-select option { background: #2a2a2a; color: #eee; }
+.port-arrow { font-size: 8px; color: #444; letter-spacing: -1px; font-weight: bold; }
+.consume-tag { font-size: 10px; padding: 0 6px; border: 1px solid rgba(255, 255, 255, 0.1); color: #888; cursor: pointer; height: 22px; line-height: 22px; transition: all 0.2s; background-color: rgba(255, 255, 255, 0.02) !important; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; justify-content: center; clip-path: polygon(0 0, 100% 0, 100% 70%, 85% 100%, 0 100%); }
+.consume-tag.active { background-color: rgba(255, 215, 0, 0.1) !important; border-color: #ffd700 !important; color: #ffd700; font-weight: bold; }
+.offset-mini { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.btn-del-conn { background: rgba(255, 77, 79, 0.1) !important; border: 1px solid rgba(255, 77, 79, 0.2) !important; color: #ff4d4f !important; font-size: 12px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; cursor: pointer; transition: all 0.2s; opacity: 0.6; }
+.btn-del-conn:hover { opacity: 1; background: #ff4d4f !important; color: #fff !important; }
 .spacer { flex: 1; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
