@@ -83,6 +83,18 @@ const style = computed(() => {
     borderStyle = `2px dashed ${color}`
   }
 
+  if (props.action.type === 'ultimate' && !props.action.isDisabled) {
+    return {
+      ...layoutStyle,
+      border: `1.5px solid ${color}`,
+      borderTop: `4px solid ${color}`,
+      background: `linear-gradient(to bottom, ${hexToRgba(color, 0.4)}, ${hexToRgba(color, 0.15)})`,
+      boxShadow: `0 0 12px ${hexToRgba(color, 0.5)}`,
+      zIndex: isSelected.value ? 30 : 25,
+      borderRadius: '4px'
+    }
+  }
+
   if (props.action.isDisabled) {
     return {
       ...layoutStyle,
@@ -302,7 +314,7 @@ const renderableAnomalies = computed(() => {
 
       resultRows.push({
         data: effect, rowIndex, colIndex, flatIndex: myEffectIndex,
-        style: { left: `${currentLeft}px`, bottom: `${100 + (rowIndex * 50)}%`, position: 'absolute', zIndex: 15 + rowIndex },
+        style: { left: `${currentLeft}px`, bottom: `${110 + (rowIndex * 50)}%`, position: 'absolute', zIndex: 15 + rowIndex },
         barWidth: finalBarWidth, isConsumed, displayDuration: finalDuration,
         extensionAmount: Math.round((finalDuration - effect.duration) * 1000) / 1000
       })
@@ -681,10 +693,17 @@ function handleEffectDrop(effectId) {
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
+  max-width: calc(100% - 1px);
   pointer-events: none;
   overflow: hidden;
   border-right: 1px solid rgba(255, 255, 255, 0.3);
   z-index: 1;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite linear;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 </style>
