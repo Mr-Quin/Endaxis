@@ -87,14 +87,14 @@ const style = computed(() => {
     return {
       ...layoutStyle,
       border: `1.5px solid ${color}`,
-      borderTop: `5px solid ${color}`,
       background: `radial-gradient(circle at center,
       ${hexToRgba(color, 0.5)} 0%,
       ${hexToRgba(color, 0.2)} 70%,
       ${hexToRgba(color, 0.1)} 100%)`,
       boxShadow: `0 0 15px ${hexToRgba(color, 0.5)}`,
       zIndex: isSelected.value ? 40 : 25,
-      borderRadius: '4px',
+      borderRadius: '2px',
+      padding: '0 6px',
     }
   }
 
@@ -471,6 +471,11 @@ function handleEffectDrop(effectId) {
       </svg>
     </div>
 
+    <template v-if="action.type === 'ultimate' && !action.isDisabled">
+      <div class="ultimate-side-bar left-bar" :style="{ backgroundColor: themeColor }"></div>
+      <div class="ultimate-side-bar right-bar" :style="{ backgroundColor: themeColor }"></div>
+    </template>
+
     <div v-if="!isGhostMode" class="action-item-content drag-handle" :class="{ 'is-link-target-invalid': !isActionValidConnectionTarget && connectionSourceActionId !== action.instanceId }">
       {{ displayLabel }}
       <div v-if="animationTimeWidth > 0"
@@ -703,6 +708,25 @@ function handleEffectDrop(effectId) {
 .trigger-window-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 2px; background-color: var(--tw-color); opacity: 1; border-radius: 2px 0 0 2px; }
 .tw-separator { position: absolute; right: 0; top: -2px; width: 1px; height: 8px; background-color: var(--tw-color); transform: translateX(50%); }
 .tw-dot { position: absolute; left: 0; top: 50%; width: 1px; height: 8px; background-color: var(--tw-color); border-radius: 0; z-index: 6; transform: translate(-50%, -50%); }
+
+.ultimate-side-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.left-bar {
+  left: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.right-bar {
+  right: 0;
+  border-radius: 0 2px 2px 0;
+}
 
 .animation-phase-overlay {
   position: absolute;

@@ -25,7 +25,7 @@
   "characterRoster": [
     {
       "id": "ENDMINISTRATOR",
-      "name": "管理员ce",
+      "name": "管理员",
       "rarity": 6,
       "element": "physical",
       "avatar": "/avatars/ENDMINISTRATOR.png",
@@ -2183,12 +2183,12 @@
       "name": "大潘",
       "rarity": 5,
       "element": "physical",
-      "avatar": "/avatars/DAPAN.png",
+      "avatar": "/avatars/DAPAN/DAPAN.png",
       "exclusive_buffs": [
         {
           "key": "prep_ingredients",
           "name": "备料",
-          "path": "/icons/icon_battle_dapan_buff.png"
+          "path": "/avatars/DAPAN/icon_battle_dapan_buff.png"
         }
       ],
       "accept_team_gauge": true,
@@ -3124,8 +3124,24 @@
       "name": "安塔尔",
       "rarity": 4,
       "element": "emag",
-      "avatar": "/avatars/ANTAL.png",
-      "exclusive_buffs": [],
+      "avatar": "/avatars/ANTAL/ANTAL.png",
+      "exclusive_buffs": [
+        {
+          "key": "antal_buff",
+          "name": "聚焦",
+          "path": "/avatars/ANTAL/icon_battle_antal_buff.png"
+        },
+        {
+          "key": "fire_enhance",
+          "name": "灼热增幅",
+          "path": "/icons/icon_battle_affix_fire_enhance.png"
+        },
+        {
+          "key": "pulse_enhance",
+          "name": "电磁增幅",
+          "path": "/icons/icon_battle_affix_pulse_enhance.png"
+        }
+      ],
       "accept_team_gauge": true,
       "attack_duration": 2.5,
       "attack_damage_ticks": [
@@ -3166,8 +3182,19 @@
           "stagger": 0
         }
       ],
-      "skill_allowed_types": [],
-      "skill_anomalies": [],
+      "skill_allowed_types": [
+        "antal_buff"
+      ],
+      "skill_anomalies": [
+        [
+          {
+            "type": "antal_buff",
+            "stacks": 1,
+            "duration": 60,
+            "offset": 2
+          }
+        ]
+      ],
       "skill_teamGaugeGain": 6.5,
       "link_duration": 1.5,
       "link_cooldown": 15,
@@ -3179,7 +3206,20 @@
           "stagger": 10
         }
       ],
-      "link_allowed_types": [],
+      "link_allowed_types": [
+        "emag_attach",
+        "conductive",
+        "emag_burst",
+        "cold_attach",
+        "frozen",
+        "cold_burst",
+        "burning",
+        "blaze_attach",
+        "blaze_burst",
+        "nature_burst",
+        "corrosion",
+        "nature_attach"
+      ],
       "link_anomalies": [],
       "ultimate_duration": 1.4,
       "ultimate_gaugeMax": 90,
@@ -3191,8 +3231,28 @@
           "stagger": 0
         }
       ],
-      "ultimate_allowed_types": [],
-      "ultimate_anomalies": [],
+      "ultimate_allowed_types": [
+        "pulse_enhance",
+        "fire_enhance"
+      ],
+      "ultimate_anomalies": [
+        [
+          {
+            "type": "pulse_enhance",
+            "stacks": 1,
+            "duration": 12,
+            "offset": 1.4
+          }
+        ],
+        [
+          {
+            "type": "fire_enhance",
+            "stacks": 1,
+            "duration": 12,
+            "offset": 1.4
+          }
+        ]
+      ],
       "execution_duration": 1.5,
       "execution_damage_ticks": [],
       "execution_allowed_types": [
