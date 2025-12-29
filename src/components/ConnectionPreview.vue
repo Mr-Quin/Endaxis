@@ -16,33 +16,32 @@ const startPoint = computed(() => {
     return null
   }
 
-  const scrollX = store.timelineScrollLeft
-  const scrollY = store.timelineScrollTop
-
   return {
-    x: (state.startPoint.x - store.timelineRect.left) + scrollX,
-    y: (state.startPoint.y - store.timelineRect.top) + scrollY,
+    x: state.startPoint.x,
+    y: state.startPoint.y,
     dir: PORT_DIRECTIONS[state.sourcePort]
   }
 })
 
 const mousePoint = computed(() => {
-  let rawX = store.cursorPosition.x
-  let rawY = store.cursorPosition.y
-
   const snapState = connectionHandler.snapState.value
-
-  if (snapState.isActive && snapState.snapPos) {
-    rawX = snapState.snapPos.x
-    rawY = snapState.snapPos.y
-  }
-
-  const x = (rawX - store.timelineRect.left) + store.timelineScrollLeft
-  const y = (rawY - store.timelineRect.top) + store.timelineScrollTop
-
   const dir = PORT_DIRECTIONS[snapState.targetPort ?? 'left']
 
-  return { x, y, dir }
+  if (snapState.isActive && snapState.snapPos) {
+    return { 
+      x: snapState.snapPos.x, 
+      y: snapState.snapPos.y, 
+      dir 
+    }
+  }
+
+  const timelinePoint = store.toTimelineSpace(store.cursorPosition.x, store.cursorPosition.y)
+
+  return { 
+    x: timelinePoint.x, 
+    y: timelinePoint.y, 
+    dir 
+  }
 })
 
 function getActionColor(action) {

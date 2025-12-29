@@ -7,7 +7,6 @@ import { PORT_DIRECTIONS } from '@/utils/layoutUtils.js'
 
 const props = defineProps({
   connection: { type: Object, required: true },
-  containerRef: { type: Object, required: false },
   renderKey: { type: Number }
 })
 
@@ -64,16 +63,17 @@ const resolveColor = (info, effectIndex, effectId) => {
   return store.getColor(action.type)
 }
 
-const getTriggerDotPosition = (instanceId, containerEl) => {
+const getTriggerDotPosition = (instanceId) => {
   const actionEl = document.getElementById(`action-${instanceId}`)
   if (!actionEl) return null
   const dotEl = actionEl.querySelector('.tw-dot')
   if (!dotEl) return null
   const rect = dotEl.getBoundingClientRect()
-  const containerRect = containerEl.getBoundingClientRect()
-  const x = (rect.left - containerRect.left) + (rect.width / 2) + containerEl.scrollLeft
-  const y = (rect.top - containerRect.top) + (rect.height / 2) + containerEl.scrollTop
-  return { x, y }
+  
+  const centerViewX = rect.left + rect.width / 2
+  const centerViewY = rect.top + rect.height / 2
+  
+  return store.toTimelineSpace(centerViewX, centerViewY)
 }
 
 function onContextMenu(evt) {
@@ -83,18 +83,38 @@ function onContextMenu(evt) {
   store.openContextMenu(evt, props.connection.id)
 }
 
-const getElementRectRelative = (domId, containerEl) => {
-  const el = document.getElementById(domId)
-  if (!el || !containerEl) return null
-  const rect = el.getBoundingClientRect()
-  const containerRect = containerEl.getBoundingClientRect()
-  return {
-    left: (rect.left - containerRect.left) + containerEl.scrollLeft,
-    top: (rect.top - containerRect.top) + containerEl.scrollTop,
-    rawLeft: rect.left,
-    rawTop: rect.top,
-    width: rect.width,
-    height: rect.height
+const getElementRectRelative = (domId, nodeId) => {
+  if (domId.startsWith('anomaly')) {
+    const el = document.getElementById(domId)
+    if (!el) {
+      return null
+    }
+  
+    const rect = el.getBoundingClientRect()
+    const tlPos = store.toTimelineSpace(rect.left, rect.top)
+  
+    return {
+      left: tlPos.x,
+      top: tlPos.y,
+      rawLeft: rect.left,
+      rawTop: rect.top,
+      width: rect.width,
+      height: rect.height
+    }
+  } else {
+    const rect = store.nodeRects[nodeId]
+    if (!rect) {
+      return null
+    }
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      rawLeft: 0,
+      rawTop: 0,
+      width: rect.width,
+      height: rect.height
+    }
   }
 }
 
@@ -106,7 +126,7 @@ const calculatePoint = (nodeId, effectIndex, isSource, connection = null, effect
   const hasTriggerWindow = Math.abs(Number(rawTw)) > 0.001
 
   if (!isSource && hasTriggerWindow && effectIndex == null) {
-    const dotPos = getTriggerDotPosition(nodeId, props.containerRef)
+    const dotPos = getTriggerDotPosition(nodeId)
     if (dotPos) {
       return { x: dotPos.x, y: dotPos.y, dir: PORT_DIRECTIONS.left }
     }
@@ -134,7 +154,7 @@ const calculatePoint = (nodeId, effectIndex, isSource, connection = null, effect
   }
   
   if (targetDomId) {
-    const rect = getElementRectRelative(targetDomId, props.containerRef)
+    const rect = getElementRectRelative(targetDomId, nodeId)
 
     if (rect) {
       const userPort = isSource ? connection?.sourcePort : connection?.targetPort
@@ -189,7 +209,7 @@ function onSelectClick() {
 }
 
 const onDragTarget = (evt) => {
-  connectionHandler.moveConnectionEnd(props.connection.id, coordinateInfo.value.rawStartPoint)
+  connectionHandler.moveConnectionEnd(props.connection.id, coordinateInfo.value.startPoint)
 }
 </script>
 

@@ -24,6 +24,7 @@ provide('TIME_BLOCK_WIDTH', TIME_BLOCK_WIDTH)
 const tracksContentRef = ref(null)
 const timeRulerWrapperRef = ref(null)
 const tracksHeaderRef = ref(null)
+const trackLaneRefs = ref([])
 
 // Render State
 const svgRenderKey = ref(0)
@@ -57,7 +58,8 @@ let lastMouseX = 0
 const SCROLL_ZONE = 50
 const MAX_SCROLL_SPEED = 15
 
-let resizeObserver = null
+const TRACK_HEIGHT = 50
+let resizeObserver = []
 
 // Box Select State
 const isBoxSelecting = ref(false)
@@ -1094,13 +1096,41 @@ onMounted(() => {
     tracksContentRef.value.addEventListener('scroll', syncRulerScroll)
     tracksContentRef.value.addEventListener('scroll', syncVerticalScroll)
     tracksContentRef.value.addEventListener('wheel', handleWheel, { passive: false })
-    resizeObserver = new ResizeObserver(([entry]) => { 
+    const tracksResizeObserver = new ResizeObserver(([entry]) => { 
       const rect = entry.target.getBoundingClientRect()
       store.setTimelineRect(rect.width, rect.height, rect.top, rect.right, rect.bottom, rect.left)
       forceSvgUpdate(); updateScrollbarHeight() })
-    resizeObserver.observe(tracksContentRef.value)
+    tracksResizeObserver.observe(tracksContentRef.value)
+    resizeObserver.push(tracksResizeObserver)
     updateScrollbarHeight()
   }
+  trackLaneRefs.value.forEach(ref => {
+    const idx = ref.dataset.trackIndex
+    const id = ref.dataset.trackId
+    const observer = new ResizeObserver(([entry]) => {
+      const rect = entry.target.getBoundingClientRect()
+      const style = window.getComputedStyle(entry.target)
+      // 排除border
+      let borderTop = parseInt(style.borderTopWidth)
+      let borderBottom = parseInt(style.borderBottomWidth)
+
+      if (Number.isNaN(borderTop)) borderTop = 0
+      if (Number.isNaN(borderBottom)) borderBottom = 0
+      
+      const data = {
+        top: rect.top + borderTop,
+        bottom: rect.bottom - borderBottom,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        height: rect.height - borderTop - borderBottom
+      }
+      store.setTrackLaneRect(id, data)
+      store.setTrackLaneRect(idx, data)
+    })
+    observer.observe(ref)
+    resizeObserver.push(observer)
+  })
   window.addEventListener('keydown', handleGlobalKeyDownWrapper)
   window.addEventListener('keyup', handleGlobalKeyUp)
   window.addEventListener('blur', resetModifierKeys)
@@ -1108,9 +1138,11 @@ onMounted(() => {
 })
 onUnmounted(() => {
   if (tracksContentRef.value) {
-    tracksContentRef.value.removeEventListener('scroll', syncRulerScroll); tracksContentRef.value.removeEventListener('scroll', syncVerticalScroll); if (resizeObserver) resizeObserver.disconnect()
+    tracksContentRef.value.removeEventListener('scroll', syncRulerScroll); tracksContentRef.value.removeEventListener('scroll', syncVerticalScroll);
     tracksContentRef.value.removeEventListener('wheel', handleWheel)
   }
+  resizeObserver.forEach(obs => obs.disconnect())
+  resizeObserver = []
   window.removeEventListener('keydown', handleGlobalKeyDownWrapper)
   window.removeEventListener('keyup', handleGlobalKeyUp)
   window.removeEventListener('mousemove', onWindowMouseMove)
@@ -1300,17 +1332,19 @@ onUnmounted(() => {
         <ContextMenu />
         <svg class="connections-svg">
           <template v-if="tracksContentRef">
-            <ActionConnector v-for="conn in store.connections" :key="conn.id" :connection="conn" :container-ref="tracksContentRef" :render-key="svgRenderKey"/>
+            <ActionConnector v-for="conn in store.connections" :key="conn.id" :connection="conn" :render-key="svgRenderKey"/>
             <ConnectionPreview v-if="connectionHandler.isDragging" />
           </template>
         </svg>
 
-        <div v-for="(track, index) in store.tracks" :key="index" class="track-row" :id="`track-row-${index}`"
+        <div v-for="(track, index) in store.tracks" :key="index" class="track-row" :id="`track-row-${index}`" :style="{ '--track-height': `${TRACK_HEIGHT}px` }"
              :class="{ 'is-active-drop': track.id === store.activeTrackId,'is-last-track': index === store.tracks.length - 1 }" @dragover="onTrackDragOver" @drop="onTrackDrop(track, $event)">
-          <div class="track-lane" :style="getTrackLaneStyle">
+          <div class="track-lane" :style="getTrackLaneStyle" ref="trackLaneRefs" :data-track-index="index" :data-track-id="track.id">
             <GaugeOverlay v-if="track.id" :track-id="track.id"/>
             <div class="actions-container">
               <ActionItem v-for="action in track.actions" :key="action.instanceId" :action="action"
+                :height="TRACK_HEIGHT"
+                :trackIndex="index"
                 @mousedown="onActionMouseDown($event, track, action)"
                 @mousemove="updateAlignGuide($event, action, $el.querySelector(`#action-${action.instanceId}`))"
                 @mouseleave="hideAlignGuide"
@@ -1881,7 +1915,7 @@ body.capture-mode .davinci-range {
 .track-row {
   position: relative;
   flex: 1;
-  min-height: 50px;
+  min-height: var(--track-height);
   width: fit-content;
   min-width: 100%;
   display: flex;
@@ -1896,7 +1930,7 @@ body.capture-mode .davinci-range {
 
 .track-lane {
   position: relative;
-  height: 50px;
+  height: var(--track-height);
   display: flex;
   background: rgba(255, 255, 255, 0.02);
   border-top: 2px solid transparent;

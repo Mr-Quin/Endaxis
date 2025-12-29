@@ -32,7 +32,6 @@ export function useDragConnection() {
         const validSet = new Set()
 
         for (const action of actionMap.value.values()) {
-            console.log(action)
             if (validateConnection(sourceId, action.id)) {
                 validSet.add(action.id)
             }
