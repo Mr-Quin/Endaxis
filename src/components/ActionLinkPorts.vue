@@ -1,7 +1,9 @@
 <script setup>
+import { useTimelineStore } from '@/stores/timelineStore'
 import { ref } from 'vue'
 
 const props = defineProps({
+    rect: { type: Object, default: () => ({ left: 0, top: 0, width: 0, height: 0 }) },
     show: { type: Boolean, default: true },
     color: { type: String, default: '#fff' },
     isDragging: { type: Boolean, default: false },
@@ -16,45 +18,65 @@ const isOverPort = ref(false)
 const portOverlayRef = ref(null)
 const portRefs = {}
 
-function calculateActivePort(x, y) {
+const store = useTimelineStore()
+
+function calculateActivePort(viewX, viewY) {
     if (!portOverlayRef.value) {
         return 'left'
     }
-    const rect = portOverlayRef.value.getBoundingClientRect()
-    const relX = x - rect.left
-    const relY = y - rect.top
+
+    const actionRect = props.rect
+
+    const timelinePointerPoint = store.toTimelineSpace(viewX, viewY)
+
+    const relX = timelinePointerPoint.x - actionRect.left
+    const relY = timelinePointerPoint.y - actionRect.top
 
     const distLeft = relX
-    const distRight = rect.width - relX
+    const distRight = actionRect.width - relX
     const distTop = relY
-    const distBottom = rect.height - relY
+    const distBottom = actionRect.height - relY
 
     const min = Math.min(distLeft, distRight, distTop, distBottom)
+    
+    let resultCanvasPoint = { x: 0, y: 0 }
+    let side = 'left'
+
     switch (true) {
         case min === distTop:
-            return {
-                side: 'top',
-                x: rect.left + rect.width / 2,
-                y: rect.top
+            side = 'top'
+            resultCanvasPoint = {
+                x: actionRect.left + actionRect.width / 2,
+                y: actionRect.top
             }
+            break
         case min === distBottom:
-            return {
-                side: 'bottom',
-                x: rect.left + rect.width / 2,
-                y: rect.bottom
+            side = 'bottom'
+            resultCanvasPoint = {
+                x: actionRect.left + actionRect.width / 2,
+                y: actionRect.top + actionRect.height
             }
+            break
         case min === distRight:
-            return {
-                side: 'right',
-                x: rect.right,
-                y: rect.top + rect.height / 2
+            side = 'right'
+            resultCanvasPoint = {
+                x: actionRect.left + actionRect.width,
+                y: actionRect.top + actionRect.height / 2
             }
+            break
         default:
-            return {
-                side: 'left',
-                x: rect.left,
-                y: rect.top + rect.height / 2
+            side = 'left'
+            resultCanvasPoint = {
+                x: actionRect.left,
+                y: actionRect.top + actionRect.height / 2
             }
+            break
+    }
+
+    return {
+        side,
+        x: resultCanvasPoint.x,
+        y: resultCanvasPoint.y
     }
 }
 
@@ -105,7 +127,8 @@ function onPortMouseDown(evt) {
     if (!props.canStart || props.disabled) {
         return
     }
-    emit('drag-start', { x: evt.clientX, y: evt.clientY }, activePort.value)
+    const timelinePos = store.toTimelineSpace(evt.clientX, evt.clientY)
+    emit('drag-start', { x: timelinePos.x, y: timelinePos.y }, activePort.value)
 }
 
 function onPortMouseUp(evt) {

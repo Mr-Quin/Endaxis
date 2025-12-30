@@ -1,12 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useTimelineStore } from '../stores/timelineStore.js'
 import { useDragConnection } from '../composables/useDragConnection.js'
 import ActionLinkPorts from './ActionLinkPorts.vue'
 import { getRectPos } from '@/utils/layoutUtils.js'
+import { watchEffect } from 'vue'
 
 const props = defineProps({
-  action: { type: Object, required: true }
+  action: { type: Object, required: true },
 })
 
 const store = useTimelineStore()
@@ -58,18 +59,19 @@ const themeColor = computed(() => {
 
 // 主体样式计算
 const style = computed(() => {
-  const widthUnit = store.timeBlockWidth
-  const left = (props.action.startTime || 0) * widthUnit
-  const width = shiftedDuration.value * widthUnit
-  const finalWidth = width < 2 ? 2 : width
+  const rect = store.nodeRects[props.action.instanceId]
+  if (!rect) {
+    return {}
+  }
+  const { left, width, height } = rect
   const color = themeColor.value
 
   const layoutStyle = {
     position: 'absolute',
     top: '0',
-    height: '100%',
+    height: `${height}px`,
     left: `${left}px`,
-    width: `${finalWidth}px`,
+    width: `${width}px`,
     boxSizing: 'border-box',
     zIndex: isSelected.value ? 20 : 10,
   }
@@ -382,7 +384,9 @@ function handleEffectDragStart(event, effectId) {
     return
   }
   const rect = event.target.getBoundingClientRect()
-  connectionHandler.newConnectionFrom(getRectPos(rect, 'right'), effectId, 'right')
+  const viewportPoint = getRectPos(rect, 'right')
+  const timelinePoint = store.toTimelineSpace(viewportPoint.x, viewportPoint.y)
+  connectionHandler.newConnectionFrom(timelinePoint, effectId, 'right')
 }
 
 function handleEffectSnap(event, effectId) {
@@ -391,7 +395,9 @@ function handleEffectSnap(event, effectId) {
       return
     }
     const rect = event.target.getBoundingClientRect()
-    connectionHandler.snapTo(effectId, 'left', getRectPos(rect, 'left'))
+    const viewportPoint = getRectPos(rect, 'left')
+    const timelinePoint = store.toTimelineSpace(viewportPoint.x, viewportPoint.y)
+    connectionHandler.snapTo(effectId, 'left', timelinePoint)
   }
 }
 
@@ -489,6 +495,7 @@ function handleEffectDrop(effectId) {
                      :isDragging="connectionHandler.isDragging.value"
                      :disabled="!isActionValidConnectionTarget"
                      :canStart="connectionHandler.toolEnabled.value"
+                     :rect="store.nodeRects[action.instanceId]"
                      v-if="showPorts"
                      :color="themeColor" />
 

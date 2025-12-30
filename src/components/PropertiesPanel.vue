@@ -437,7 +437,8 @@ function handleStartConnection(id) {
     return
   }
 
-  connectionHandler.newConnectionFrom(getRectPos(domNode.getBoundingClientRect(), 'right'), id, 'right')
+  const viewPoint = getRectPos(domNode.getBoundingClientRect(), 'right')
+  connectionHandler.newConnectionFrom(store.toTimelineSpace(viewPoint.x, viewPoint.y), id, 'right')
 }
 </script>
 

@@ -209,6 +209,9 @@ export const useTimelineStore = defineStore('timeline', () => {
     const timelineScrollTop = ref(0)
     const timelineRect = ref({ width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 })
 
+    const trackLaneRects = ref({})
+    const nodeRects = ref({})
+
     const showCursorGuide = ref(false)
     const cursorCurrentTime = ref(0)
     const cursorPosition = ref({ x: 0, y: 0 })
@@ -675,6 +678,8 @@ export const useTimelineStore = defineStore('timeline', () => {
     function setScrollLeft(val) { timelineScrollLeft.value = val }
     function setScrollTop(val) { timelineScrollTop.value = val }
     function setTimelineRect(width, height, top, right, bottom, left) { timelineRect.value = { width, height, top, left, right, bottom } }
+    function setTrackLaneRect(trackId, rect) { trackLaneRects.value[trackId] = rect }
+    function setNodeRect(nodeId, rect) { nodeRects.value[nodeId] = rect }
     function setCursorTime(time) { cursorCurrentTime.value = Math.max(0, time) }
     function setCursorPosition(x, y) { cursorPosition.value = { x, y } }
     function toggleCursorGuide() { showCursorGuide.value = !showCursorGuide.value }
@@ -1138,6 +1143,46 @@ export const useTimelineStore = defineStore('timeline', () => {
         }
         return false
     }
+
+    function updateActionRects() {
+        actionMap.value.forEach(action => {
+            const widthUnit = timeBlockWidth.value
+            const left = (action.node.startTime || 0) * widthUnit
+            const width = action.node.duration * widthUnit
+            const finalWidth = width < 2 ? 2 : width
+            const trackRect = trackLaneRects.value[action.trackId]
+
+            let y = 0
+            if (trackRect) {
+                y = trackRect.top
+            }
+
+            const rect = {
+                left,
+                width: finalWidth,
+                right: left + finalWidth,
+                height: trackRect?.height ?? 0,
+                top: y - timelineRect.value.top,
+            }
+
+            setNodeRect(action.id, rect)
+        })
+    }
+
+    function toTimelineSpace(viewX, viewY) {
+        return {
+            x: viewX - timelineRect.value.left + timelineScrollLeft.value,
+            y: viewY - timelineRect.value.top + timelineScrollTop.value
+        }
+    }
+
+    function toViewportSpace(canvasX, canvasY) {
+        return {
+            x: canvasX - timelineScrollLeft.value + timelineRect.value.left,
+            y: canvasY - timelineScrollTop.value + timelineRect.value.top
+        }
+    }
+
 
     // ===================================================================================
     // 右键菜单状态
@@ -1883,13 +1928,13 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     return {
-        MAX_SCENARIOS,
-        systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollLeft, timelineScrollTop, timelineRect, globalDragOffset, draggingSkillData,
+        MAX_SCENARIOS, toTimelineSpace, toViewportSpace, updateActionRects,
+        systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollLeft, timelineScrollTop, timelineRect, trackLaneRects, nodeRects, globalDragOffset, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, isBoxSelectMode, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
         teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getActionPositionInfo, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction,
-        addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, setScrollTop, setTimelineRect, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
+        addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, setCursorPosition, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
         removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly, getAnomalyIndexById,
