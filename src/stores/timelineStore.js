@@ -1877,8 +1877,15 @@ export const useTimelineStore = defineStore('timeline', () => {
         }
     }
 
-    function getProjectData() {
-        const listToExport = JSON.parse(JSON.stringify(scenarioList.value))
+    function getProjectData({ includeScenarios = null } = {}) {
+        let listToExport = JSON.parse(JSON.stringify(scenarioList.value))
+
+        if (includeScenarios) {
+            const ids = Array.isArray(includeScenarios) ? includeScenarios : [includeScenarios];
+            const allowedSet = new Set(ids);
+            listToExport = listToExport.filter(s => allowedSet.has(s.id));
+        }
+
         const currentSc = listToExport.find(s => s.id === activeScenarioId.value)
         if (currentSc) {
             currentSc.data = {
@@ -1910,8 +1917,8 @@ export const useTimelineStore = defineStore('timeline', () => {
         URL.revokeObjectURL(link.href)
     }
 
-    function exportShareString() {
-        const projectData = getProjectData();
+    function exportShareString({ includeScenarios = null } = {}) {
+        const projectData = getProjectData({ includeScenarios });
         const jsonString = JSON.stringify(projectData);
         return LZString.compressToEncodedURIComponent(jsonString);
     }

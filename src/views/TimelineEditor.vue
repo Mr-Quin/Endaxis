@@ -11,6 +11,8 @@ import ActionLibrary from '../components/ActionLibrary.vue'
 import PropertiesPanel from '../components/PropertiesPanel.vue'
 import ResourceMonitor from '../components/ResourceMonitor.vue'
 
+import { addMetadataToPng, readMetadataFromPng } from '../utils/pngUtils.js'
+
 const store = useTimelineStore()
 const { copyShareCode, importFromCode } = useShareProject()
 
@@ -147,8 +149,23 @@ async function onFileSelected(event) {
   if (!file) return
 
   try {
-    const success = await store.importProject(file)
-    if (success) ElMessage.success('项目加载成功！')
+    const fileExtension = file.name.split('.').pop().toLowerCase()
+    
+    if (fileExtension === 'png') {
+        const metadata = await readMetadataFromPng(file, 'EndaxisData');
+        if (metadata) {
+             const success = store.importShareString(metadata);
+             if (success) {
+                 ElMessage.success('从图片加载项目成功！');
+                 event.target.value = '';
+                 return;
+             }
+        }
+        ElMessage.warning('该图片未包含有效的 Endaxis 项目数据');
+    } else {
+        const success = await store.importProject(file)
+        if (success) ElMessage.success('项目加载成功！')
+    }
   } catch (e) {
     ElMessage.error('加载失败：' + e.message)
   } finally {
@@ -263,7 +280,24 @@ async function processExport() {
       height: workspaceEl.scrollHeight + 20,
     })
 
-    await capture.download({ format: 'png', filename: userFilename });
+    const captureBlob = await capture.toBlob({type: 'png'});
+    
+    let pngBlob = captureBlob
+    
+    try {
+      // 仅包含当前截图的方案数据
+      const shareString = store.exportShareString({ includeScenarios: store.activeScenarioId });
+      // 写入元数据失败不阻止导出
+      pngBlob = await addMetadataToPng(captureBlob, 'EndaxisData', shareString);
+    } catch (error) {
+      console.error(error)
+    }
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(pngBlob);
+    link.download = userFilename;
+    link.click();
+    URL.revokeObjectURL(link.href);
 
     ElMessage.success(`长图已导出：${userFilename}`)
 
@@ -415,7 +449,7 @@ onUnmounted(() => { window.removeEventListener('keydown', handleGlobalKeydown) }
         </div>
 
         <div class="header-controls">
-          <input type="file" ref="fileInputRef" style="display: none" accept=".json" @change="onFileSelected" />
+          <input type="file" ref="fileInputRef" style="display: none" accept=".json,.png" @change="onFileSelected" />
 
           <button class="control-btn info-btn" @click="aboutDialogVisible = true" title="查看教程与项目信息">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
