@@ -167,7 +167,7 @@ function addNewCharacter() {
   const allGlobalEffects = [...effectKeys]
 
   const newChar = {
-    id: newId, name: "新干员", rarity: 5, element: "physical", avatar: "/Endaxis/avatars/default.png", exclusive_buffs: [],
+    id: newId, name: "新干员", rarity: 5, element: "physical", avatar: "/avatars/default.png", exclusive_buffs: [],
     accept_team_gauge: true,
 
     // 初始化各类动作属性
@@ -205,7 +205,7 @@ function addNewEnemy() {
   const newEnemy = {
     id: newId,
     name: '新敌人',
-    avatar: '/Endaxis/Icon_Enemy/default_enemy.png',
+    avatar: '/Icon_Enemy/default_enemy.png',
     maxStagger: 100,
     staggerNodeCount: 0,
     staggerNodeDuration: 2,
@@ -534,7 +534,7 @@ function saveData() {
              @click="selectChar(char.id)">
 
           <div class="avatar-wrapper-small" :class="`rarity-${char.rarity}-border`">
-            <img :src="char.avatar" @error="e=>e.target.src='/Endaxis/avatars/default.png'" />
+            <img :src="char.avatar" @error="e=>e.target.src='/avatars/default.png'" />
           </div>
 
           <div class="char-info">
@@ -561,7 +561,7 @@ function saveData() {
                @click="selectEnemy(enemy.id)">
 
             <div class="avatar-wrapper-small" :style="{ borderColor: ENEMY_TIERS.find(t=>t.value===enemy.tier)?.color }">
-              <img :src="enemy.avatar" @error="e=>e.target.src='/Endaxis/avatars/default_enemy.png'" />
+              <img :src="enemy.avatar" @error="e=>e.target.src='/avatars/default_enemy.png'" />
             </div>
 
             <div class="char-info">
@@ -592,7 +592,7 @@ function saveData() {
         <header class="panel-header">
           <div class="header-left">
             <div class="avatar-wrapper-large" :class="`rarity-${selectedChar.rarity}-border`">
-              <img :src="selectedChar.avatar" @error="e=>e.target.src='/Endaxis/avatars/default.png'" />
+              <img :src="selectedChar.avatar" @error="e=>e.target.src='/avatars/default.png'" />
             </div>
 
             <div class="header-titles">
@@ -949,7 +949,7 @@ function saveData() {
         <header class="panel-header">
           <div class="header-left">
             <div class="avatar-wrapper-large" style="border-color: #ff4d4f">
-              <img :src="selectedEnemy.avatar" @error="e=>e.target.src='/Endaxis/avatars/default_enemy.png'" />
+              <img :src="selectedEnemy.avatar" @error="e=>e.target.src='/avatars/default_enemy.png'" />
             </div>
             <div class="header-titles">
               <h1 class="edit-title">{{ selectedEnemy.name }}</h1>

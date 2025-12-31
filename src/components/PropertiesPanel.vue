@@ -305,9 +305,9 @@ function updateCustomBarItem(index, key, value) {
 const iconOptions = computed(() => {
   const allGlobalKeys = Object.keys(store.iconDatabase)
   const allowed = targetData.value?.allowedTypes
-  const availableKeys = (allowed && allowed.length > 0)
-      ? allGlobalKeys.filter(key => allowed.includes(key) || key === 'default')
-      : allGlobalKeys
+  const availableKeys = allGlobalKeys.filter(key =>
+      (allowed && allowed.includes(key)) || key === 'default'
+  )
 
   const groups = []
   if (currentCharacter.value && currentCharacter.value.exclusive_buffs) {
