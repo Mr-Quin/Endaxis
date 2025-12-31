@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { executeFetch } from '@/api/fetchStrategy.js'
-import LZString from 'lz-string'
+import { compressGzip, decompressGzip } from '@/utils/gzipUtils'
 
 const uid = () => Math.random().toString(36).substring(2, 9)
 
@@ -1917,21 +1917,21 @@ export const useTimelineStore = defineStore('timeline', () => {
         URL.revokeObjectURL(link.href)
     }
 
-    function exportShareString({ includeScenarios = null } = {}) {
+    async function exportShareString({ includeScenarios = null } = {}) {
         const projectData = getProjectData({ includeScenarios });
         const jsonString = JSON.stringify(projectData);
-        return LZString.compressToEncodedURIComponent(jsonString);
+        return await compressGzip(jsonString);
     }
 
-    function importShareString(compressedStr) {
+    async function importShareString(compressedStr) {
         try {
-            const jsonString = LZString.decompressFromEncodedURIComponent(compressedStr);
+            const jsonString = await decompressGzip(compressedStr);
             if (!jsonString) return false;
 
             const data = JSON.parse(jsonString);
             return loadProjectData(data);
         } catch (e) {
-            console.error("Import share string failed:", e);
+            console.error("导入分享码失败:", e);
             return false;
         }
     }

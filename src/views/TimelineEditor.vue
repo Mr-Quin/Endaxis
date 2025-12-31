@@ -280,13 +280,13 @@ async function processExport() {
       height: workspaceEl.scrollHeight + 20,
     })
 
-    const captureBlob = await capture.toBlob({type: 'png'});
+    const captureBlob = await capture.toBlob({type: 'png', dpr: 1});
     
     let pngBlob = captureBlob
     
     try {
       // 仅包含当前截图的方案数据
-      const shareString = store.exportShareString({ includeScenarios: store.activeScenarioId });
+      const shareString = await store.exportShareString({ includeScenarios: store.activeScenarioId });
       // 写入元数据失败不阻止导出
       pngBlob = await addMetadataToPng(captureBlob, 'EndaxisData', shareString);
     } catch (error) {

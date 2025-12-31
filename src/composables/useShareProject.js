@@ -5,18 +5,14 @@ export function useShareProject() {
     const store = useTimelineStore()
 
     // 1. 复制分享码
-    function copyShareCode() {
+    async function copyShareCode() {
         try {
             // 获取压缩后的长字符串
-            const shareStr = store.exportShareString()
+            const shareStr = await store.exportShareString()
 
             // 写入剪贴板
-            navigator.clipboard.writeText(shareStr).then(() => {
-                ElMessage.success('分享码已复制到剪贴板！可发给好友导入。')
-            }).catch(err => {
-                console.error('Copy failed', err)
-                ElMessage.warning('复制失败，可能是浏览器权限限制')
-            })
+            await navigator.clipboard.writeText(shareStr)
+            ElMessage.success('分享码已复制到剪贴板！可发给好友导入。')
         } catch (e) {
             console.error(e)
             ElMessage.error('分享码生成失败: ' + e.message)
