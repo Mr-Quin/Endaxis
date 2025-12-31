@@ -1183,55 +1183,60 @@ onUnmounted(() => {
 <template>
   <div class="timeline-grid-layout">
     <div class="corner-placeholder">
-      <div class="corner-button-row">
-        <button class="mini-tool-btn" :class="{ 'is-active': store.showCursorGuide }" @click="store.toggleCursorGuide" title="辅助线 (Ctrl+G)">
-          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="6" x2="12" y2="18"></line><line x1="6" y1="12" x2="18" y2="12"></line></svg>
-        </button>
-
-        <button class="mini-tool-btn" :class="{ 'is-active': store.isBoxSelectMode }" @click="store.toggleBoxSelectMode" title="框选 (Ctrl+B)">
-          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 4"/><path d="M8 12h8" stroke-width="1.5"/><path d="M12 8v8" stroke-width="1.5"/></svg>
-        </button>
-
-        <button class="mini-tool-btn" :class="{ 'is-active': store.snapStep < 0.1 }" @click="store.toggleSnapStep" title="吸附精度 (Alt+S)">
-          <span class="btn-text">{{ store.snapStep < 0.05 ? '1f' : '0.1s' }}</span>
-        </button>
-
-        <button class="mini-tool-btn" :class="{ 'is-active': connectionHandler.toolEnabled.value }" @click="store.toggleConnectionTool" title="连线工具 (Alt+L)">
-          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 4h14c3 0 3 8 0 8h-14c-3 0-3 8 0 8h14" /><circle cx="5" cy="4" r="2" fill="currentColor"/><circle cx="19" cy="20" r="2" fill="currentColor"/></svg>
-        </button>
-      </div>
-
-      <div class="corner-zoom-row">
-        <div class="zoom-info-line">
-          <span class="zoom-label">SCALE</span>
-          <span class="zoom-value">{{ Math.round((store.timeBlockWidth / 50) * 100) }}%</span>
+      <div class="corner-controls">
+        <div class="corner-button-row">
+          <button class="mini-tool-btn" :class="{ 'is-active': store.showCursorGuide }" @click="store.toggleCursorGuide" title="辅助线 (Ctrl+G)">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="6" x2="12" y2="18"></line><line x1="6" y1="12" x2="18" y2="12"></line></svg>
+          </button>
+          
+          <button class="mini-tool-btn" :class="{ 'is-active': store.isBoxSelectMode }" @click="store.toggleBoxSelectMode" title="框选 (Ctrl+B)">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 4"/><path d="M8 12h8" stroke-width="1.5"/><path d="M12 8v8" stroke-width="1.5"/></svg>
+          </button>
+          
+          <button class="mini-tool-btn" :class="{ 'is-active': store.snapStep < 0.1 }" @click="store.toggleSnapStep" title="吸附精度 (Alt+S)">
+            <span class="btn-text">{{ store.snapStep < 0.05 ? '1f' : '0.1s' }}</span>
+          </button>
+          
+          <button class="mini-tool-btn" :class="{ 'is-active': connectionHandler.toolEnabled.value }" @click="store.toggleConnectionTool" title="连线工具 (Alt+L)">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 4h14c3 0 3 8 0 8h-14c-3 0-3 8 0 8h14" /><circle cx="5" cy="4" r="2" fill="currentColor"/><circle cx="19" cy="20" r="2" fill="currentColor"/></svg>
+          </button>
         </div>
-        <div class="zoom-slider-container">
-          <span class="zoom-icon" @click="adjustZoom(-Math.max(1, Math.round(store.timeBlockWidth * 0.1)), null)"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg></span>
-          <input
-              type="range"
-              class="davinci-range"
-              :min="store.ZOOM_LIMITS.MIN"
-              :max="store.ZOOM_LIMITS.MAX"
-              step="1"
-              v-model.number="zoomValue"
-          />
-          <span class="zoom-icon" @click="adjustZoom(Math.max(1, Math.round(store.timeBlockWidth * 0.1)), null)"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+        
+        <div class="corner-zoom-row">
+          <div class="zoom-info-line">
+            <span class="zoom-label">SCALE</span>
+            <span class="zoom-value">{{ Math.round((store.timeBlockWidth / 50) * 100) }}%</span>
+          </div>
+          <div class="zoom-slider-container">
+            <span class="zoom-icon" @click="adjustZoom(-Math.max(1, Math.round(store.timeBlockWidth * 0.1)), null)"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg></span>
+            <input
+            type="range"
+            class="davinci-range"
+            :min="store.ZOOM_LIMITS.MIN"
+            :max="store.ZOOM_LIMITS.MAX"
+            step="1"
+            v-model.number="zoomValue"
+            />
+            <span class="zoom-icon" @click="adjustZoom(Math.max(1, Math.round(store.timeBlockWidth * 0.1)), null)"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-label-wrapper">
+        <div class="timeline-label" title="游戏时间">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">G</text>
+          </svg>
+        </div>
+        <div class="timeline-label" title="现实时间">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+            <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">R</text>
+          </svg>
         </div>
       </div>
     </div>
 
     <div class="time-ruler-wrapper" ref="timeRulerWrapperRef" @click="store.selectTrack(null)">
-      <div class="time-ruler-track" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
-        <div v-for="tick in dynamicTicks.realTicks"
-             :key="tick.time"
-             class="tick-line"
-             :class="tick.type"
-             :style="{ left: `${Math.round(tick.x)}px` }">
-          <span v-if="tick.label" class="tick-label">{{ tick.label }}</span>
-        </div>
-      </div>
-      <div class="time-ruler-track" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
+      <div class="time-ruler-track game-time" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
         <div v-for="(ext, idx) in store.globalExtensions"
              :key="idx"
              class="freeze-region-dim timeline"
@@ -1245,6 +1250,15 @@ onUnmounted(() => {
              :class="tick.type"
              :style="{ left: `${Math.round(tick.x)}px` }">
            <span v-if="tick.label" class="tick-label">{{ tick.label }}</span>
+        </div>
+      </div>
+      <div class="time-ruler-track" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
+        <div v-for="tick in dynamicTicks.realTicks"
+             :key="tick.time"
+             class="tick-line"
+             :class="tick.type"
+             :style="{ left: `${Math.round(tick.x)}px` }">
+          <span v-if="tick.label" class="tick-label">{{ tick.label }}</span>
         </div>
       </div>
       <div class="operation-layer">
@@ -1482,18 +1496,23 @@ onUnmounted(() => {
    2. Corner Placeholder (Top-Left)
    ========================================================================== */
 .corner-placeholder {
-  grid-column: 1 / 2;
-  grid-row: 1 / 2;
   background: #3a3a3a;
   border-bottom: 1px solid #444;
   border-right: 1px solid #444;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
   align-items: center;
-  padding: 0 8px;
+  padding: 0 2px 0 8px;
   gap: 4px;
   box-sizing: border-box;
+}
+
+.corner-controls {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  gap: 4px;
+  min-width: 0;
 }
 
 .corner-button-row {
@@ -1592,6 +1611,7 @@ onUnmounted(() => {
   background: #555;
   outline: none;
   border-radius: 1px;
+  min-width: 0;
 }
 
 .davinci-range::-webkit-slider-thumb {
@@ -1625,6 +1645,27 @@ body.capture-mode .davinci-range {
   border: none;
 }
 
+.timeline-label-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-top: 20px;
+}
+
+.timeline-label {
+  height: 20px;
+  display: flex;
+  align-items: flex-end;
+  flex: 1 0 auto;
+  font-size: 10px;
+  color: #888;
+  transition: color 0.2s;
+}
+
+.timeline-label:hover {
+  color: #e0e0e0;
+}
+
 /* ==========================================================================
    3. Time Ruler (Top-Right)
    ========================================================================== */
@@ -1640,15 +1681,18 @@ body.capture-mode .davinci-range {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding-top: 50px;
+  padding-top: 20px;
 }
 
 .time-ruler-track {
   position: relative;
-  flex-grow: 1;
-  flex-shrink: 0;
-  height: 25px;
+  flex: 1 0 auto;
+  height: 20px;
   width: 100%;
+
+  &.game-time {
+    opacity: 0.5;
+  }
 }
 
 .tick-line {
@@ -2618,10 +2662,10 @@ body.capture-mode .davinci-range {
     transition: none;
     background: repeating-linear-gradient(
       45deg,
-      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.3),
+      rgba(255, 255, 255, 0.3) 3px,
       rgba(255, 255, 255, 0.2) 3px,
-      rgba(255, 255, 255, 0.1) 3px,
-      rgba(255, 255, 255, 0.1) 6px
+      rgba(255, 255, 255, 0.2) 6px
     );
   }
 }
