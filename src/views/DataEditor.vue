@@ -760,7 +760,7 @@ function saveData() {
                 </div>
                 <div class="form-group" v-if="['skill', 'link', 'ultimate'].includes(variant.type)">
                   <label>变体专属图标路径</label>
-                  <input v-model="variant.icon" placeholder="留空则继承基础图标" type="text"/>
+                  <input v-model="variant.icon" type="text"/>
                 </div>
 
                 <div class="form-group"><label>持续时间</label><input type="number" step="0.1" v-model.number="variant.duration"></div>

@@ -161,7 +161,10 @@
       "ultimate_animationTime": 1.5,
       "ultimate_enhancementTime": 0,
       "attack_gaugeGain": 0,
-      "weapon": "sword"
+      "weapon": "sword",
+      "skill_icon": "/avatars/ENDMINISTRATOR/icon_skill_endmin_01.png",
+      "link_icon": "/avatars/ENDMINISTRATOR/icon_combo_skill_endmin_01.png",
+      "ultimate_icon": "/avatars/ENDMINISTRATOR/icon_ultimate_skill_endmin_01.png"
     },
     {
       "id": "POGRANICHNK",
@@ -174,6 +177,11 @@
           "key": "pograni_buff",
           "name": "铁誓",
           "path": "/avatars/POGRANICHNK/icon_battle_pograni_buff.png"
+        },
+        {
+          "key": "pograni_talent",
+          "name": "士气激昂",
+          "path": "/avatars/POGRANICHNK/icon_battle_pograni_talent_1.png"
         }
       ],
       "attack_duration": 3.3,
@@ -218,7 +226,8 @@
       "skill_allowed_types": [
         "armor_break",
         "break",
-        "ice_shatter"
+        "ice_shatter",
+        "pograni_talent_1"
       ],
       "skill_anomalies": [
         [
@@ -254,7 +263,9 @@
           "sp": 13
         }
       ],
-      "link_allowed_types": [],
+      "link_allowed_types": [
+        "pograni_talent_1"
+      ],
       "link_anomalies": [],
       "link_anomaly_delays": [
         0.7
@@ -290,7 +301,8 @@
         }
       ],
       "ultimate_allowed_types": [
-        "pograni_buff"
+        "pograni_buff",
+        "pograni_talent_1"
       ],
       "ultimate_anomalies": [
         [
@@ -359,7 +371,9 @@
           "name": "连携1",
           "type": "link",
           "duration": 0.8,
-          "allowedTypes": [],
+          "allowedTypes": [
+            "pograni_talent"
+          ],
           "physicalAnomaly": [],
           "damageTicks": [
             {
@@ -369,14 +383,17 @@
             }
           ],
           "cooldown": 18,
-          "gaugeGain": 10
+          "gaugeGain": 10,
+          "icon": "/avatars/POGRANICHNK/icon_combo_skill_pograni_01.png"
         },
         {
           "id": "v_1765344406616",
           "name": "连携2",
           "type": "link",
           "duration": 1.4,
-          "allowedTypes": [],
+          "allowedTypes": [
+            "pograni_talent"
+          ],
           "physicalAnomaly": [],
           "damageTicks": [
             {
@@ -391,14 +408,17 @@
             }
           ],
           "cooldown": 18,
-          "gaugeGain": 10
+          "gaugeGain": 10,
+          "icon": "/avatars/POGRANICHNK/icon_combo_skill_pograni_01.png"
         },
         {
           "id": "v_1765344414601",
           "name": "连携3",
           "type": "link",
           "duration": 2.4,
-          "allowedTypes": [],
+          "allowedTypes": [
+            "pograni_talent"
+          ],
           "physicalAnomaly": [],
           "damageTicks": [
             {
@@ -418,14 +438,17 @@
             }
           ],
           "cooldown": 18,
-          "gaugeGain": 10
+          "gaugeGain": 10,
+          "icon": "/avatars/POGRANICHNK/icon_combo_skill_pograni_01.png"
         },
         {
           "id": "v_1766424867630",
           "name": "连携4",
           "type": "link",
           "duration": 2.4,
-          "allowedTypes": [],
+          "allowedTypes": [
+            "pograni_talent"
+          ],
           "physicalAnomaly": [],
           "damageTicks": [
             {
@@ -445,13 +468,17 @@
             }
           ],
           "cooldown": 18,
-          "gaugeGain": 10
+          "gaugeGain": 10,
+          "icon": "/avatars/POGRANICHNK/icon_combo_skill_pograni_01.png"
         }
       ],
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 2.5,
       "attack_gaugeGain": 0,
-      "weapon": "sword"
+      "weapon": "sword",
+      "skill_icon": "/avatars/POGRANICHNK/icon_skill_pograni_01.png",
+      "link_icon": "/avatars/POGRANICHNK/icon_combo_skill_pograni_01.png",
+      "ultimate_icon": "/avatars/POGRANICHNK/icon_ultimate_skill_pograni_01.png"
     },
     {
       "id": "ARDELIA",
@@ -608,7 +635,10 @@
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 2.7,
       "attack_gaugeGain": 0,
-      "weapon": "funnel"
+      "weapon": "funnel",
+      "skill_icon": "/avatars/ARDELIA/icon_skill_ardelia_01.png",
+      "link_icon": "/avatars/ARDELIA/icon_combo_skill_ardelia_01.png",
+      "ultimate_icon": "/avatars/ARDELIA/icon_ultimate_skill_ardelia_01.png"
     },
     {
       "id": "LASTRITE",
@@ -721,7 +751,10 @@
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 2.9,
       "attack_gaugeGain": 0,
-      "weapon": "claym"
+      "weapon": "claym",
+      "skill_icon": "/avatars/LASTRITE/icon_skill_lastrite_01.png",
+      "link_icon": "/avatars/LASTRITE/icon_combo_skill_lastrite_01.png",
+      "ultimate_icon": "/avatars/LASTRITE/icon_ultimate_skill_lastrite_01.png"
     },
     {
       "id": "GILBERTA",
@@ -898,7 +931,10 @@
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 0.5,
       "attack_gaugeGain": 0,
-      "weapon": "funnel"
+      "weapon": "funnel",
+      "skill_icon": "/avatars/GILBERTA/icon_skill_aglina_01.png",
+      "link_icon": "/avatars/GILBERTA/icon_combo_skill_aglina_01.png",
+      "ultimate_icon": "/avatars/GILBERTA/icon_ultimate_skill_aglina_01.png"
     },
     {
       "id": "YVONNE",
@@ -1071,12 +1107,16 @@
           ],
           "spCost": 100,
           "gaugeGain": 6.5,
-          "teamGaugeGain": 6.5
+          "teamGaugeGain": 6.5,
+          "icon": "/avatars/YVONNE/icon_skill_yvonne_01.png"
         }
       ],
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 2,
-      "weapon": "pistol"
+      "weapon": "pistol",
+      "skill_icon": "/avatars/YVONNE/icon_skill_yvonne_01.png",
+      "link_icon": "/avatars/YVONNE/icon_combo_skill_yvonne_01.png",
+      "ultimate_icon": "/avatars/YVONNE/icon_ultimate_skill_yvonne_01.png"
     },
     {
       "id": "LAEVATAIN",
@@ -1347,11 +1387,12 @@
           ],
           "spCost": 100,
           "gaugeGain": 106.5,
-          "teamGaugeGain": 6.5
+          "teamGaugeGain": 6.5,
+          "icon": "/avatars/LAEVATAIN/icon_skill_laevat_01.png"
         },
         {
-          "id": "v_1765344189692",
-          "name": "大招内强化战技",
+          "id": "v_1767269025680",
+          "name": "大招内战技",
           "type": "skill",
           "duration": 1.9,
           "allowedTypes": [
@@ -1367,9 +1408,47 @@
           "physicalAnomaly": [
             [
               {
-                "type": "magma_4",
+                "type": "magma_1",
                 "stacks": 1,
                 "duration": 0
+              }
+            ]
+          ],
+          "damageTicks": [
+            {
+              "offset": 0,
+              "sp": 0,
+              "stagger": 10
+            }
+          ],
+          "spCost": 100,
+          "gaugeGain": 0,
+          "teamGaugeGain": 0,
+          "icon": "/avatars/LAEVATAIN/icon_skill_laevat_02_line.png"
+        },
+        {
+          "id": "v_1765344189692",
+          "name": "大招内强化战技",
+          "type": "skill",
+          "duration": 1.9,
+          "icon": "/avatars/LAEVATAIN/icon_skill_laevat_02.png",
+          "allowedTypes": [
+            "burning",
+            "blaze_attach",
+            "blaze_burst",
+            "magma_1",
+            "magma_2",
+            "magma_3",
+            "magma_4",
+            "magma_0"
+          ],
+          "physicalAnomaly": [
+            [
+              {
+                "type": "magma_4",
+                "stacks": 1,
+                "duration": 0,
+                "offset": 0
               }
             ]
           ],
@@ -1382,14 +1461,15 @@
           ],
           "spCost": 100,
           "gaugeGain": 0,
-          "teamGaugeGain": 0,
-          "icon": "\\avatars\\LAEVATAIN/icon_skill_laevat_02.png"
+          "teamGaugeGain": 0
         }
       ],
       "ultimate_enhancementTime": 15,
       "ultimate_animationTime": 2,
       "weapon": "sword",
-      "skill_icon": "\\avatars\\LAEVATAIN/icon_skill_laevat_01.png"
+      "skill_icon": "/avatars/LAEVATAIN/icon_skill_laevat_01_line.png",
+      "link_icon": "/avatars/LAEVATAIN/icon_combo_skill_laevat_01.png",
+      "ultimate_icon": "/avatars/LAEVATAIN/icon_ultimate_skill_laevat_01.png"
     },
     {
       "id": "LIFENG",
@@ -1615,12 +1695,16 @@
           "gaugeCost": 90,
           "gaugeGain": 0,
           "enhancementTime": 0,
-          "animationTime": 1.9
+          "animationTime": 1.9,
+          "icon": "/avatars/LIFENG/icon_ultimate_skill_lifeng_01.png"
         }
       ],
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 1.9,
-      "weapon": "lance"
+      "weapon": "lance",
+      "skill_icon": "/avatars/LIFENG/icon_skill_lifeng_01.png",
+      "link_icon": "/avatars/LIFENG/icon_combo_skill_lifeng_01.png",
+      "ultimate_icon": "/avatars/LIFENG/icon_ultimate_skill_lifeng_01.png"
     },
     {
       "id": "EMBER",
@@ -1751,7 +1835,10 @@
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 1.7,
-      "weapon": "claym"
+      "weapon": "claym",
+      "skill_icon": "/avatars/EMBER/icon_skill_azrila_01.png",
+      "link_icon": "/avatars/EMBER/icon_combo_skill_azrila_01.png",
+      "ultimate_icon": "/avatars/EMBER/icon_ultimate_skill_azrila_01.png"
     },
     {
       "id": "XAIHI",
@@ -1867,7 +1954,10 @@
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
       "ultimate_animationTime": 1.5,
-      "weapon": "funnel"
+      "weapon": "funnel",
+      "skill_icon": "/avatars/XAIHI/icon_skill_seraph_01.png",
+      "link_icon": "/avatars/XAIHI/icon_combo_skill_seraph_01.png",
+      "ultimate_icon": "/avatars/XAIHI/icon_ultimate_skill_seraph_01.png"
     },
     {
       "id": "SNOWSHINE",
@@ -1986,7 +2076,11 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 2
+      "ultimate_animationTime": 2,
+      "weapon": "claym",
+      "skill_icon": "/avatars/SNOWSHINE/icon_skill_aurora_01.png",
+      "link_icon": "/avatars/SNOWSHINE/icon_combo_skill_aurora_01.png",
+      "ultimate_icon": "/avatars/SNOWSHINE/icon_ultimate_skill_aurora_01.png"
     },
     {
       "id": "ARCLIGHT",
@@ -1994,7 +2088,13 @@
       "rarity": 5,
       "element": "emag",
       "avatar": "/avatars/ARCLIGHT/ARCLIGHT.png",
-      "exclusive_buffs": [],
+      "exclusive_buffs": [
+        {
+          "key": "ikut_talent",
+          "name": "荒野游人",
+          "path": "/avatars/ARCLIGHT/icon_battle_ikut_talent_1.png"
+        }
+      ],
       "accept_team_gauge": true,
       "attack_duration": 3,
       "attack_damage_ticks": [
@@ -2105,7 +2205,32 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.9
+      "ultimate_animationTime": 1.9,
+      "weapon": "sword",
+      "skill_icon": "/avatars/ARCLIGHT/icon_skill_ikut_01_line.png",
+      "link_icon": "/avatars/ARCLIGHT/icon_combo_skill_ikut_01.png",
+      "ultimate_icon": "/avatars/ARCLIGHT/icon_ultimate_skill_ikut_01.png",
+      "variants": [
+        {
+          "id": "v_1767273184428",
+          "name": "强化战技",
+          "type": "skill",
+          "duration": 1,
+          "icon": "/avatars/ARCLIGHT/icon_skill_ikut_01.png",
+          "allowedTypes": [],
+          "physicalAnomaly": [],
+          "damageTicks": [
+            {
+              "offset": 0,
+              "sp": 0,
+              "stagger": 10
+            }
+          ],
+          "spCost": 100,
+          "gaugeGain": 6.5,
+          "teamGaugeGain": 6.5
+        }
+      ]
     },
     {
       "id": "AVYWENNA",
@@ -2113,7 +2238,18 @@
       "rarity": 5,
       "element": "emag",
       "avatar": "/avatars/AVYWENNA/AVYWENNA.png",
-      "exclusive_buffs": [],
+      "exclusive_buffs": [
+        {
+          "key": "Thunderlances",
+          "name": "雷枪",
+          "path": "/avatars/AVYWENNA/icon_combo_skill_avywen_01.png"
+        },
+        {
+          "key": "Thunderlances EX",
+          "name": "强雷枪",
+          "path": "/avatars/AVYWENNA/icon_power_attack_avywen_01.png"
+        }
+      ],
       "accept_team_gauge": true,
       "attack_duration": 3.2,
       "attack_damage_ticks": [
@@ -2171,8 +2307,19 @@
           "stagger": 10
         }
       ],
-      "link_allowed_types": [],
-      "link_anomalies": [],
+      "link_allowed_types": [
+        "Thunderlances"
+      ],
+      "link_anomalies": [
+        [
+          {
+            "type": "Thunderlances",
+            "stacks": 3,
+            "duration": 0,
+            "offset": 0
+          }
+        ]
+      ],
       "ultimate_duration": 1.5,
       "ultimate_gaugeMax": 85,
       "ultimate_gaugeReply": 0,
@@ -2183,8 +2330,19 @@
           "stagger": 0
         }
       ],
-      "ultimate_allowed_types": [],
-      "ultimate_anomalies": [],
+      "ultimate_allowed_types": [
+        "Thunderlances EX"
+      ],
+      "ultimate_anomalies": [
+        [
+          {
+            "type": "Thunderlances EX",
+            "stacks": 1,
+            "duration": 0,
+            "offset": 0
+          }
+        ]
+      ],
       "execution_duration": 1.5,
       "execution_damage_ticks": [],
       "execution_allowed_types": [
@@ -2209,7 +2367,36 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.5
+      "ultimate_animationTime": 1.5,
+      "weapon": "lance",
+      "skill_icon": "/avatars/AVYWENNA/icon_skill_avywen_01_line.png",
+      "link_icon": "/avatars/AVYWENNA/icon_combo_skill_avywen_01.png",
+      "ultimate_icon": "/avatars/AVYWENNA/icon_ultimate_skill_avywen_01.png",
+      "variants": [
+        {
+          "id": "v_1767273720814",
+          "name": "战技-回收雷枪",
+          "type": "skill",
+          "duration": 0.5,
+          "icon": "/avatars/AVYWENNA/icon_skill_avywen_01.png",
+          "allowedTypes": [
+            "emag_burst",
+            "conductive",
+            "emag_attach"
+          ],
+          "physicalAnomaly": [],
+          "damageTicks": [
+            {
+              "offset": 0,
+              "sp": 0,
+              "stagger": 30
+            }
+          ],
+          "spCost": 100,
+          "gaugeGain": 6.5,
+          "teamGaugeGain": 6.5
+        }
+      ]
     },
     {
       "id": "DAPAN",
@@ -2219,7 +2406,7 @@
       "avatar": "/avatars/DAPAN/DAPAN.png",
       "exclusive_buffs": [
         {
-          "key": "prep_ingredients",
+          "key": "dapan_buff",
           "name": "备料",
           "path": "/avatars/DAPAN/icon_battle_dapan_buff.png"
         }
@@ -2328,7 +2515,7 @@
         "break",
         "ice_shatter",
         "knockup",
-        "prep_ingredients"
+        "dapan_buff"
       ],
       "ultimate_anomalies": [
         [
@@ -2347,10 +2534,10 @@
         ],
         [
           {
-            "type": "prep_ingredients",
+            "type": "dapan_buff",
             "stacks": 1,
             "duration": 0,
-            "offset": 0.5
+            "offset": 0
           }
         ]
       ],
@@ -2380,7 +2567,11 @@
       "variants": [],
       "attack_gaugeGain": 0,
       "ultimate_animationTime": 1.5,
-      "ultimate_enhancementTime": 0
+      "ultimate_enhancementTime": 0,
+      "weapon": "claym",
+      "skill_icon": "/avatars/DAPAN/icon_skill_dapan_01.png",
+      "link_icon": "/avatars/DAPAN/icon_combo_skill_dapan_01.png",
+      "ultimate_icon": "/avatars/DAPAN/icon_ultimate_skill_dapan_01.png"
     },
     {
       "id": "WULFGARD",
@@ -2538,11 +2729,16 @@
           ],
           "spCost": 75,
           "gaugeGain": 6.5,
-          "teamGaugeGain": 6.5
+          "teamGaugeGain": 6.5,
+          "icon": "/avatars/WULFGARD/icon_skill_wolfgd_01.png"
         }
       ],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.5
+      "ultimate_animationTime": 1.5,
+      "weapon": "pistol",
+      "skill_icon": "/avatars/WULFGARD/icon_skill_wolfgd_01_line.png",
+      "link_icon": "/avatars/WULFGARD/icon_combo_skill_wolfgd_01.png",
+      "ultimate_icon": "/avatars/WULFGARD/icon_ultimate_skill_wolfgd_01.png"
     },
     {
       "id": "PERLICA",
@@ -2672,7 +2868,11 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.6
+      "ultimate_animationTime": 1.6,
+      "weapon": "funnel",
+      "skill_icon": "/avatars/PERLICA/icon_skill_pelica_01.png",
+      "link_icon": "/avatars/PERLICA/icon_combo_skill_pelica_01.png",
+      "ultimate_icon": "/avatars/PERLICA/icon_ultimate_skill_pelica_01.png"
     },
     {
       "id": "CHENQIANYU",
@@ -2804,7 +3004,11 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.6
+      "ultimate_animationTime": 1.6,
+      "weapon": "sword",
+      "skill_icon": "/avatars/CHENQIANYU/icon_skill_chen_01.png",
+      "link_icon": "/avatars/CHENQIANYU/icon_combo_skill_chen_01.png",
+      "ultimate_icon": "/avatars/CHENQIANYU/icon_ultimate_skill_chen_01.png"
     },
     {
       "id": "ALESH",
@@ -2931,7 +3135,44 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_animationTime": 1.6,
-      "ultimate_enhancementTime": 0
+      "ultimate_enhancementTime": 0,
+      "weapon": "sword",
+      "skill_icon": "/avatars/ALESH/icon_skill_deepfin_01_line.png",
+      "link_icon": "/avatars/ALESH/icon_combo_skill_deepfin_01.png",
+      "ultimate_icon": "/avatars/ALESH/icon_ultimate_skill_deepfin_01.png",
+      "variants": [
+        {
+          "id": "v_1767274880488",
+          "name": "强化战技",
+          "type": "skill",
+          "duration": 1.3,
+          "icon": "/avatars/ALESH/icon_skill_deepfin_01.png",
+          "allowedTypes": [
+            "frozen",
+            "cold_attach",
+            "cold_burst"
+          ],
+          "physicalAnomaly": [
+            [
+              {
+                "type": "frozen",
+                "stacks": 1,
+                "duration": 5
+              }
+            ]
+          ],
+          "damageTicks": [
+            {
+              "offset": 0,
+              "sp": 30,
+              "stagger": 10
+            }
+          ],
+          "spCost": 100,
+          "gaugeGain": 17,
+          "teamGaugeGain": 8.5
+        }
+      ]
     },
     {
       "id": "CATCHER",
@@ -3050,7 +3291,11 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.3
+      "ultimate_animationTime": 1.3,
+      "weapon": "claym",
+      "skill_icon": "/avatars/CATCHER/icon_skill_meurs_01.png",
+      "link_icon": "/avatars/CATCHER/icon_combo_skill_meurs_01.png",
+      "ultimate_icon": "/avatars/CATCHER/icon_ultimate_skill_meurs_01.png"
     },
     {
       "id": "FLUORITE",
@@ -3150,7 +3395,11 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 0.5
+      "ultimate_animationTime": 0.5,
+      "weapon": "pistol",
+      "skill_icon": "/avatars/FLUORITE/icon_skill_bounda_01.png",
+      "link_icon": "/avatars/FLUORITE/icon_combo_skill_bounda_01.png",
+      "ultimate_icon": "/avatars/FLUORITE/icon_ultimate_skill_bounda_01.png"
     },
     {
       "id": "ANTAL",
@@ -3310,7 +3559,11 @@
       ],
       "execution_anomalies": [],
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.4
+      "ultimate_animationTime": 1.4,
+      "weapon": "funnel",
+      "skill_icon": "/avatars/ANTAL/icon_skill_antal_01.png",
+      "link_icon": "/avatars/ANTAL/icon_combo_skill_antal_01.png",
+      "ultimate_icon": "/avatars/ANTAL/icon_ultimate_skill_antal_01.png"
     },
     {
       "id": "ESTELLA",
@@ -3439,7 +3692,11 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_enhancementTime": 0,
-      "ultimate_animationTime": 1.8
+      "ultimate_animationTime": 1.8,
+      "weapon": "lance",
+      "skill_icon": "/avatars/ESTELLA/icon_skill_whiten_01.png",
+      "link_icon": "/avatars/ESTELLA/icon_combo_skill_whiten_01.png",
+      "ultimate_icon": "/avatars/ESTELLA/icon_ultimate_skill_whiten_01.png"
     },
     {
       "id": "AKEKURI",
@@ -3551,7 +3808,11 @@
       "execution_anomalies": [],
       "accept_team_gauge": true,
       "ultimate_animationTime": 1.7,
-      "ultimate_enhancementTime": 0
+      "ultimate_enhancementTime": 0,
+      "weapon": "sword",
+      "skill_icon": "/avatars/AKEKURI/icon_skill_karin_01.png",
+      "link_icon": "/avatars/AKEKURI/icon_combo_skill_karin_01.png",
+      "ultimate_icon": "/avatars/AKEKURI/icon_ultimate_skill_karin_01.png"
     }
   ],
   "enemyDatabase": [
