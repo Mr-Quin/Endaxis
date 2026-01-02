@@ -125,6 +125,10 @@ const targetTrackIndex = ref(null)
 const searchQuery = ref('')
 const filterElement = ref('ALL')
 
+const isGameTimeCollapsed = ref(true)
+const showGameTime = computed(() => !isGameTimeCollapsed.value || store.isCapturing)
+const gridRowHeight = computed(() => showGameTime.value ? '60px' : '48px')
+
 const ELEMENT_FILTERS = [
   { label: '全部', value: 'ALL', color: '#888' },
   { label: '物理', value: 'physical', color: '#e0e0e0' },
@@ -1181,7 +1185,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="timeline-grid-layout">
+  <div class="timeline-grid-layout" :style="{ gridTemplateRows: `${gridRowHeight} 1fr` }">
     <div class="corner-placeholder">
       <div class="corner-controls">
         <div class="corner-button-row">
@@ -1222,21 +1226,33 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="timeline-label-wrapper">
-        <div class="timeline-label" title="游戏时间">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-            <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">G</text>
-          </svg>
-        </div>
-        <div class="timeline-label" title="现实时间">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-            <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">R</text>
-          </svg>
-        </div>
+        <template v-if="showGameTime">
+          <div class="timeline-label interactable" title="游戏时间（点击折叠）" @click="isGameTimeCollapsed = true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">G</text>
+            </svg>
+            <div class="collapse-hint-icon">
+              <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="3" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="timeline-label" title="现实时间">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+              <text x="12" y="20" font-size="20" fill="currentColor" text-anchor="middle" font-weight="bold" font-family="sans-serif">R</text>
+            </svg>
+          </div>
+        </template>
+        <template v-else>
+          <div class="timeline-label interactable expand-btn" title="展开游戏时间轴" @click="isGameTimeCollapsed = false">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </div>
+        </template>
       </div>
     </div>
 
     <div class="time-ruler-wrapper" ref="timeRulerWrapperRef" @click="store.selectTrack(null)">
-      <div class="time-ruler-track game-time" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
+      <div v-show="showGameTime" class="time-ruler-track game-time" :style="{ width: `${store.TOTAL_DURATION * TIME_BLOCK_WIDTH}px` }">
         <div v-for="(ext, idx) in store.globalExtensions"
              :key="idx"
              class="freeze-region-dim timeline"
@@ -1649,21 +1665,55 @@ body.capture-mode .davinci-range {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding-top: 20px;
+  height: 100%;
 }
 
 .timeline-label {
+  flex: 0 0 auto;
   height: 20px;
   display: flex;
   align-items: flex-end;
-  flex: 1 0 auto;
   font-size: 10px;
   color: #888;
   transition: color 0.2s;
+
+  &:hover {
+    color: #e0e0e0;
+  }
+
+  &.interactable {
+    cursor: pointer;
+    position: relative;
+
+    &:hover {
+      color: #ffd700;
+    }
+  }
+
+  &.expand-btn {
+    justify-content: center;
+    align-items: center;
+    color: #888;
+
+    &:hover {
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.1);
+      border-radius: 4px;
+    }
+  }
 }
 
-.timeline-label:hover {
-  color: #e0e0e0;
+.collapse-hint-icon {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #888;
+}
+
+.timeline-label.interactable:hover .collapse-hint-icon {
+  opacity: 1;
 }
 
 /* ==========================================================================
@@ -1681,12 +1731,11 @@ body.capture-mode .davinci-range {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding-top: 20px;
 }
 
 .time-ruler-track {
   position: relative;
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   height: 20px;
   width: 100%;
 
