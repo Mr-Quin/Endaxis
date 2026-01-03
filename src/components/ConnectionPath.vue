@@ -81,15 +81,27 @@ const pathData = computed(() => {
       <title>左键选中后按 Delete 删除</title>
     </path>
 
-    <path :d="pathData" fill="none" :stroke="isSelected ? '#ffffff' : `url(#${gradientId})`" stroke-width="2"
-      stroke-linecap="round" class="main-path" />
+    <g class="path-group">
+      <path :d="pathData" 
+        fill="none" 
+        stroke="rgba(0,0,0,0.3)" 
+        stroke-width="3" 
+        class="path-shadow" />
 
-    <circle r="2">
-      <animateMotion :path="pathData" dur="1.5s" repeatCount="indefinite" calcMode="spline" keyTimes="0;1"
-        keySplines="0.4 0 0.2 1" />
-      <animate attributeName="fill" :values="`${colors.start};${colors.end}`" dur="1.5s" repeatCount="indefinite"
-        calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" />
-    </circle>
+      <path :d="pathData" 
+        fill="none" 
+        :stroke="isSelected ? '#ffffff' : `url(#${gradientId})`" 
+        stroke-width="2"
+        stroke-linecap="round" 
+        class="main-path" />
+    </g>
+
+    <circle r="2" class="moving-circle" 
+      :style="{
+        offsetPath: `path('${pathData}')`,
+        '--start-color': colors.start,
+        '--end-color': colors.end
+      }"></circle>
 
     <template v-if="isSelected && !isPreview">
       <circle :cx="endPoint.x" :cy="endPoint.y" r="5" class="drag-handle-dot target-handle"
@@ -133,7 +145,7 @@ const pathData = computed(() => {
 .connector-group.is-consumption .main-path {
   stroke-dasharray: 2, 6;
   stroke-linecap: round;
-  animation: dash-flow 60s linear infinite;
+  /* animation: dash-flow 60s linear infinite; */
 }
 
 .connector-group.is-consumption.is-selected {
@@ -157,12 +169,25 @@ const pathData = computed(() => {
   stroke-opacity: 0.4;
 }
 
+.path-shadow {
+  filter: blur(2px); 
+  transform: translateY(1px);
+}
+
 .main-path {
   pointer-events: none;
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
   stroke-dasharray: 10, 5;
-  animation: dash-flow 30s linear infinite;
-  transition: stroke 0.2s;
+  will-change: stroke-dashoffset;
+  animation: dash-flow 0.5s linear infinite;
+}
+
+@keyframes dash-flow {
+  from {
+    stroke-dashoffset: 15;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .drag-handle-dot {
@@ -180,9 +205,29 @@ const pathData = computed(() => {
   fill: #ffd700;
 }
 
-@keyframes dash-flow {
-  to {
-    stroke-dashoffset: -1000;
+.moving-circle {
+  will-change: offset-distance, fill;
+  
+  animation: 
+    move-along-path 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite,
+    color-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes move-along-path {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes color-pulse {
+  0% {
+    fill: var(--start-color);
+  }
+  100% {
+    fill: var(--end-color);
   }
 }
 </style>

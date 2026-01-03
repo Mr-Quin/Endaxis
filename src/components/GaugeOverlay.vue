@@ -112,6 +112,15 @@ const fullSegments = computed(() => {
           :x2="seg.x2" :y2="1"
           class="full-gauge-line no-events"
           :stroke="themeColor"
+      />
+
+      <line
+          v-for="(seg, i) in fullSegments"
+          :key="i"
+          :x1="seg.x1" :y1="1"
+          :x2="seg.x2" :y2="1"
+          class="full-gauge-glow no-events"
+          :stroke="themeColor"
           :filter="`url(#glow-${trackId})`"
       />
     </svg>
@@ -137,18 +146,36 @@ const fullSegments = computed(() => {
 .full-gauge-line {
   stroke-width: 2;
   stroke-linecap: round;
-  animation: pulse-glow 2s ease-in-out infinite alternate;
   transform: translateY(1px);
+  will-change: opacity;
+  animation: stroke-opacity 2s ease-in-out infinite alternate;
 }
 
-@keyframes pulse-glow {
+.full-gauge-glow {
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px currentColor);
+  transform: translateY(1px);
+  will-change: opacity, transform;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
   0% {
-    stroke-opacity: 0.85;
-    filter: drop-shadow(0 0 1px currentColor);
+    opacity: 0;
+    transform: scaleY(1);
   }
   100% {
-    stroke-opacity: 1;
-    filter: drop-shadow(0 0 6px currentColor);
+    opacity: 1;
+    transform: scaleY(1.2);
+  }
+}
+
+@keyframes stroke-opacity {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
   }
 }
 </style>

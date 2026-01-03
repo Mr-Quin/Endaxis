@@ -467,6 +467,7 @@ function handleEffectDrop(effectId) {
       <div v-if="animationTimeWidth > 0"
            class="animation-phase-overlay"
            :style="{ width: `${animationTimeWidth}px` }">
+        <div class="shimmer-bar"></div>
       </div>
     </div>
 
@@ -725,12 +726,28 @@ function handleEffectDrop(effectId) {
   overflow: hidden;
   border-right: 1px solid rgba(255, 255, 255, 0.3);
   z-index: 1;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 3s infinite linear;
 }
+
+.shimmer-bar {
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  background: linear-gradient(
+    90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.15) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  will-change: transform;
+  animation: shimmer 1.5s infinite linear;
+}
+
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% { 
+    transform: translateX(-100%); 
+  }
+  100% { 
+    transform: translateX(50%); 
+  }
 }
 </style>

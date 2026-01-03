@@ -461,6 +461,7 @@ watch(() => store.timelineScrollLeft, (newVal) => {
 }
 
 .enemy-avatar-box {
+  container-type: size;
   width: 32px;
   height: 32px;
   border: 1px solid #444;
@@ -476,6 +477,7 @@ watch(() => store.timelineScrollLeft, (newVal) => {
   position: absolute; top: 0; left: 0; width: 100%; height: 1px;
   background: rgba(255, 215, 0, 0.3);
   box-shadow: 0 0 4px #ffd700;
+  will-change: transform;
   animation: scan 3s infinite linear;
 }
 
@@ -794,8 +796,8 @@ watch(() => store.timelineScrollLeft, (newVal) => {
 
 /* 动画定义 */
 @keyframes scan {
-  0% { top: -10%; }
-  100% { top: 110%; }
+  0% { transform: translateY(-10cqh); }
+  100% { transform: translateY(110cqh); }
 }
 
 .stun-bg-anim { animation: stun-flash 2s infinite alternate; }
