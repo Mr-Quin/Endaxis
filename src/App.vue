@@ -133,4 +133,45 @@ body.is-lib-dragging .action-item-wrapper {
 .el-switch__label.is-active {
   color: #ffd700 !important;
 }
+
+/* 输入框与文本域样式 */
+.el-input__wrapper,
+.el-textarea__inner {
+  background-color: #111114 !important;
+  border-radius: 0 !important;
+  box-shadow: 0 0 0 1px #333 inset !important;
+  border: none !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px #ffd700 inset !important;
+  background-color: #16161a !important;
+}
+
+.el-input__count,
+.el-input__count-inner {
+  background: transparent !important;
+  font-family: 'Roboto Mono', 'Consolas', monospace !important;
+  font-size: 10px !important;
+  color: #666 !important;
+  bottom: 5px !important;
+  right: 10px !important;
+  pointer-events: none;
+}
+.el-textarea__inner:focus + .el-input__count {
+  color: #ffd700 !important;
+  opacity: 0.8;
+}
+.el-textarea__inner::-webkit-scrollbar {
+  width: 4px;
+}
+.el-textarea__inner::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.2);
+}
+::placeholder {
+  color: #444 !important;
+  font-size: 12px;
+}
 </style>
