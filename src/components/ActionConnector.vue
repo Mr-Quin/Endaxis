@@ -83,23 +83,8 @@ function onContextMenu(evt) {
   store.openContextMenu(evt, props.connection.id)
 }
 
-const getElementRectRelative = (domId, nodeId) => {
-  if (domId.startsWith('anomaly') || domId.startsWith('transfer')) {
-    const el = document.getElementById(domId)
-    if (!el) {
-      return null
-    }
-  
-    const rect = el.getBoundingClientRect()
-    const tlPos = store.toTimelineSpace(rect.left, rect.top)
-  
-    return {
-      left: tlPos.x,
-      top: tlPos.y,
-      width: rect.width,
-      height: rect.height
-    }
-  } else {
+const getElementRectRelative = (nodeId, isAction) => {
+  if (isAction) {
     const rect = store.nodeRects[nodeId]
     if (!rect) {
       return null
@@ -111,46 +96,57 @@ const getElementRectRelative = (domId, nodeId) => {
       width: rect.width,
       height: rect.height
     }
+  } else {
+    const layout = store.effectLayouts.get(nodeId)
+    if (!layout) {
+      return null
+    }
+
+    const rect = layout.rect
+
+    return {
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height
+    }
   }
 }
 
-const calculatePoint = (nodeId, effectIndex, isSource, connection = null, effectId = null) => {
+const calculatePoint = (nodeId, isSource, connection = null, effectId = null) => {
   const info = store.getActionPositionInfo(nodeId)
   if (!info) return null
 
   const rawTw = info.action.triggerWindow || 0
   const hasTriggerWindow = Math.abs(Number(rawTw)) > 0.001
 
-  if (!isSource && hasTriggerWindow && effectIndex == null) {
+  if (!isSource && hasTriggerWindow) {
     const dotPos = getTriggerDotPosition(nodeId)
     if (dotPos) {
       return { x: dotPos.x, y: dotPos.y, dir: PORT_DIRECTIONS.left }
     }
   }
 
+  const isGhostMode = rawTw < 0
+
   let targetDomId = null
-  let realEffectIndex = effectIndex
 
-  if (connection) {
-    const targetId = isSource ? connection.fromEffectId : connection.toEffectId
-    realEffectIndex = resolveRealIndex(info.action, effectIndex, targetId)
-  }
-
-  if (isSource && connection && connection.isConsumption && realEffectIndex != null) {
-    const transferId = `transfer-${nodeId}-${realEffectIndex}`
-    if (document.getElementById(transferId)) {
-      targetDomId = transferId
+  let isAction = false
+  if (isSource && connection && connection.isConsumption && effectId != null) {
+    targetDomId = `${effectId}_transfer`
+  } else if (effectId != null) {
+    if (isGhostMode) {
+     targetDomId = nodeId 
     } else {
-      targetDomId = `anomaly-${nodeId}-${realEffectIndex}`
+      targetDomId = effectId
     }
-  } else if (realEffectIndex != null) {
-    targetDomId = `anomaly-${nodeId}-${realEffectIndex}`
   } else {
-    targetDomId = `action-${nodeId}`
+    targetDomId = nodeId
+    isAction = true
   }
   
   if (targetDomId) {
-    const rect = getElementRectRelative(targetDomId, nodeId)
+    const rect = getElementRectRelative(targetDomId, isAction)
 
     if (rect) {
       const userPort = isSource ? connection?.sourcePort : connection?.targetPort
@@ -179,8 +175,8 @@ const coordinateInfo = computed(() => {
   const _trigger = props.renderKey
   const conn = props.connection
 
-  const start = calculatePoint(conn.from, conn.fromEffectIndex, true, conn, conn.fromEffectId)
-  const end = calculatePoint(conn.to, conn.toEffectIndex, false, conn, conn.toEffectId)
+  const start = calculatePoint(conn.from, true, conn, conn.fromEffectId)
+  const end = calculatePoint(conn.to, false, conn, conn.toEffectId)
 
   if (!start || !end) return null
 

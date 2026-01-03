@@ -1173,6 +1173,133 @@ export const useTimelineStore = defineStore('timeline', () => {
         })
     }
 
+    const effectLayouts = computed(() => {
+        const layoutMap = new Map()
+        const consumptionMap = new Map()
+
+        connections.value.forEach(conn => {
+            if (conn.isConsumption) {
+                if (conn.fromEffectId) {
+                    consumptionMap.set(conn.fromEffectId, conn)
+                }
+            }
+        })
+
+        const ICON_SIZE = 20
+        const BAR_MARGIN = 2
+        const VERTICAL_GAP = 3
+        const ACTION_BORDER = 2
+        const widthUnit = timeBlockWidth.value
+
+        actionMap.value.forEach(action => {
+            const actionRect = nodeRects.value[action.id]
+
+            if (!actionRect) return
+
+            if (action.node.physicalAnomaly && action.node.physicalAnomaly.length > 0) {
+                const rows = Array.isArray(action.node.physicalAnomaly[0])
+                    ? action.node.physicalAnomaly
+                    : [action.node.physicalAnomaly];
+
+                let globalFlatIndex = 0
+
+                rows.forEach((row, rowIndex) => {
+                    row.forEach((effect, colIndex) => {
+                        const effectId = ensureEffectId(effect);
+                        const myEffectIndex = globalFlatIndex++;
+
+                        const originalOffset = Number(effect.offset) || 0;
+
+                        // 计算图标的起始现实位置
+                        const shiftedStartTimestamp = getShiftedEndTime(action.node.startTime, originalOffset, action.id);
+                        const effectLeft = shiftedStartTimestamp * widthUnit;
+
+                        // 相对动作的位置
+                        const relativeX = effectLeft - actionRect.left
+                        const relativeY = (rowIndex * (VERTICAL_GAP + ICON_SIZE)) + VERTICAL_GAP + ACTION_BORDER;
+                        const localTransform = `translate(${relativeX}px, ${-relativeY}px)`
+
+                        // 相对时间轴的位置
+                        const absoluteTop = actionRect.top - relativeY - ICON_SIZE + ACTION_BORDER;
+                        const absoluteLeft = effectLeft + 1
+
+                        const iconRect = {
+                            left: absoluteLeft,
+                            width: ICON_SIZE,
+                            right: absoluteLeft + ICON_SIZE,
+                            height: ICON_SIZE,
+                            top: absoluteTop
+                        };
+
+                        // 计算 Buff 的偏移后总时长
+                        let finalDuration = getShiftedEndTime(shiftedStartTimestamp, effect.duration, action.id) - shiftedStartTimestamp;
+                        let isConsumed = false
+
+                        // 连线消耗逻辑
+                        let conn = consumptionMap.get(effectId) || consumptionMap.get(`${action.id}_${myEffectIndex}`);
+
+                        if (conn && conn.isConsumption) {
+                            const targetTrack = tracks.value.find(t => t.actions.some(a => a.instanceId === conn.to));
+                            const targetAction = targetTrack?.actions.find(a => a.instanceId === conn.to);
+                            if (targetAction) {
+                                const consumptionTime = targetAction.startTime - (conn.consumptionOffset || 0);
+                                const cutDuration = consumptionTime - shiftedStartTimestamp;
+                                const snappedCutDuration = Math.round(cutDuration * 1000) / 1000;
+                                if (snappedCutDuration >= 0) {
+                                    finalDuration = Math.min(finalDuration, snappedCutDuration);
+                                    isConsumed = true
+                                }
+                            }
+                        }
+
+                        let finalBarWidth = finalDuration > 0 ? (finalDuration * widthUnit) : 0;
+                        if (finalBarWidth > 0) {
+                            finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE - BAR_MARGIN)
+                        }
+
+
+                        layoutMap.set(effectId, {
+                            rect: iconRect,
+                            localTransform,
+                            barData: {
+                                width: finalBarWidth,
+                                isConsumed,
+                                displayDuration: finalDuration,
+                                extensionAmount: Math.round((finalDuration - effect.duration) * 1000) / 1000
+                            },
+                            data: effect,
+                            actionId: action.id,
+                            flatIndex: myEffectIndex
+                        })
+
+                        if (isConsumed) {
+                            const barLeft = absoluteLeft + ICON_SIZE + BAR_MARGIN;
+                            const barRight = barLeft + finalBarWidth;
+
+                            // 时间条末端位置
+                            const transferRect = {
+                                left: barRight,
+                                width: 0,
+                                right: barRight,
+                                height: ICON_SIZE,
+                                top: absoluteTop
+                            };
+                            layoutMap.set(`${effectId}_transfer`, { rect: transferRect })
+                        }
+                    })
+                })
+            }
+        })
+        return layoutMap
+    })
+
+    function getNodeRect(id) {
+        if (nodeRects.value[id]) return nodeRects.value[id]
+        const effectLayout = effectLayouts.value.get(id)
+        if (effectLayout) return effectLayout.rect
+        return null
+    }
+
     function toTimelineSpace(viewX, viewY) {
         return {
             x: viewX - timelineRect.value.left + timelineScrollLeft.value,
@@ -2007,5 +2134,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         globalExtensions, getShiftedEndTime, refreshAllActionShifts, getActionById,
         enemyDatabase, activeEnemyId, applyEnemyPreset, ENEMY_TIERS, enemyCategories,
         scenarioList, activeScenarioId, switchScenario, addScenario, duplicateScenario, deleteScenario,
+        effectLayouts, getNodeRect,
     }
 })

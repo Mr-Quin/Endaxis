@@ -282,52 +282,35 @@ const renderableAnomalies = computed(() => {
   const raw = props.action.physicalAnomaly || []
   if (raw.length === 0) return []
   const rows = Array.isArray(raw[0]) ? raw : [raw]
-  const widthUnit = store.timeBlockWidth
-  const ICON_SIZE = 20
-  const BAR_MARGIN = 2
   const resultRows = []
-  const myConnections = store.connections.filter(c => c.from === props.action.instanceId)
+  
+  const parentRect = store.nodeRects[props.action.instanceId]
+  if (!parentRect) return []
+
   let globalFlatIndex = 0
 
   rows.forEach((row, rowIndex) => {
     row.forEach((effect, colIndex) => {
       const myEffectIndex = globalFlatIndex++
-      const originalOffset = Number(effect.offset) || 0
-
-      // 计算图标的起始现实位置
-      const shiftedStartTimestamp = store.getShiftedEndTime(props.action.startTime, originalOffset, props.action.instanceId)
-      const shiftedOffset = shiftedStartTimestamp - props.action.startTime
-      const currentLeft = shiftedOffset * widthUnit
-
-      // 计算 Buff 的偏移后总时长
-      let finalDuration = store.getShiftedEndTime(shiftedStartTimestamp, effect.duration, props.action.instanceId) - shiftedStartTimestamp
-      let isConsumed = false
-
-      // 连线消耗逻辑
-      let conn = myConnections.find(c => (effect._id && c.fromEffectId === effect._id) || (!c.fromEffectId && c.fromEffectIndex === myEffectIndex))
-
-      if (conn && conn.isConsumption) {
-        const targetTrack = store.tracks.find(t => t.actions.some(a => a.instanceId === conn.to))
-        const targetAction = targetTrack?.actions.find(a => a.instanceId === conn.to)
-        if (targetAction) {
-          const consumptionTime = targetAction.startTime - (conn.consumptionOffset || 0)
-          const cutDuration = consumptionTime - shiftedStartTimestamp
-          const snappedCutDuration = Math.round(cutDuration * 1000) / 1000
-          if (snappedCutDuration >= 0) {
-            finalDuration = Math.min(finalDuration, snappedCutDuration)
-            isConsumed = true
-          }
-        }
-      }
-
-      let finalBarWidth = finalDuration > 0 ? (finalDuration * widthUnit) : 0
-      if (finalBarWidth > 0) finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE - BAR_MARGIN)
+      const effectId = effect._id
+      
+      const layout = store.effectLayouts.get(effectId)
+      if (!layout) return
 
       resultRows.push({
-        data: effect, rowIndex, colIndex, flatIndex: myEffectIndex,
-        style: { left: `${currentLeft}px`, bottom: `${110 + (rowIndex * 50)}%`, position: 'absolute', zIndex: 15 + rowIndex },
-        barWidth: finalBarWidth, isConsumed, displayDuration: finalDuration,
-        extensionAmount: Math.round((finalDuration - effect.duration) * 1000) / 1000
+        data: effect, 
+        rowIndex, 
+        colIndex, 
+        flatIndex: myEffectIndex,
+        style: { 
+            transform: layout.localTransform, 
+            zIndex: 15 + rowIndex
+        },
+        barWidth: layout.barData.width, 
+        isConsumed: layout.barData.isConsumed, 
+        displayDuration: layout.barData.displayDuration,
+        extensionAmount: layout.barData.extensionAmount,
+        effectId: effectId
       })
     })
   })
@@ -500,7 +483,7 @@ function handleEffectDrop(effectId) {
       <div v-for="(item, index) in renderableAnomalies" :key="`${item.rowIndex}-${item.colIndex}`"
            class="anomaly-wrapper" :style="item.style">
 
-        <div :id="`anomaly-${action.instanceId}-${index}`"
+        <div :id="item.effectId"
              class="anomaly-icon-box"
              :class="{ 'is-linking': connectionHandler.isDragging.value, 'is-link-target-valid': connectionHandler.isNodeValid(item.data._id) }"
              @mousedown.stop="handleEffectDragStart($event, item.data._id)"
@@ -509,7 +492,7 @@ function handleEffectDrop(effectId) {
              @mouseleave="connectionHandler.clearSnap()"
              @click.stop="onIconClick($event, item, index)">
 
-          <img :src="getIconPath(item.data.type)" class="anomaly-icon"/>
+          <img :src="getIconPath(item.data.type)" class="anomaly-icon" />
           <div v-if="item.data.stacks > 1" class="anomaly-stacks">{{ item.data.stacks }}</div>
         </div>
 
@@ -527,7 +510,7 @@ function handleEffectDrop(effectId) {
           </span>
 
           <div v-if="item.isConsumed"
-               :id="`transfer-${action.instanceId}-${item.flatIndex}`"
+               :id="`${item.effectId}_transfer`"
                class="transfer-node-wrapper">
             <div class="transfer-node"></div>
             <div class="transfer-line"></div>
@@ -552,7 +535,7 @@ function handleEffectDrop(effectId) {
 
 /* === 异常状态层 === */
 .anomalies-overlay { position: absolute; top: 0; left: -1px; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-.anomaly-wrapper { display: flex; align-items: center; height: 22px; pointer-events: none; white-space: nowrap; }
+.anomaly-wrapper { position: absolute; display: flex; align-items: center; pointer-events: none; white-space: nowrap; bottom: 100% }
 
 /* 图标样式 */
 .anomaly-icon-box {
