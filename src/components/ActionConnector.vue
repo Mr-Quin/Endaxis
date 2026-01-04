@@ -41,8 +41,8 @@ const getTrackCenterY = (trackIndex) => {
 }
 
 const resolveColor = (info, effectIndex, effectId) => {
-  if (!info || !info.action) return store.getColor('default')
-  const { action, trackIndex } = info
+  if (!info) return store.getColor('default')
+  const { node:action, trackIndex } = info
   const realIdx = resolveRealIndex(action, effectIndex, effectId)
   if (realIdx !== undefined && realIdx !== null) {
     const raw = action.physicalAnomaly || []
@@ -102,10 +102,11 @@ const getElementRectRelative = (nodeId, isAction) => {
 }
 
 const calculatePoint = (nodeId, isSource, connection = null, effectId = null) => {
-  const info = store.getActionPositionInfo(nodeId)
+  const info = store.getActionById(nodeId)
   if (!info) return null
 
-  const rawTw = info.action.triggerWindow || 0
+  const action = info.node
+  const rawTw = action.triggerWindow || 0
   const hasTriggerWindow = Math.abs(Number(rawTw)) > 0.001
 
 
@@ -156,7 +157,7 @@ const calculatePoint = (nodeId, isSource, connection = null, effectId = null) =>
     }
   }
 
-  const timePoint = isSource ? info.action.startTime + info.action.duration : info.action.startTime
+  const timePoint = isSource ? action.startTime + action.duration : action.startTime
   return {
     x: timePoint * store.timeBlockWidth,
     y: getTrackCenterY(info.trackIndex),
@@ -173,8 +174,8 @@ const coordinateInfo = computed(() => {
 
   if (!start || !end) return null
 
-  const colorStart = resolveColor(store.getActionPositionInfo(conn.from), conn.fromEffectIndex, conn.fromEffectId)
-  const colorEnd = resolveColor(store.getActionPositionInfo(conn.to), conn.toEffectIndex, conn.toEffectId)
+  const colorStart = resolveColor(store.getActionById(conn.from), conn.fromEffectIndex, conn.fromEffectId)
+  const colorEnd = resolveColor(store.getActionById(conn.to), conn.toEffectIndex, conn.toEffectId)
 
   return {
     startPoint: { x: start.x, y: start.y },

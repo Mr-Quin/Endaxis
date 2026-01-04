@@ -477,15 +477,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         return elementId
     }
 
-    const getActionPositionInfo = (instanceId) => {
-        for (let i = 0; i < tracks.value.length; i++) {
-            const track = tracks.value[i];
-            const action = track.actions.find(a => a.instanceId === instanceId);
-            if (action) return { trackIndex: i, action };
-        }
-        return null;
-    }
-
     const findEffectIndexById = (action, effectId) => {
         if (!action || !action.physicalAnomaly || !effectId) return -1
         let current = 0
@@ -1107,14 +1098,14 @@ export const useTimelineStore = defineStore('timeline', () => {
         const sourceId = selectedActionId.value
         if (!sourceId || sourceId === targetInstanceId) return false
 
-        const sourceInfo = getActionPositionInfo(sourceId)
-        const targetInfo = getActionPositionInfo(targetInstanceId)
+        const sourceInfo = getActionById(sourceId)
+        const targetInfo = getActionById(targetInstanceId)
 
         if (!sourceInfo || !targetInfo) return false
 
-        const sourceAction = sourceInfo.action
+        const sourceAction = sourceInfo.node
         if (sourceAction.isLocked) return false
-        const targetAction = targetInfo.action
+        const targetAction = targetInfo.node
 
         const tStart = targetAction.startTime
         const tEnd = targetAction.startTime + targetAction.duration
@@ -1393,25 +1384,25 @@ export const useTimelineStore = defineStore('timeline', () => {
     // ===================================================================================
 
     function toggleActionLock(instanceId) {
-        const info = getActionPositionInfo(instanceId)
+        const info = getActionById(instanceId)
         if (info) {
-            info.action.isLocked = !info.action.isLocked
+            info.node.isLocked = !info.node.isLocked
             commitState()
         }
     }
 
     function toggleActionDisable(instanceId) {
-        const info = getActionPositionInfo(instanceId)
+        const info = getActionById(instanceId)
         if (info) {
-            info.action.isDisabled = !info.action.isDisabled
+            info.node.isDisabled = !info.node.isDisabled
             commitState()
         }
     }
 
     function setActionColor(instanceId, color) {
-        const info = getActionPositionInfo(instanceId)
+        const info = getActionById(instanceId)
         if (info) {
-            info.action.customColor = color
+            info.node.customColor = color
             commitState()
         }
     }
@@ -2167,7 +2158,7 @@ export const useTimelineStore = defineStore('timeline', () => {
         systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollLeft, timelineScrollTop, timelineRect, trackLaneRects, nodeRects, globalDragOffset, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, isBoxSelectMode, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
-        teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getActionPositionInfo, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
+        teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction,
         addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, setCursorPosition, toggleSnapStep, nudgeSelection,
