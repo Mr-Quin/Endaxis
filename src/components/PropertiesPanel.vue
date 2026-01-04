@@ -412,21 +412,28 @@ function updateConnPort(connId, type, event) {
   store.updateConnectionPort(connId, type, val)
 }
 
-function handleStartConnection(id) {
+function handleStartConnection(id, type) {
   if (connectionHandler.isDragging.value) {
     connectionHandler.cancelDrag()
     return
   }
 
-  const domNodeId = store.getDomNodeIdByNodeId(id)
-  const domNode = document.getElementById(domNodeId)
+  let rect;
 
-  if (!domNode) {
+  if (type === 'action') {
+    const actionLayout = store.getNodeRect(id)
+    rect = actionLayout.rect
+  } else {
+    const effectLayout = store.effectLayouts.get(id)
+    rect = effectLayout.rect
+  }
+
+  if (!rect) {
     return
   }
 
-  const viewPoint = getRectPos(domNode.getBoundingClientRect(), 'right')
-  connectionHandler.newConnectionFrom(store.toTimelineSpace(viewPoint.x, viewPoint.y), id, 'right')
+  const point = getRectPos(rect, 'right')
+  connectionHandler.newConnectionFrom(point, id, 'right')
 }
 </script>
 
@@ -645,7 +652,7 @@ function handleStartConnection(id) {
           </div>
 
           <div class="editor-actions">
-            <button v-if="!isLibraryMode" class="action-btn link-style" @click.stop="handleStartConnection(activeAnomalyId)"
+            <button v-if="!isLibraryMode" class="action-btn link-style" @click.stop="handleStartConnection(activeAnomalyId, 'effect')"
                     :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === activeAnomalyId }">
               连线
             </button>
@@ -668,7 +675,7 @@ function handleStartConnection(id) {
 
           <div class="spacer"></div>
 
-          <button class="main-link-btn" @click.stop="handleStartConnection(store.selectedActionId)" :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === store.selectedActionId }">
+          <button class="main-link-btn" @click.stop="handleStartConnection(store.selectedActionId, 'action')" :class="{ 'is-linking': connectionHandler.isDragging.value && connectionHandler.state.value.sourceId === store.selectedActionId }">
             <span class="plus-icon"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
             {{ (connectionHandler.isDragging.value) ? '选择目标' : '新建连线' }}
           </button>

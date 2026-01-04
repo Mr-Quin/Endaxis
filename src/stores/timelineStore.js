@@ -456,33 +456,10 @@ export const useTimelineStore = defineStore('timeline', () => {
 
     const timeBlockWidth = computed(() => BASE_BLOCK_WIDTH.value)
 
-    function getDomNodeIdByNodeId(id, { isTransfer = false } = {}) {
-        const node = resolveNode(id)
-
-        let elementId = null
-        if (node.type === 'action') {
-            elementId = `action-${node.id}`
-        } else if (node.type === 'effect') {
-            if (isTransfer) {
-                elementId = `transfer-${node.actionId}-${node.flatIndex}`
-            } else {
-                elementId = `anomaly-${node.actionId}-${node.flatIndex}`
-            }
-        }
-
-        if (!elementId) {
-            return null
-        }
-
-        return elementId
-    }
-
     const ensureEffectId = (effect) => {
         if (!effect._id) effect._id = uid()
         return effect._id
     }
-
-    const getIncomingConnections = (targetId) => connections.value.filter(c => c.to === targetId)
 
     const getCharacterElementColor = (characterId) => {
         const charInfo = characterRoster.value.find(c => c.id === characterId)
@@ -2132,13 +2109,13 @@ export const useTimelineStore = defineStore('timeline', () => {
         systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollLeft, timelineScrollTop, timelineRect, trackLaneRects, nodeRects, globalDragOffset, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, isBoxSelectMode, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
-        teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getIncomingConnections, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
+        teamTracksInfo, activeSkillLibrary, BASE_BLOCK_WIDTH, setBaseBlockWidth, formatTimeLabel, ZOOM_LIMITS, timeBlockWidth, ELEMENT_COLORS, getCharacterElementColor, isActionSelected, hoveredActionId, setHoveredAction,
         fetchGameData, exportProject, importProject, exportShareString, importShareString, TOTAL_DURATION, selectTrack, changeTrackOperator, clearTrack, selectLibrarySkill, updateLibrarySkill, selectAction, updateAction,
         addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, setCursorPosition, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
         removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly,
-        alignActionToTarget, getDomNodeIdByNodeId, moveTrack,
+        alignActionToTarget, moveTrack,
         connectionMap, actionMap, effectsMap, getConnectionById, resolveNode, getNodesOfConnection, enableConnectionTool, connectionDragState, connectionSnapState, validConnectionTargetIds, createConnection, toggleConnectionTool,
         cycleBoundaries, selectedCycleBoundaryId, addCycleBoundary, updateCycleBoundary, selectCycleBoundary,
         contextMenu, openContextMenu, closeContextMenu,
