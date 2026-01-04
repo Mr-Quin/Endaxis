@@ -25,33 +25,22 @@ const isDimmed = computed(() => {
   return store.hoveredActionId && !isRelatedToHover.value && !isSelected.value && !connectionHandler.isDragging.value
 })
 
-const resolveRealIndex = (action, storedIndex, effectId) => {
-  if (!action) return storedIndex
-  if (effectId) {
-    const freshIndex = store.findEffectIndexById(action, effectId)
-    if (freshIndex !== -1) return freshIndex
-  }
-  return storedIndex
-}
-
 const getTrackCenterY = (trackIndex) => {
   const rowEl = document.getElementById(`track-row-${trackIndex}`)
   if (rowEl) return rowEl.offsetTop + (rowEl.offsetHeight / 2)
   return 20 + trackIndex * 80
 }
 
-const resolveColor = (info, effectIndex, effectId) => {
+const resolveColor = (info, effectId) => {
   if (!info) return store.getColor('default')
   const { node:action, trackIndex } = info
-  const realIdx = resolveRealIndex(action, effectIndex, effectId)
-  if (realIdx !== undefined && realIdx !== null) {
-    const raw = action.physicalAnomaly || []
-    if (raw.length === 0) return store.getColor('default')
-    const flatList = Array.isArray(raw[0]) ? raw.flat() : raw
-    const effect = flatList[realIdx]
-    if (effect && effect.type) return store.getColor(effect.type)
+
+  if (effectId) {
+    const effect = store.getEffectById(effectId)
+    if (effect) return store.getColor(effect.node.type)
     return store.getColor('default')
   }
+
   if (action.type === 'link') return store.getColor('link')
   if (action.type === 'execution') return store.getColor('execution')
   if (action.type === 'attack') return store.getColor('physical')
@@ -174,8 +163,8 @@ const coordinateInfo = computed(() => {
 
   if (!start || !end) return null
 
-  const colorStart = resolveColor(store.getActionById(conn.from), conn.fromEffectIndex, conn.fromEffectId)
-  const colorEnd = resolveColor(store.getActionById(conn.to), conn.toEffectIndex, conn.toEffectId)
+  const colorStart = resolveColor(store.getActionById(conn.from), conn.fromEffectId)
+  const colorEnd = resolveColor(store.getActionById(conn.to), conn.toEffectId)
 
   return {
     startPoint: { x: start.x, y: start.y },

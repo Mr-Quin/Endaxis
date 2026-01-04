@@ -477,35 +477,9 @@ export const useTimelineStore = defineStore('timeline', () => {
         return elementId
     }
 
-    const findEffectIndexById = (action, effectId) => {
-        if (!action || !action.physicalAnomaly || !effectId) return -1
-        let current = 0
-        for (const row of action.physicalAnomaly) {
-            for (const effect of row) {
-                if (effect._id === effectId) return current
-                current++
-            }
-        }
-        return -1
-    }
-
     const ensureEffectId = (effect) => {
         if (!effect._id) effect._id = uid()
         return effect._id
-    }
-
-    const getAnomalyIndexById = (actionId, effectId) => {
-        if (!actionId || !effectId) return null
-        const track = tracks.value.find(t => t.actions.some(a => a.instanceId === actionId))
-        const action = track?.actions.find(a => a.instanceId === actionId)
-        if (!action || !action.physicalAnomaly) return null
-
-        for (let r = 0; r < action.physicalAnomaly.length; r++) {
-            const row = action.physicalAnomaly[r]
-            const c = row.findIndex(e => e._id === effectId)
-            if (c !== -1) return { rowIndex: r, colIndex: c }
-        }
-        return null
     }
 
     const getIncomingConnections = (targetId) => connections.value.filter(c => c.to === targetId)
@@ -2163,14 +2137,14 @@ export const useTimelineStore = defineStore('timeline', () => {
         addSkillToTrack, setDraggingSkill, setDragOffset, setScrollLeft, setScrollTop, setTimelineRect, setTrackLaneRect, setNodeRect, calculateGlobalSpData, calculateGaugeData, calculateGlobalStaggerData, updateTrackInitialGauge, updateTrackMaxGauge,
         removeConnection, updateConnection, updateConnectionPort, getColor, toggleCursorGuide, toggleBoxSelectMode, setCursorTime, setCursorPosition, toggleSnapStep, nudgeSelection,
         setMultiSelection, clearSelection, copySelection, pasteSelection, removeCurrentSelection, undo, redo, commitState,
-        removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly, getAnomalyIndexById,
-        findEffectIndexById, alignActionToTarget, getDomNodeIdByNodeId, moveTrack,
+        removeAnomaly, initAutoSave, loadFromBrowser, resetProject, selectedConnectionId, selectConnection, selectAnomaly,
+        alignActionToTarget, getDomNodeIdByNodeId, moveTrack,
         connectionMap, actionMap, effectsMap, getConnectionById, resolveNode, getNodesOfConnection, enableConnectionTool, connectionDragState, connectionSnapState, validConnectionTargetIds, createConnection, toggleConnectionTool,
         cycleBoundaries, selectedCycleBoundaryId, addCycleBoundary, updateCycleBoundary, selectCycleBoundary,
         contextMenu, openContextMenu, closeContextMenu,
         switchEvents, selectedSwitchEventId, addSwitchEvent, updateSwitchEvent, selectSwitchEvent,
         toggleActionLock, toggleActionDisable, setActionColor,
-        globalExtensions, getShiftedEndTime, refreshAllActionShifts, getActionById,
+        globalExtensions, getShiftedEndTime, refreshAllActionShifts, getActionById, getEffectById,
         enemyDatabase, activeEnemyId, applyEnemyPreset, ENEMY_TIERS, enemyCategories,
         scenarioList, activeScenarioId, switchScenario, addScenario, duplicateScenario, deleteScenario,
         effectLayouts, getNodeRect,

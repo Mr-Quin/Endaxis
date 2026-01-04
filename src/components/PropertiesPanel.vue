@@ -380,30 +380,18 @@ const relevantConnections = computed(() => {
         let myIconPath = null
         if (targetData.value) {
           const myEffectId = isOutgoing ? conn.fromEffectId : conn.toEffectId
-          let realIndex = -1
-          if (myEffectId) realIndex = store.findEffectIndexById(targetData.value, myEffectId)
-          if (realIndex === -1 && (isOutgoing ? conn.fromEffectIndex : conn.toEffectIndex) !== null) {
-            realIndex = isOutgoing ? conn.fromEffectIndex : conn.toEffectIndex
-          }
-          if (realIndex !== -1) {
-            const allEffects = (targetData.value.physicalAnomaly || []).flat()
-            const effect = allEffects[realIndex]
-            if (effect) myIconPath = getIconPath(effect.type, myCharId)
+          const myEffect = store.getEffectById(myEffectId)
+          if (myEffect) {
+            myIconPath = getIconPath(myEffect.node.type, myCharId)
           }
         }
 
         let otherIconPath = null
         if (otherAction) {
           const otherEffectId = isOutgoing ? conn.toEffectId : conn.fromEffectId
-          let realIndex = -1
-          if (otherEffectId) realIndex = store.findEffectIndexById(otherAction, otherEffectId)
-          if (realIndex === -1 && (isOutgoing ? conn.toEffectIndex : conn.fromEffectIndex) !== null) {
-            realIndex = isOutgoing ? conn.toEffectIndex : conn.fromEffectIndex
-          }
-          if (realIndex !== -1) {
-            const allEffects = (otherAction.physicalAnomaly || []).flat()
-            const effect = allEffects[realIndex]
-            if (effect) otherIconPath = getIconPath(effect.type, otherCharId)
+          const otherEffect = store.getEffectById(otherEffectId)
+          if (otherEffect) {
+            otherIconPath = getIconPath(otherEffect.node.type, otherCharId)
           }
         }
 
