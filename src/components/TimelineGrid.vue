@@ -667,20 +667,22 @@ const alignGuide = ref({
   targetRect: null
 })
 
-function updateAlignGuide(evt, action, element) {
-  hoveredContext.value = { action, element, clientX: evt.clientX }
+function updateAlignGuide(evt, action) {
+  hoveredContext.value = { action, clientX: evt.clientX }
 
   if (!isAltDown.value || !store.selectedActionId || store.selectedActionId === action.instanceId) {
     alignGuide.value.visible = false
     return
   }
 
-  const rect = element.getBoundingClientRect()
-  const containerRect = store.timelineRect
-  const relLeft = rect.left - containerRect.left + store.timelineScrollLeft
-  const relTop = rect.top - containerRect.top + store.timelineScrollTop
+  const actionLayout = store.getNodeRect(action.instanceId)
+  if (!actionLayout) return
+  
+  const rect = actionLayout.rect
+  const relLeft = rect.left
+  const relTop = rect.top
 
-  const clickX = evt.clientX - rect.left
+  const clickX = store.toTimelineSpace(evt.clientX, evt.clientY).x - rect.left
   const isClickLeft = clickX < (rect.width / 2)
   const isShift = isShiftDown.value
 
@@ -738,8 +740,8 @@ function hideAlignGuide() {
 
 function recalcAlignGuide() {
   if (hoveredContext.value) {
-    const { action, element, clientX } = hoveredContext.value
-    updateAlignGuide({ clientX }, action, element)
+    const { action, clientX } = hoveredContext.value
+    updateAlignGuide({ clientX }, action)
   }
 }
 
