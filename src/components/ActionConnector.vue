@@ -26,9 +26,8 @@ const isDimmed = computed(() => {
 })
 
 const getTrackCenterY = (trackIndex) => {
-  const rowEl = document.getElementById(`track-row-${trackIndex}`)
-  if (rowEl) return rowEl.offsetTop + (rowEl.offsetHeight / 2)
-  return 20 + trackIndex * 80
+  const trackRect = store.trackLaneRects[trackIndex]
+  return trackRect.top + (trackRect.height / 2)
 }
 
 const resolveColor = (info, effectId) => {
@@ -59,7 +58,7 @@ function onContextMenu(evt) {
   store.openContextMenu(evt, props.connection.id)
 }
 
-const getElementRectRelative = (nodeId, isAction) => {
+const getNodeRectRelative = (nodeId, isAction) => {
   if (isAction) {
     const layout = store.nodeRects[nodeId]
     if (!layout || !layout.rect) {
@@ -112,24 +111,24 @@ const calculatePoint = (nodeId, isSource, connection = null, effectId = null) =>
 
   const isGhostMode = rawTw < 0
 
-  let targetDomId = null
+  let nodeId = null
 
   let isAction = false
   if (isSource && connection && connection.isConsumption && effectId != null) {
-    targetDomId = `${effectId}_transfer`
+    nodeId = `${effectId}_transfer`
   } else if (effectId != null) {
     if (isGhostMode) {
-     targetDomId = nodeId 
+     nodeId = nodeId 
     } else {
-      targetDomId = effectId
+      nodeId = effectId
     }
   } else {
-    targetDomId = nodeId
+    nodeId = nodeId
     isAction = true
   }
   
-  if (targetDomId) {
-    const rect = getElementRectRelative(targetDomId, isAction)
+  if (nodeId) {
+    const rect = getNodeRectRelative(nodeId, isAction)
 
     if (rect) {
       const userPort = isSource ? connection?.sourcePort : connection?.targetPort
