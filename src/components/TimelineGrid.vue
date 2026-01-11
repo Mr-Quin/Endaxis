@@ -1138,7 +1138,6 @@ const activeFreezeRegions = computed(() => {
 
 watch(() => store.timeBlockWidth, () => { nextTick(() => { forceSvgUpdate(); updateScrollbarHeight() }) })
 watch(() => [store.tracks, store.connections], () => { nextTick(() => { forceSvgUpdate() }) }, { deep: true })
-watchEffect(() => { store.updateActionRects() })
 
 onMounted(() => {
   if (tracksContentRef.value) {

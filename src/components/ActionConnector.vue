@@ -27,6 +27,7 @@ const isDimmed = computed(() => {
 
 const getTrackCenterY = (trackIndex) => {
   const trackRect = store.trackLaneRects[trackIndex]
+  if (!trackRect) return 0
   return trackRect.top + (trackRect.height / 2)
 }
 
@@ -58,7 +59,7 @@ function onContextMenu(evt) {
   store.openContextMenu(evt, props.connection.id)
 }
 
-const getNodeRectRelative = (nodeId, isAction) => {
+const getNodeRectRelative = (nodeId, isAction, fallBackId = null) => {
   if (isAction) {
     const layout = store.nodeRects[nodeId]
     if (!layout || !layout.rect) {
@@ -75,6 +76,10 @@ const getNodeRectRelative = (nodeId, isAction) => {
   } else {
     const layout = store.effectLayouts.get(nodeId)
     if (!layout) {
+      // 如果没有找到状态位置，使用备选位置
+      if (fallBackId) {
+        return getNodeRectRelative(fallBackId, isAction)
+      }
       return null
     }
 
@@ -114,8 +119,10 @@ const calculatePoint = (nodeId, isSource, connection = null, effectId = null) =>
   let rectNodeId = null
 
   let isAction = false
+  let fallBackId = null
   if (isSource && connection && connection.isConsumption && effectId != null) {
     rectNodeId = `${effectId}_transfer`
+    fallBackId = effectId
   } else if (effectId != null) {
     if (isGhostMode) {
      rectNodeId = nodeId 
@@ -128,7 +135,7 @@ const calculatePoint = (nodeId, isSource, connection = null, effectId = null) =>
   }
   
   if (rectNodeId) {
-    const rect = getNodeRectRelative(rectNodeId, isAction)
+    const rect = getNodeRectRelative(rectNodeId, isAction, fallBackId)
 
     if (rect) {
       const userPort = isSource ? connection?.sourcePort : connection?.targetPort
