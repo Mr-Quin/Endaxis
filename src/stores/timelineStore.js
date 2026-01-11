@@ -625,7 +625,11 @@ export const useTimelineStore = defineStore('timeline', () => {
     // 实体操作 (CRUD)
     // ===================================================================================
 
-    function setTimelineShift(val) { timelineShift.value = val }
+    function setTimelineShift(val) {
+        const width = TOTAL_DURATION * timeBlockWidth.value
+        const maxShift = width - timelineRect.value.width
+        timelineShift.value = Math.min(Math.max(0, val), maxShift)
+    }
     function setScrollTop(val) { timelineScrollTop.value = val }
     function setTimelineRect(width, height, top, right, bottom, left) { timelineRect.value = { width, height, top, left, right, bottom } }
     function setTrackLaneRect(trackId, rect) { trackLaneRects.value[trackId] = rect }
