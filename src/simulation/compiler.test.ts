@@ -156,7 +156,33 @@ describe("compileTimeline", () => {
       expect(r2.realDuration).toBe(2.7);
     });
 
-    it("应推迟冻屏期间开始的状态", () => {});
+    it("应推迟冻屏期间开始的状态", () => {
+      const ult = createMockAction("ULT", 2, 5, {
+        type: "ultimate",
+        animationTime: 2,
+      });
+      const skill = createMockAction("SKILL", 3, 1, {
+        type: "skill",
+        physicalAnomaly: [
+          [
+            createAnomaly({
+              _id: "eff1",
+              offset: 1,
+              duration: 1,
+              type: "buff",
+            }),
+          ],
+        ],
+      });
+
+      const result = compileTimeline([ult, skill]);
+
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+
+      expect(resolvedSkill.effects).toHaveLength(1);
+      // 动作推迟至 4 秒，状态再延后 1 秒 = 5 秒
+      expect(resolvedSkill.effects[0].realStartTime).toBe(5);
+    });
 
     it("应推延长冻屏期间未结束的状态的持续时间", () => {});
 
