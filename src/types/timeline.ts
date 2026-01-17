@@ -32,6 +32,7 @@ export interface Action {
 }
 
 export interface ActionNode {
+  type: "action";
   id: string;
   trackIndex: number;
   skillId: string;
@@ -39,6 +40,7 @@ export interface ActionNode {
 }
 
 export interface AnomalyNode {
+  type: "effect";
   id: string;
   actionId: string;
   colIndex: number;
@@ -47,19 +49,14 @@ export interface AnomalyNode {
   node: Anomaly;
 }
 
-export interface ResolvedEffect {
-  id: string;
+export interface ResolvedEffect extends AnomalyNode {
   uniqueId: string;
   realStartTime: number;
   displayDuration: number;
   isConsumed: boolean;
-  rowIndex: number;
-  colIndex: number;
 }
 
-export interface ResolvedAction {
-  id: string;
-  trackIndex: number;
+export interface ResolvedAction extends ActionNode {
   gameStartTime: number;
   realStartTime: number;
   realDuration: number;
@@ -69,5 +66,23 @@ export interface ResolvedAction {
     hasWindow: boolean;
     startTime: number;
     duration: number;
+  };
+}
+
+export interface TimeExtension {
+  time: number;
+  gameTime: number;
+  amount: number;
+  sourceId: string;
+  logicalTime: number;
+  cumulativeFreezeTime: number;
+}
+
+export interface ResolvedTimeline {
+  actions: ResolvedAction[];
+  timeExtensions: TimeExtension[];
+  meta: {
+    totalDuration: number;
+    totalDamage: number;
   };
 }

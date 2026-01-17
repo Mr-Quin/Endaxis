@@ -41,6 +41,7 @@ describe("compileTimeline", () => {
     options: Partial<Action> = {}
   ): ActionNode => ({
     id,
+    type: "action",
     trackIndex: 0,
     skillId: "mock_skill",
     node: createAction({
@@ -62,8 +63,8 @@ describe("compileTimeline", () => {
     expect(result.actions[1].realStartTime).toBe(6);
   });
 
-  describe("冻屏时间计算", () => {
-    it("应推迟冻屏期间开始的动作", () => {
+  describe("时停计算", () => {
+    it("应推迟时停期间开始的动作", () => {
       const ult = createMockAction("ULT", 2, 5, {
         type: "ultimate",
         animationTime: 2,
@@ -85,7 +86,7 @@ describe("compileTimeline", () => {
       expect(resolvedSkill.realDuration).toBe(1);
     });
 
-    it("应延长冻屏期间未结束的动作", () => {
+    it("应延长时停期间未结束的动作", () => {
       const ult = createMockAction("ULT", 2, 3, {
         type: "ultimate",
         animationTime: 1.5,
@@ -147,7 +148,7 @@ describe("compileTimeline", () => {
       expect(resolvedSkill.realDuration).toBe(1);
     });
 
-    it("连携的冻屏可被缩短", () => {
+    it("连携的时停可被缩短", () => {
       const link1 = createMockAction("LINK1", 0, 1.2, {
         type: "link",
       });
@@ -163,12 +164,12 @@ describe("compileTimeline", () => {
       expect(l1.realStartTime).toBe(0);
       // 长度延长 1.2 + 0.5 = 1.7
       expect(l1.realDuration).toBe(1.7);
-      // 开始时间不受冻屏影响
+      // 开始时间不受时停影响
       expect(l2.realStartTime).toBe(0.1);
       expect(l2.realDuration).toBe(1.2);
     });
 
-    it("终结技冻屏不可缩短", () => {
+    it("终结技时停不可缩短", () => {
       const ult1 = createMockAction("ULT1", 0, 1.5, {
         type: "ultimate",
         animationTime: 1.5,
@@ -190,7 +191,7 @@ describe("compileTimeline", () => {
       expect(r2.realDuration).toBe(2.7);
     });
 
-    it("应推迟冻屏期间开始的状态", () => {
+    it("应推迟时停期间开始的状态", () => {
       const ult = createMockAction("ULT", 2, 5, {
         type: "ultimate",
         animationTime: 2,
@@ -218,7 +219,7 @@ describe("compileTimeline", () => {
       expect(resolvedSkill.effects[0].realStartTime).toBe(5);
     });
 
-    it("应推延长冻屏期间未结束的状态的持续时间", () => {});
+    it("应推延长时停期间未结束的状态的持续时间", () => {});
 
     it("应推迟伤害触发点", () => {});
   });
