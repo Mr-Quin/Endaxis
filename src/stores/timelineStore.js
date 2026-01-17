@@ -1702,6 +1702,80 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     const nodeRects = computed(() => {
+        return useNewCompiler.value ? newNodeRects.value : legacyNodeRects.value;
+    });
+
+    const newNodeRects = computed(() => {
+        const rects = {}
+        const ACTION_BORDER = 2
+        const LINE_GAP = 6
+        const LINE_HEIGHT = 2
+        const widthUnit = timeBlockWidth.value
+
+        compiledTimeline.value.actions.forEach(resAction => {
+            const left = resAction.realStartTime * widthUnit
+            const width = resAction.realDuration * widthUnit
+            const finalWidth = width < 2 ? 2 : width
+            const trackRect = trackLaneRects.value[resAction.trackIndex]
+
+            let y = 0
+            if (trackRect) {
+                y = trackRect.top
+            }
+
+            const rect = {
+                left,
+                width: finalWidth,
+                right: left + finalWidth,
+                height: trackRect?.height ?? 0,
+                top: y - timelineRect.value.top,
+            }
+
+            let triggerWindowLayout = { hasWindow: false }
+            if (resAction.triggerWindow && resAction.triggerWindow.hasWindow) {
+                const twDuration = resAction.triggerWindow.duration
+                const twWidth = twDuration * widthUnit
+
+                const barYRelative = ACTION_BORDER + LINE_GAP - LINE_HEIGHT / 2
+
+                const leftEdge = -ACTION_BORDER
+                const barY = rect.top + rect.height + barYRelative - ACTION_BORDER
+                const triggerBarRight = rect.left + leftEdge
+                const triggerBarLeft = triggerBarRight - twWidth
+
+                triggerWindowLayout = {
+                    rect: {
+                        left: triggerBarLeft,
+                        right: triggerBarRight,
+                        top: barY,
+                        height: LINE_HEIGHT,
+                        width: twWidth
+                    },
+                    localTransform: `translate(${leftEdge - twWidth}px, ${barYRelative}px)`,
+                    hasWindow: true
+                }
+            }
+
+            const barYRelative = ACTION_BORDER + LINE_GAP - LINE_HEIGHT / 2
+            const leftEdge = -ACTION_BORDER
+            const rightEdge = leftEdge + finalWidth + ACTION_BORDER
+            const barY = rect.top + rect.height + barYRelative - ACTION_BORDER
+
+            rects[resAction.id] = {
+                rect,
+                bar: {
+                    top: barY,
+                    relativeY: barYRelative,
+                    leftEdge,
+                    rightEdge
+                },
+                triggerWindow: undefined
+            }
+        })
+        return rects
+    });
+
+    const legacyNodeRects = computed(() => {
         const rects = {}
         const ACTION_BORDER = 2
         const LINE_GAP = 6
@@ -1780,6 +1854,82 @@ export const useTimelineStore = defineStore('timeline', () => {
     })
 
     const effectLayouts = computed(() => {
+        return useNewCompiler.value ? newEffectLayouts.value : legacyEffectLayouts.value;
+    });
+
+    const newEffectLayouts = computed(() => {
+        const layoutMap = new Map()
+        const ICON_SIZE = 20
+        const BAR_MARGIN = 2
+        const VERTICAL_GAP = 3
+        const ACTION_BORDER = 2
+        const widthUnit = timeBlockWidth.value
+
+        compiledTimeline.value.actions.forEach(resAction => {
+            const actionRect = nodeRects.value[resAction.id]?.rect
+            if (!actionRect) return
+
+            resAction.effects.forEach(effect => {
+                const effectId = effect.id
+
+                const effectLeft = effect.realStartTime * widthUnit
+
+                const relativeX = effectLeft - actionRect.left
+                const relativeY = (effect.rowIndex * (VERTICAL_GAP + ICON_SIZE)) + VERTICAL_GAP + ACTION_BORDER;
+                const localTransform = `translate(${relativeX}px, ${-relativeY}px)`
+
+                const absoluteTop = actionRect.top - relativeY - ICON_SIZE + ACTION_BORDER;
+                const absoluteLeft = effectLeft + 1
+
+                const iconRect = {
+                    left: absoluteLeft,
+                    width: ICON_SIZE,
+                    right: absoluteLeft + ICON_SIZE,
+                    height: ICON_SIZE,
+                    top: absoluteTop
+                };
+
+                const displayDuration = effect.displayDuration
+
+                let finalBarWidth = displayDuration > 0 ? (displayDuration * widthUnit) : 0;
+                if (finalBarWidth > 0) {
+                    finalBarWidth = Math.max(0, finalBarWidth - ICON_SIZE - BAR_MARGIN)
+                }
+
+                layoutMap.set(effectId, {
+                    rect: iconRect,
+                    localTransform,
+                    barData: {
+                        width: finalBarWidth,
+                        isConsumed: effect.isConsumed,
+                        displayDuration,
+                        extensionAmount: effect.extensionAmount
+                    },
+                    data: effect.node,
+                    actionId: resAction.id,
+                    flatIndex: effect.flatIndex
+                })
+
+                if (effect.isConsumed) {
+                    const barLeft = absoluteLeft + ICON_SIZE + BAR_MARGIN;
+                    const barRight = barLeft + finalBarWidth;
+
+                    const transferRect = {
+                        left: barRight,
+                        width: 0,
+                        right: barRight,
+                        height: ICON_SIZE,
+                        top: absoluteTop
+                    };
+                    layoutMap.set(`${effectId}_transfer`, { rect: transferRect })
+                }
+            });
+        });
+
+        return layoutMap;
+    });
+
+    const legacyEffectLayouts = computed(() => {
         const layoutMap = new Map()
         const consumptionMap = new Map()
 
@@ -2659,48 +2809,48 @@ export const useTimelineStore = defineStore('timeline', () => {
 
             const data = await executeFetch()
 
-        if (data) {
-            if (data.characterRoster) {
-                characterRoster.value = data.characterRoster.sort((a, b) => (b.rarity || 0) - (a.rarity || 0))
-            }
-            if (data.ICON_DATABASE) {
-                iconDatabase.value = data.ICON_DATABASE
-            }
-            if (data.enemyDatabase) {
-                enemyDatabase.value = data.enemyDatabase
-            }
-            if (data.enemyCategories) {
-                enemyCategories.value = data.enemyCategories
-            }
-            if (data.weaponDatabase) {
-                weaponDatabase.value = (data.weaponDatabase || []).map(w => ({
-                    ...w,
-                    commonSlots: normalizeWeaponCommonSlots(w.commonSlots),
-                    buffBonuses: normalizeWeaponBuffBonuses(w.buffBonuses),
-                }))
-            }
-            if (data.equipmentDatabase) {
-                equipmentDatabase.value = data.equipmentDatabase
-            } else {
-                equipmentDatabase.value = []
-            }
-            if (data.equipmentCategories) {
-                equipmentCategories.value = data.equipmentCategories
-            } else {
-                equipmentCategories.value = []
-            }
-            if (data.equipmentCategoryConfigs) {
-                equipmentCategoryConfigs.value = data.equipmentCategoryConfigs
-            } else {
-                equipmentCategoryConfigs.value = {}
-            }
-            if (data.misc) {
-                misc.value = {
-                    modifierDefs: normalizeModifierDefs(data.misc?.modifierDefs),
-                    weaponCommonModifiers: normalizeWeaponCommonModifiersTable(data.misc?.weaponCommonModifiers),
+            if (data) {
+                if (data.characterRoster) {
+                    characterRoster.value = data.characterRoster.sort((a, b) => (b.rarity || 0) - (a.rarity || 0))
+                }
+                if (data.ICON_DATABASE) {
+                    iconDatabase.value = data.ICON_DATABASE
+                }
+                if (data.enemyDatabase) {
+                    enemyDatabase.value = data.enemyDatabase
+                }
+                if (data.enemyCategories) {
+                    enemyCategories.value = data.enemyCategories
+                }
+                if (data.weaponDatabase) {
+                    weaponDatabase.value = (data.weaponDatabase || []).map(w => ({
+                        ...w,
+                        commonSlots: normalizeWeaponCommonSlots(w.commonSlots),
+                        buffBonuses: normalizeWeaponBuffBonuses(w.buffBonuses),
+                    }))
+                }
+                if (data.equipmentDatabase) {
+                    equipmentDatabase.value = data.equipmentDatabase
+                } else {
+                    equipmentDatabase.value = []
+                }
+                if (data.equipmentCategories) {
+                    equipmentCategories.value = data.equipmentCategories
+                } else {
+                    equipmentCategories.value = []
+                }
+                if (data.equipmentCategoryConfigs) {
+                    equipmentCategoryConfigs.value = data.equipmentCategoryConfigs
+                } else {
+                    equipmentCategoryConfigs.value = {}
+                }
+                if (data.misc) {
+                    misc.value = {
+                        modifierDefs: normalizeModifierDefs(data.misc?.modifierDefs),
+                        weaponCommonModifiers: normalizeWeaponCommonModifiersTable(data.misc?.weaponCommonModifiers),
+                    }
                 }
             }
-        }
 
             historyStack.value = []
             historyIndex.value = -1

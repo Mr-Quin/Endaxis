@@ -3,6 +3,7 @@ import type {
   ResolvedTimeline,
   ResolvedAction,
   ResolvedEffect,
+  ResolvedDamageTick,
   TimeExtension,
 } from "../types/timeline";
 import { TimeContext } from "./time-context";
@@ -132,6 +133,7 @@ function resolveAction(
     item.id
   );
   const realDuration = round(realEndTime - realStartTime);
+  const actionExtension = round(realDuration - a.duration);
 
   // Resolve Effects
   const resolvedEffects: ResolvedEffect[] = [];
@@ -167,6 +169,9 @@ function resolveAction(
           realStartTime: effectRealStartTime,
           displayDuration: round(effectRealEndTime - effectRealStartTime),
           isConsumed: false,
+          extensionAmount: round(
+            round(effectRealEndTime - effectRealStartTime) - effect.duration
+          ),
 
           // Inheritance
           rowIndex,
@@ -178,6 +183,18 @@ function resolveAction(
     });
   }
 
+  // Resolve Damage Ticks
+  const resolvedDamageTicks: ResolvedDamageTick[] = (a.damageTicks || []).map(
+    (tick) => ({
+      ...tick,
+      realTime: timeCtx.getShiftedEndTime(
+        realStartTime,
+        tick.offset || 0,
+        item.id
+      ),
+    })
+  );
+
   // Return extended object
   return {
     ...item, // Spread ActionNode properties (id, trackIndex, etc.)
@@ -186,11 +203,13 @@ function resolveAction(
     realDuration,
     isInterrupted: false,
     effects: resolvedEffects,
+    resolvedDamageTicks,
     triggerWindow: {
       hasWindow: (a.triggerWindow || 0) >= 0,
-      startTime: 0, // Placeholder
+      startTime: 0,
       duration: Math.abs(a.triggerWindow || 0),
     },
+    extensionAmount: actionExtension,
   };
 }
 

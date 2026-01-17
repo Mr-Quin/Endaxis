@@ -14,6 +14,9 @@ export interface DamageTick {
   sp: number;
   stagger: number;
 }
+export interface ResolvedDamageTick extends DamageTick {
+  realTime: number;
+}
 export interface Action {
   instanceId: string;
   type: string;
@@ -56,6 +59,7 @@ export interface ResolvedEffect extends AnomalyNode {
   realStartTime: number;
   displayDuration: number;
   isConsumed: boolean;
+  extensionAmount: number;
 }
 
 export interface ResolvedAction extends ActionNode {
@@ -69,6 +73,8 @@ export interface ResolvedAction extends ActionNode {
     startTime: number;
     duration: number;
   };
+  resolvedDamageTicks: ResolvedDamageTick[];
+  extensionAmount: number;
 }
 
 export interface TimeExtension {
