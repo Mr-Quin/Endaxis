@@ -16,6 +16,7 @@ export interface DamageTick {
 }
 export interface ResolvedDamageTick extends DamageTick {
   realTime: number;
+  realOffset: number;
 }
 export interface Action {
   instanceId: string;
@@ -88,6 +89,8 @@ export interface TimeExtension {
 
 export interface ResolvedTimeline {
   actions: ResolvedAction[];
+  actionMap: Map<string, ResolvedAction>;
+  effectMap: Map<string, ResolvedEffect>;
   timeExtensions: TimeExtension[];
   timeContext: TimeContext;
   meta: {

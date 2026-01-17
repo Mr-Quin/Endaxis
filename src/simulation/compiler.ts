@@ -183,21 +183,24 @@ function resolveAction(
     });
   }
 
-  // Resolve Damage Ticks
-  const resolvedDamageTicks: ResolvedDamageTick[] = (a.damageTicks || []).map(
-    (tick) => ({
-      ...tick,
-      realTime: timeCtx.getShiftedEndTime(
+  const resolvedDamageTicks: ResolvedDamageTick[] = a.damageTicks.map(
+    (tick) => {
+      const realTime = timeCtx.getShiftedEndTime(
         realStartTime,
         tick.offset || 0,
         item.id
-      ),
-    })
+      );
+
+      return {
+        ...tick,
+        realTime,
+        realOffset: realTime - realStartTime,
+      };
+    }
   );
 
-  // Return extended object
   return {
-    ...item, // Spread ActionNode properties (id, trackIndex, etc.)
+    ...item,
     gameStartTime: gameStartTime,
     realStartTime,
     realDuration,
@@ -249,6 +252,32 @@ function resolveConsumption(
   });
 }
 
+function resolveActions(
+  actions: ActionNode[],
+  stopSources: ActionNode[],
+  sourceShiftMap: Map<string, ShiftContext>,
+  timeCtx: TimeContext
+) {
+  const resolvedActions: ResolvedAction[] = [];
+  const actionMap = new Map<string, ResolvedAction>();
+  const effectMap = new Map<string, ResolvedEffect>();
+  for (const item of actions) {
+    const resolvedAction = resolveAction(
+      item,
+      stopSources,
+      sourceShiftMap,
+      timeCtx
+    );
+    resolvedActions.push(resolvedAction);
+    actionMap.set(resolvedAction.id, resolvedAction);
+    resolvedAction.effects.forEach((effect) => {
+      effectMap.set(effect.id, effect);
+    });
+  }
+
+  return { resolvedActions, actionMap, effectMap };
+}
+
 export function compileTimeline(
   actions: ActionNode[],
   options: CompileOptions = {}
@@ -265,8 +294,11 @@ export function compileTimeline(
   const timeCtx = new TimeContext(timeExtensions);
 
   // 3. Resolve Actions
-  const resolvedActions: ResolvedAction[] = sortedActions.map((item) =>
-    resolveAction(item, stopSources, sourceShiftMap, timeCtx)
+  const { resolvedActions, actionMap, effectMap } = resolveActions(
+    sortedActions,
+    stopSources,
+    sourceShiftMap,
+    timeCtx
   );
 
   // 4. Resolve Consumption
@@ -280,6 +312,8 @@ export function compileTimeline(
 
   return {
     actions: resolvedActions,
+    actionMap,
+    effectMap,
     timeExtensions,
     timeContext: timeCtx,
     meta: {

@@ -3012,6 +3012,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         equipmentCategoryOverrides, updateEquipmentCategoryOverride,
         activeSetBonusLibrary, addSetBonusStatus, getActiveSetBonusCategories,
         misc,
-        useNewCompiler,
+        useNewCompiler, compiledTimeline,
     }
 })

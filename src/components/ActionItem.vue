@@ -303,8 +303,20 @@ const connectionSourceActionId = computed(() => {
 
 // 计算判定点的位置样式
 const renderableTicks = computed(() => {
-  const ticks = props.action.damageTicks || []
   const widthUnit = store.timeBlockWidth
+
+  if (store.useNewCompiler) {
+    const resolvedAction = store.compiledTimeline.actionMap.get(props.action.instanceId)
+    return resolvedAction?.resolvedDamageTicks.map(tick => {
+        const left = tick.realOffset * widthUnit
+        return {
+            style: { left: `${left}px` },
+            data: tick
+        }
+    })
+  }
+
+  const ticks = props.action.damageTicks || []
 
   return ticks.map(tick => {
     const originalOffset = tick.offset || 0
