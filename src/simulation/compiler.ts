@@ -5,6 +5,7 @@ import type {
   ResolvedEffect,
   TimeExtension,
 } from "../types/timeline";
+import { TimeContext } from "./time-context";
 
 export interface CompileOptions {
   connections?: Array<{
@@ -94,43 +95,13 @@ function calculateTimeShifts(startSortedActions: ActionNode[]) {
 }
 
 /**
- * Core function to calculate the shifted end time given a starting physical time.
- * Logic extends duration if it overlaps with any freeze windows.
- */
-function getShiftedTime(
-  startTime: number,
-  duration: number,
-  excludeActionId: string | null,
-  timeExtensions: TimeExtension[]
-): number {
-  let currentTimeLimit = startTime + duration;
-  const processedExtensions = new Set<string>();
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-    for (const ext of timeExtensions) {
-      if (ext.sourceId === excludeActionId) continue;
-      if (processedExtensions.has(ext.sourceId)) continue;
-
-      if (ext.time >= startTime && ext.time < currentTimeLimit) {
-        currentTimeLimit = round(currentTimeLimit + ext.amount);
-        processedExtensions.add(ext.sourceId);
-        changed = true;
-      }
-    }
-  }
-  return currentTimeLimit;
-}
-
-/**
  * Resolves a single action's logical/real time and its effects.
  */
 function resolveAction(
   item: ActionNode,
   stopSources: ActionNode[],
   sourceShiftMap: Map<string, ShiftContext>,
-  timeExtensions: TimeExtension[]
+  timeCtx: TimeContext
 ): ResolvedAction {
   const a = item.node;
   const gameStartTime = a.startTime;
@@ -155,11 +126,10 @@ function resolveAction(
   }
 
   // Calculate Real Duration
-  const realEndTime = getShiftedTime(
+  const realEndTime = timeCtx.getShiftedEndTime(
     realStartTime,
     a.duration,
-    item.id,
-    timeExtensions
+    item.id
   );
   const realDuration = round(realEndTime - realStartTime);
 
@@ -174,19 +144,17 @@ function resolveAction(
         const originalOffset = Number(effect.offset) || 0;
 
         // Effect Start
-        const effectRealStartTime = getShiftedTime(
+        const effectRealStartTime = timeCtx.getShiftedEndTime(
           realStartTime,
           originalOffset,
-          item.id,
-          timeExtensions
+          item.id
         );
 
         // Effect Duration
-        const effectRealEndTime = getShiftedTime(
+        const effectRealEndTime = timeCtx.getShiftedEndTime(
           effectRealStartTime,
           effect.duration,
-          item.id,
-          timeExtensions
+          item.id
         );
 
         resolvedEffects.push({
@@ -275,9 +243,11 @@ export function compileTimeline(
   const { stopSources, sourceShiftMap, timeExtensions } =
     calculateTimeShifts(sortedActions);
 
+  const timeCtx = new TimeContext(timeExtensions);
+
   // 3. Resolve Actions
   const resolvedActions: ResolvedAction[] = sortedActions.map((item) =>
-    resolveAction(item, stopSources, sourceShiftMap, timeExtensions)
+    resolveAction(item, stopSources, sourceShiftMap, timeCtx)
   );
 
   // 4. Resolve Consumption
