@@ -14,7 +14,8 @@
       "@/*": ["./src/*"]
     },
     "allowJs": true,
-    "checkJs": false
+    "checkJs": false,
+    "lib": ["ESNext", "DOM"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

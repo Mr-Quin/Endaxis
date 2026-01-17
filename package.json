@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "convert:images": "node scripts/convert-png-to-webp.js",
-    "type-check": "vue-tsc --noEmit --project tsconfig.app.json"
+    "type-check": "vue-tsc --noEmit --project tsconfig.app.json",
+    "test": "vitest"
   },
   "dependencies": {
     "@vueuse/core": "^14.1.0",
