@@ -77,7 +77,9 @@ export function compileTimeline(
     // The type `Action` doesn't explicitly have `isDisabled` in my definition?
     // Let's assume enabled.
     const hasWindow = (a.triggerWindow || 0) >= 0;
-    return (a.type === "link" || a.type === "ultimate") && hasWindow;
+    return (
+      (a.type === "link" || a.type === "ultimate") && hasWindow && !a.isDisabled
+    );
   });
 
   const sourceShiftMap = new Map<string, ShiftContext>();

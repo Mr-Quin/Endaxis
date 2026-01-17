@@ -25,9 +25,10 @@ export interface Action {
   duration: number;
   triggerWindow?: number;
   animationTime?: number;
+  isDisabled?: boolean;
   allowedTypes: string[];
   damageTicks: DamageTick[];
-  physicalAnomaly: Anomaly[][]; // Nested array to match store
+  physicalAnomaly: Anomaly[][];
 }
 
 export interface ActionNode {

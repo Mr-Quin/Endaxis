@@ -78,7 +78,7 @@ describe("compileTimeline", () => {
       expect(resolvedUlt.realStartTime).toBe(2);
       expect(resolvedUlt.realDuration).toBe(5);
 
-      // 推迟 2 秒
+      // 推迟 1 秒
       expect(resolvedSkill.realStartTime).toBe(4);
 
       // 长度不变
@@ -111,6 +111,40 @@ describe("compileTimeline", () => {
 
       // 延长 2.2 + 1.5 + 0.5 = 4.2
       expect(resolvedSkill.realDuration).toBe(4.2);
+    });
+
+    it("应忽略禁用的动作", () => {
+      const ult = createMockAction("ULT", 2, 5, {
+        type: "ultimate",
+        animationTime: 2,
+        isDisabled: true,
+      });
+      const skill = createMockAction("SKILL", 3, 1, { type: "skill" });
+
+      const result = compileTimeline([ult, skill]);
+
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+
+      // ULT 被禁用，所以 SKILL 不受影响
+      expect(resolvedSkill.realStartTime).toBe(3);
+      expect(resolvedSkill.realDuration).toBe(1);
+    });
+
+    // 触发窗口为负
+    it("应忽略幽灵动作", () => {
+      const ult = createMockAction("ULT", 2, 5, {
+        type: "ultimate",
+        animationTime: 2,
+        triggerWindow: -1,
+      });
+      const skill = createMockAction("SKILL", 3, 1, { type: "skill" });
+
+      const result = compileTimeline([ult, skill]);
+
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+
+      expect(resolvedSkill.realStartTime).toBe(3);
+      expect(resolvedSkill.realDuration).toBe(1);
     });
 
     it("连携的冻屏可被缩短", () => {
