@@ -90,20 +90,26 @@ describe("compileTimeline", () => {
       animationTime: 1.5,
     });
     const skill = createMockAction("SKILL", 0, 2.2, { type: "skill" });
+    const link = createMockAction("LINK", 3.5, 1.2, { type: "link" });
 
-    const result = compileTimeline([ult, skill]);
+    const result = compileTimeline([ult, skill, link]);
 
     const resolvedUlt = result.actions.find((a) => a.id === "ULT")!;
     const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+    const resolvedLink = result.actions.find((a) => a.id === "LINK")!;
 
     expect(resolvedUlt.realStartTime).toBe(2);
-    expect(resolvedUlt.realDuration).toBe(3);
+    // 延长 3 + 0.5 = 3.5
+    expect(resolvedUlt.realDuration).toBe(3.5);
+
+    expect(resolvedLink.realStartTime).toBe(3.5);
+    expect(resolvedLink.realDuration).toBe(1.2);
 
     // 开始时间不变
     expect(resolvedSkill.realStartTime).toBe(0);
 
-    // 时间延长
-    expect(resolvedSkill.realDuration).toBe(3.7);
+    // 延长 2.2 + 1.5 + 0.5 = 4.2
+    expect(resolvedSkill.realDuration).toBe(4.2);
   });
 
   it("连携的冻屏可被缩短", () => {

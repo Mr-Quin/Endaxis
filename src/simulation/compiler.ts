@@ -27,13 +27,17 @@ interface ShiftContext {
   physicalEnd: number;
 }
 
-interface Extension {
+interface TimeExtension {
   time: number; // logical time of the source
   gameTime: number; // game time relative to cumulative
   amount: number;
   sourceId: string;
   cumulativeFreezeTime: number;
   // physicalStart: number;
+}
+
+function round(num: number, factor: number = 1000): number {
+  return Math.round(num * factor) / factor;
 }
 
 export function compileTimeline(
@@ -72,7 +76,7 @@ export function compileTimeline(
   let lastPhysicalEnd = 0;
 
   // We also need a linear list of extensions for `getShiftedEndTime` logic
-  const globalExtensions: Extension[] = [];
+  const globalExtensions: TimeExtension[] = [];
   let cumulativeFreezeTime = 0;
 
   stopSources.forEach((sourceItem, index) => {
@@ -81,31 +85,31 @@ export function compileTimeline(
     const nextSource = nextSourceItem?.node;
 
     const logicalStart = source.startTime;
-    const physicalStart = Math.max(logicalStart, lastPhysicalEnd); // This might need correction.
+    const physicalStart = round(Math.max(logicalStart, lastPhysicalEnd)); // This might need correction.
     // In store: Math.max(source.logicalStartTime, lastPhysicalEnd)
     // Here source.startTime IS logical.
 
     let amount = 0;
     if (source.type === "ultimate") {
-      amount = Number(source.animationTime) || 1.5;
+      amount = source.animationTime || 1.5;
     } else {
       // Link logic
       if (nextSource) {
         const gap = nextSource.startTime - source.startTime;
-        amount = Math.min(0.5, Math.max(0.1, Math.round(gap * 1000) / 1000));
+        amount = Math.min(0.5, Math.max(0.1, round(gap)));
       } else {
         amount = 0.5;
       }
     }
 
-    const shift = physicalStart - logicalStart;
+    const shift = round(physicalStart - logicalStart);
 
     // Record for action shifting
     sourceShiftMap.set(sourceItem.id, {
       shift,
       amount,
       physicalStart,
-      physicalEnd: physicalStart + amount,
+      physicalEnd: round(physicalStart + amount),
     });
 
     // Record for global duration shifting
@@ -119,8 +123,8 @@ export function compileTimeline(
       cumulativeFreezeTime: cumulativeFreezeTime,
     });
 
-    cumulativeFreezeTime += amount;
-    lastPhysicalEnd = physicalStart + amount;
+    cumulativeFreezeTime = round(cumulativeFreezeTime + amount);
+    lastPhysicalEnd = round(physicalStart + amount);
   });
 
   // Helper to shift a time point (duration extension)
@@ -172,7 +176,7 @@ export function compileTimeline(
         const freezeAmount = shiftCtx.amount;
 
         if (freezeTime >= startTime && freezeTime < currentTimeLimit) {
-          currentTimeLimit += freezeAmount;
+          currentTimeLimit = round(currentTimeLimit + freezeAmount);
           processedExtensions.add(sourceItem.id);
           changed = true;
         }
@@ -202,14 +206,13 @@ export function compileTimeline(
       const ctx = sourceShiftMap.get(activeSourceItem.id)!;
       if (item.id === activeSourceItem.id) {
         // Self is the freezer
-        realStartTime = Math.round(ctx.physicalStart * 1000) / 1000;
+        realStartTime = round(ctx.physicalStart);
       } else {
         // Shifted by predecessor
         const normalShifted = logicalStartTime + ctx.shift;
         // Ensure we don't start before the freezer ends?
         // "Math.max(normalShiftedTime, ctx.physicalEnd)"
-        realStartTime =
-          Math.round(Math.max(normalShifted, ctx.physicalEnd) * 1000) / 1000;
+        realStartTime = round(Math.max(normalShifted, ctx.physicalEnd));
       }
     } else {
       // No prior freeze
@@ -219,7 +222,7 @@ export function compileTimeline(
     // Now calculate Real Duration
     // Store: `end = getShiftedEndTime(realStartTime, duration, id)`
     const realEndTime = getShiftedTime(realStartTime, a.duration, item.id);
-    const realDuration = realEndTime - realStartTime;
+    const realDuration = round(realEndTime - realStartTime);
 
     // 4. Resolve Effects (Physical Anomaly)
     const resolvedEffects: ResolvedEffect[] = [];
@@ -259,7 +262,7 @@ export function compileTimeline(
             effect.duration,
             item.id
           );
-          let displayDuration = effectRealEndTime - effectRealStartTime;
+          let displayDuration = round(effectRealEndTime - effectRealStartTime);
 
           let isConsumed = false;
 
@@ -346,7 +349,7 @@ export function compileTimeline(
 
             const cutDuration = consumptionTime - effect.realStartTime;
             // Store: `snappedCutDuration`.
-            const snappedCut = Math.round(cutDuration * 1000) / 1000;
+            const snappedCut = round(cutDuration);
 
             if (snappedCut >= 0) {
               effect.displayDuration = Math.min(
@@ -363,7 +366,7 @@ export function compileTimeline(
 
   // Calculate Meta
   const totalDuration = resolvedActions.reduce(
-    (max, a) => Math.max(max, a.realStartTime + a.realDuration),
+    (max, a) => Math.max(max, round(a.realStartTime + a.realDuration)),
     0
   );
 
