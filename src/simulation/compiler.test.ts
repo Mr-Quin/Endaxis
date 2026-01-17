@@ -59,8 +59,8 @@ describe("compileTimeline", () => {
 
     const result = compileTimeline(actions);
     expect(result.actions).toHaveLength(2);
-    expect(result.actions[0].realStartTime).toBe(0);
-    expect(result.actions[1].realStartTime).toBe(6);
+    expect(result.actions[0]?.realStartTime).toBe(0);
+    expect(result.actions[1]?.realStartTime).toBe(6);
   });
 
   describe("时停计算", () => {
@@ -216,12 +216,74 @@ describe("compileTimeline", () => {
 
       expect(resolvedSkill.effects).toHaveLength(1);
       // 动作推迟至 4 秒，状态再延后 1 秒 = 5 秒
-      expect(resolvedSkill.effects[0].realStartTime).toBe(5);
+      expect(resolvedSkill.effects[0]?.realStartTime).toBe(5);
+      expect(resolvedSkill.effects[0]?.realDuration).toBe(1);
+      expect(resolvedSkill.effects[0]?.extensionAmount).toBe(0);
     });
 
-    it("应推延长时停期间未结束的状态的持续时间", () => {});
+    it("应推延长时停期间未结束的状态的持续时间", () => {
+      const ult = createMockAction("ULT", 3, 5, {
+        type: "ultimate",
+        animationTime: 2,
+      });
+      const skill = createMockAction("SKILL", 1, 1, {
+        type: "skill",
+        physicalAnomaly: [
+          [
+            createAnomaly({
+              _id: "eff1",
+              offset: 1,
+              duration: 2,
+              type: "buff",
+            }),
+          ],
+        ],
+      });
 
-    it("应推迟伤害触发点", () => {});
+      const result = compileTimeline([ult, skill]);
+
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+
+      expect(resolvedSkill.effects).toHaveLength(1);
+      expect(resolvedSkill.effects[0]?.realStartTime).toBe(2);
+      // 状态持续时间延长 2 秒
+      expect(resolvedSkill.effects[0]?.realDuration).toBe(4);
+      expect(resolvedSkill.effects[0]?.extensionAmount).toBe(2);
+    });
+
+    it("应推迟伤害触发点", () => {
+      const ult = createMockAction("ULT", 2, 5, {
+        type: "ultimate",
+        animationTime: 2,
+      });
+      const skill = createMockAction("SKILL", 1, 2, {
+        type: "skill",
+        damageTicks: [
+          {
+            offset: 0,
+            sp: 0,
+            stagger: 0,
+          },
+          {
+            offset: 2,
+            sp: 0,
+            stagger: 0,
+          },
+        ],
+      });
+
+      const result = compileTimeline([ult, skill]);
+
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+
+      expect(resolvedSkill.resolvedDamageTicks).toHaveLength(2);
+      // 第一段伤害不受影响
+      expect(resolvedSkill.resolvedDamageTicks[0]?.realOffset).toBe(0);
+      expect(resolvedSkill.resolvedDamageTicks[0]?.realTime).toBe(1);
+      // 第二段伤害推迟2秒
+      expect(resolvedSkill.resolvedDamageTicks[1]?.realOffset).toBe(4);
+      expect(resolvedSkill.resolvedDamageTicks[1]?.realTime).toBe(5);
+    });
   });
 
   it("应计算状态消耗", () => {
@@ -249,7 +311,7 @@ describe("compileTimeline", () => {
     const effect = rProd.effects[0];
 
     expect(effect).toBeDefined();
-    expect(effect.isConsumed).toBe(true);
-    expect(effect.displayDuration).toBe(5);
+    expect(effect?.isConsumed).toBe(true);
+    expect(effect?.displayDuration).toBe(5);
   });
 });

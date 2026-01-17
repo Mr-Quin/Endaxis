@@ -160,20 +160,20 @@ function resolveAction(
         );
 
         resolvedEffects.push({
+          ...effect,
           type: "effect",
           id: uniqueId,
           actionId: item.id,
           uniqueId: `${uniqueId}_${flatIndex}`,
 
-          // Layout Data
           realStartTime: effectRealStartTime,
+          realDuration: round(effectRealEndTime - effectRealStartTime),
           displayDuration: round(effectRealEndTime - effectRealStartTime),
           isConsumed: false,
           extensionAmount: round(
             round(effectRealEndTime - effectRealStartTime) - effect.duration
           ),
 
-          // Inheritance
           rowIndex,
           colIndex,
           flatIndex,

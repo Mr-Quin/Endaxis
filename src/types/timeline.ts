@@ -57,6 +57,7 @@ export interface AnomalyNode {
 
 export interface ResolvedEffect extends AnomalyNode {
   uniqueId: string;
+  realDuration: number;
   realStartTime: number;
   displayDuration: number;
   isConsumed: boolean;
