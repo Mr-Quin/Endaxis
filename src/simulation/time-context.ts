@@ -1,4 +1,4 @@
-import { TimeExtension } from "../types/timeline";
+import type { TimeExtension } from "../types/timeline";
 
 function round(num: number, factor: number = 1000): number {
   return Math.round(num * factor) / factor;

@@ -1,3 +1,5 @@
+import type { TimeContext } from "../simulation/time-context";
+
 export interface Anomaly {
   _id: string;
   offset: number;
@@ -81,6 +83,7 @@ export interface TimeExtension {
 export interface ResolvedTimeline {
   actions: ResolvedAction[];
   timeExtensions: TimeExtension[];
+  timeContext: TimeContext;
   meta: {
     totalDuration: number;
     totalDamage: number;

@@ -4,6 +4,7 @@ import { watchThrottled } from '@vueuse/core'
 import { executeFetch } from '@/api/fetchStrategy.js'
 import { compressGzip, decompressGzip } from '@/utils/gzipUtils'
 import { CORE_STATS, createDefaultStats } from '@/utils/coreStats.js'
+import { compileTimeline } from '../simulation/compiler'
 
 const uid = () => Math.random().toString(36).substring(2, 9)
 
@@ -1977,9 +1978,40 @@ export const useTimelineStore = defineStore('timeline', () => {
     // ===================================================================================
     // 监控数据计算 (Monitor Data)
     // ===================================================================================
+    const useNewCompiler = ref(false);
 
-    // 获取全局所有的时停延长点
-    const globalExtensions = computed(() => {
+    function toggleNewCompiler() {
+        useNewCompiler.value = !useNewCompiler.value;
+    }
+
+    const compiledTimeline = computed(() => {
+        const actionNodes = [];
+        tracks.value.forEach((track, trackIndex) => {
+            track.actions.forEach(action => {
+                actionNodes.push({
+                    type: 'action',
+                    id: action.instanceId,
+                    trackIndex,
+                    skillId: action.dataId,
+                    node: {
+                        ...action,
+                        startTime: action.logicalStartTime ?? action.startTime,
+                        physicalAnomaly: action.physicalAnomaly || []
+                    }
+                });
+            });
+        });
+
+        const options = {
+            connections: connections.value
+        };
+
+        return compileTimeline(actionNodes, options);
+    });
+
+    const timeContext = computed(() => compiledTimeline.value.timeContext);
+
+    const legacyGlobalExtensions = computed(() => {
         const sources = [];
         tracks.value.forEach(track => {
             track.actions.forEach(action => {
@@ -2026,6 +2058,10 @@ export const useTimelineStore = defineStore('timeline', () => {
             cumulativeTime += amount;
         }
         return extensions;
+    });
+
+    const globalExtensions = computed(() => {
+        return useNewCompiler.value ? compiledTimeline.value.timeExtensions : legacyGlobalExtensions.value;
     });
 
     function refreshAllActionShifts(excludeIds = []) {
@@ -2085,6 +2121,10 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function getShiftedEndTime(startTime, duration, excludeActionId = null) {
+        if (useNewCompiler.value) {
+            return timeContext.value.getShiftedEndTime(startTime, duration, excludeActionId);
+        }
+
         let currentTimeLimit = startTime + duration;
         let processedExtensions = new Set();
         let changed = true;
@@ -2103,6 +2143,10 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function toGameTime(realTimeS) {
+        if (useNewCompiler.value) {
+            return timeContext.value.toGameTime(realTimeS);
+        }
+
         const extensions = globalExtensions.value;
 
         for (const ext of extensions) {
@@ -2129,6 +2173,10 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     function toRealTime(gameTimeS) {
+        if (useNewCompiler.value) {
+            return timeContext.value.toRealTime(gameTimeS);
+        }
+
         const extensions = globalExtensions.value;
         const breakPoint = extensions.toReversed().find(e => e.gameTime <= gameTimeS);
 
@@ -2789,7 +2837,7 @@ export const useTimelineStore = defineStore('timeline', () => {
     }
 
     return {
-        MAX_SCENARIOS, toTimelineSpace, toViewportSpace, toGameTime, toRealTime,
+        MAX_SCENARIOS, toTimelineSpace, toViewportSpace, toGameTime, toRealTime, toggleNewCompiler,
         systemConstants, isLoading, characterRoster, iconDatabase, tracks, connections, activeTrackId, timelineScrollTop, timelineShift, timelineRect, trackLaneRects, nodeRects, draggingSkillData,
         selectedActionId, selectedLibrarySkillId, selectedLibrarySource, selectedWeaponStatusId, multiSelectedIds, clipboard, isCapturing, setIsCapturing, showCursorGuide, isBoxSelectMode, cursorPosTimeline, cursorCurrentTime, cursorPosition, snapStep,
         selectedAnomalyId, setSelectedAnomalyId, updateTrackGaugeEfficiency,
@@ -2814,5 +2862,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         equipmentCategoryOverrides, updateEquipmentCategoryOverride,
         activeSetBonusLibrary, addSetBonusStatus, getActiveSetBonusCategories,
         misc,
+        useNewCompiler,
     }
 })

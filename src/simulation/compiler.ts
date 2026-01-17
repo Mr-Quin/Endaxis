@@ -262,6 +262,7 @@ export function compileTimeline(
   return {
     actions: resolvedActions,
     timeExtensions,
+    timeContext: timeCtx,
     meta: {
       totalDuration,
       totalDamage: 0,
