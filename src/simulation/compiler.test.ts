@@ -155,7 +155,7 @@ describe("compileTimeline", () => {
     expect(r2.realDuration).toBe(2.7);
   });
 
-  it("should calculate consumption logic", () => {
+  it("应计算状态消耗", () => {
     const producer = createMockAction("PROD", 0, 10, {
       physicalAnomaly: [
         [createAnomaly({ _id: "eff1", offset: 0, duration: 10, type: "buff" })],
@@ -168,7 +168,7 @@ describe("compileTimeline", () => {
         id: "c1",
         fromEffectId: "eff1",
         to: "CONS",
-        from: "PROD", // Added required fallback
+        from: "PROD",
         isConsumption: true,
         consumptionOffset: 0,
       },
