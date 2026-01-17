@@ -1,6 +1,5 @@
 import type {
   ActionNode,
-  ResolvedTimeline,
   ResolvedAction,
   ResolvedEffect,
   Anomaly,
@@ -32,8 +31,17 @@ interface TimeExtension {
   gameTime: number; // game time relative to cumulative
   amount: number;
   sourceId: string;
+  logicalTime: number;
   cumulativeFreezeTime: number;
-  // physicalStart: number;
+}
+
+interface ResolvedTimeline {
+  actions: ResolvedAction[];
+  timeExtensions: TimeExtension[];
+  meta: {
+    totalDuration: number;
+    totalDamage: number;
+  };
 }
 
 function round(num: number, factor: number = 1000): number {
@@ -120,6 +128,7 @@ export function compileTimeline(
       gameTime: logicalStart, // Approximate?
       amount,
       sourceId: sourceItem.id,
+      logicalTime: logicalStart,
       cumulativeFreezeTime: cumulativeFreezeTime,
     });
 
@@ -372,6 +381,7 @@ export function compileTimeline(
 
   return {
     actions: resolvedActions,
+    timeExtensions: globalExtensions,
     meta: {
       totalDuration,
       totalDamage: 0,

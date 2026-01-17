@@ -53,7 +53,7 @@ describe("compileTimeline", () => {
     }),
   });
 
-  it("should map basic actions without shifts", () => {
+  it("应正确映射动作", () => {
     const actions = [createMockAction("A", 0, 5), createMockAction("B", 6, 2)];
 
     const result = compileTimeline(actions);
@@ -62,97 +62,105 @@ describe("compileTimeline", () => {
     expect(result.actions[1].realStartTime).toBe(6);
   });
 
-  it("冻屏期间开始的动作应推迟", () => {
-    const ult = createMockAction("ULT", 2, 5, {
-      type: "ultimate",
-      animationTime: 2,
-    });
-    const skill = createMockAction("SKILL", 3, 1, { type: "skill" });
+  describe("冻屏时间计算", () => {
+    it("应推迟冻屏期间开始的动作", () => {
+      const ult = createMockAction("ULT", 2, 5, {
+        type: "ultimate",
+        animationTime: 2,
+      });
+      const skill = createMockAction("SKILL", 3, 1, { type: "skill" });
 
-    const result = compileTimeline([ult, skill]);
+      const result = compileTimeline([ult, skill]);
 
-    const resolvedUlt = result.actions.find((a) => a.id === "ULT")!;
-    const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+      const resolvedUlt = result.actions.find((a) => a.id === "ULT")!;
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
 
-    expect(resolvedUlt.realStartTime).toBe(2);
-    expect(resolvedUlt.realDuration).toBe(5);
+      expect(resolvedUlt.realStartTime).toBe(2);
+      expect(resolvedUlt.realDuration).toBe(5);
 
-    // 推迟2秒
-    expect(resolvedSkill.realStartTime).toBe(4);
+      // 推迟 2 秒
+      expect(resolvedSkill.realStartTime).toBe(4);
 
-    // 时间不变
-    expect(resolvedSkill.realDuration).toBe(1);
-  });
-
-  it("冻屏期间未结束的动作应延长", () => {
-    const ult = createMockAction("ULT", 2, 3, {
-      type: "ultimate",
-      animationTime: 1.5,
-    });
-    const skill = createMockAction("SKILL", 0, 2.2, { type: "skill" });
-    const link = createMockAction("LINK", 3.5, 1.2, { type: "link" });
-
-    const result = compileTimeline([ult, skill, link]);
-
-    const resolvedUlt = result.actions.find((a) => a.id === "ULT")!;
-    const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
-    const resolvedLink = result.actions.find((a) => a.id === "LINK")!;
-
-    expect(resolvedUlt.realStartTime).toBe(2);
-    // 延长 3 + 0.5 = 3.5
-    expect(resolvedUlt.realDuration).toBe(3.5);
-
-    expect(resolvedLink.realStartTime).toBe(3.5);
-    expect(resolvedLink.realDuration).toBe(1.2);
-
-    // 开始时间不变
-    expect(resolvedSkill.realStartTime).toBe(0);
-
-    // 延长 2.2 + 1.5 + 0.5 = 4.2
-    expect(resolvedSkill.realDuration).toBe(4.2);
-  });
-
-  it("连携的冻屏可被缩短", () => {
-    const link1 = createMockAction("LINK1", 0, 1.2, {
-      type: "link",
-      // 默认0.5秒
-    });
-    const link2 = createMockAction("LINK2", 0.1, 1.2, {
-      type: "link",
+      // 长度不变
+      expect(resolvedSkill.realDuration).toBe(1);
     });
 
-    const result = compileTimeline([link1, link2]);
+    it("应延长冻屏期间未结束的动作", () => {
+      const ult = createMockAction("ULT", 2, 3, {
+        type: "ultimate",
+        animationTime: 1.5,
+      });
+      const skill = createMockAction("SKILL", 0, 2.2, { type: "skill" });
+      const link = createMockAction("LINK", 3.5, 1.2, { type: "link" });
 
-    const l1 = result.actions.find((a) => a.id === "LINK1")!;
-    const l2 = result.actions.find((a) => a.id === "LINK2")!;
+      const result = compileTimeline([ult, skill, link]);
 
-    expect(l1.realStartTime).toBe(0);
-    // 延迟l2的冻屏时间
-    expect(l1.realDuration).toBe(1.7);
-    expect(l2.realStartTime).toBe(0.1);
-    expect(l2.realDuration).toBe(1.2);
-  });
+      const resolvedUlt = result.actions.find((a) => a.id === "ULT")!;
+      const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
+      const resolvedLink = result.actions.find((a) => a.id === "LINK")!;
 
-  it("终结技不可重叠", () => {
-    const ult1 = createMockAction("ULT1", 0, 1.5, {
-      type: "ultimate",
-      animationTime: 1.5,
+      expect(resolvedUlt.realStartTime).toBe(2);
+      // 延长 3 + 0.5 = 3.5
+      expect(resolvedUlt.realDuration).toBe(3.5);
+
+      expect(resolvedLink.realStartTime).toBe(3.5);
+      expect(resolvedLink.realDuration).toBe(1.2);
+
+      // 开始时间不变
+      expect(resolvedSkill.realStartTime).toBe(0);
+
+      // 延长 2.2 + 1.5 + 0.5 = 4.2
+      expect(resolvedSkill.realDuration).toBe(4.2);
     });
-    const ult2 = createMockAction("ULT2", 1, 2.7, {
-      type: "ultimate",
-      animationTime: 2.7,
+
+    it("连携的冻屏可被缩短", () => {
+      const link1 = createMockAction("LINK1", 0, 1.2, {
+        type: "link",
+      });
+      const link2 = createMockAction("LINK2", 0.1, 1.2, {
+        type: "link",
+      });
+
+      const result = compileTimeline([link1, link2]);
+
+      const l1 = result.actions.find((a) => a.id === "LINK1")!;
+      const l2 = result.actions.find((a) => a.id === "LINK2")!;
+
+      expect(l1.realStartTime).toBe(0);
+      // 长度延长 1.2 + 0.5 = 1.7
+      expect(l1.realDuration).toBe(1.7);
+      // 开始时间不受冻屏影响
+      expect(l2.realStartTime).toBe(0.1);
+      expect(l2.realDuration).toBe(1.2);
     });
 
-    const result = compileTimeline([ult1, ult2]);
+    it("终结技冻屏不可缩短", () => {
+      const ult1 = createMockAction("ULT1", 0, 1.5, {
+        type: "ultimate",
+        animationTime: 1.5,
+      });
+      const ult2 = createMockAction("ULT2", 1, 2.7, {
+        type: "ultimate",
+        animationTime: 2.7,
+      });
 
-    const r1 = result.actions.find((a) => a.id === "ULT1")!;
-    const r2 = result.actions.find((a) => a.id === "ULT2")!;
+      const result = compileTimeline([ult1, ult2]);
 
-    expect(r1.realStartTime).toBe(0);
-    expect(r1.realDuration).toBe(1.5);
-    // 延后至 ult1 结束
-    expect(r2.realStartTime).toBe(1.5);
-    expect(r2.realDuration).toBe(2.7);
+      const r1 = result.actions.find((a) => a.id === "ULT1")!;
+      const r2 = result.actions.find((a) => a.id === "ULT2")!;
+
+      expect(r1.realStartTime).toBe(0);
+      expect(r1.realDuration).toBe(1.5);
+      // 延后至 ult1 结束
+      expect(r2.realStartTime).toBe(1.5);
+      expect(r2.realDuration).toBe(2.7);
+    });
+
+    it("应推迟冻屏期间开始的状态", () => {});
+
+    it("应推延长冻屏期间未结束的状态的持续时间", () => {});
+
+    it("应推迟伤害触发点", () => {});
   });
 
   it("应计算状态消耗", () => {

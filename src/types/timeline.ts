@@ -70,11 +70,3 @@ export interface ResolvedAction {
     duration: number;
   };
 }
-
-export interface ResolvedTimeline {
-  actions: ResolvedAction[];
-  meta: {
-    totalDuration: number;
-    totalDamage: number;
-  };
-}
