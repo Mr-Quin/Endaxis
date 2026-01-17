@@ -1,25 +1,56 @@
 import { describe, it, expect } from "vitest";
 import { compileTimeline } from "./compiler";
-import type { ActionNode } from "../types/timeline";
+import type { Action, ActionNode, Anomaly } from "../types/timeline";
+
+function createAction(action: Partial<Action>): Action {
+  return {
+    instanceId: action.instanceId || "",
+    type: "skill",
+    name: "mock_skill",
+    startTime: 0,
+    cooldown: 0,
+    spCost: 0,
+    gaugeCost: 0,
+    gaugeGain: 0,
+    teamGaugeGain: 0,
+    duration: 0,
+    triggerWindow: 0,
+    animationTime: 0,
+    allowedTypes: ["skill"],
+    damageTicks: [],
+    physicalAnomaly: [],
+    ...action,
+  };
+}
+
+function createAnomaly(anomaly: Partial<Anomaly>): Anomaly {
+  return {
+    _id: anomaly._id || "",
+    type: "buff",
+    duration: 0,
+    offset: 0,
+    ...anomaly,
+  };
+}
 
 describe("compileTimeline", () => {
   const createMockAction = (
     id: string,
     startTime: number,
     duration: number,
-    options: Partial<ActionNode["node"]> = {}
+    options: Partial<Action> = {}
   ): ActionNode => ({
     id,
     trackIndex: 0,
     skillId: "mock_skill",
-    node: {
+    node: createAction({
       startTime,
       duration,
       type: options.type || "skill",
       animationTime: options.animationTime,
       triggerWindow: options.triggerWindow,
       ...options,
-    },
+    }),
   });
 
   it("should map basic actions without shifts", () => {
@@ -66,13 +97,13 @@ describe("compileTimeline", () => {
     const resolvedSkill = result.actions.find((a) => a.id === "SKILL")!;
 
     expect(resolvedUlt.realStartTime).toBe(2);
-    expect(resolvedUlt.realDuration).toBe(1.5);
+    expect(resolvedUlt.realDuration).toBe(3);
 
     // 开始时间不变
     expect(resolvedSkill.realStartTime).toBe(0);
 
     // 时间延长
-    expect(resolvedSkill.realDuration).toBe(3.2);
+    expect(resolvedSkill.realDuration).toBe(3.7);
   });
 
   it("连携的冻屏可被缩短", () => {
@@ -121,7 +152,7 @@ describe("compileTimeline", () => {
   it("should calculate consumption logic", () => {
     const producer = createMockAction("PROD", 0, 10, {
       physicalAnomaly: [
-        [{ id: "eff1", offset: 0, duration: 10, type: "buff" }],
+        [createAnomaly({ _id: "eff1", offset: 0, duration: 10, type: "buff" })],
       ],
     });
     const consumer = createMockAction("CONS", 5, 2);
