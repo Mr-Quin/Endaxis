@@ -4,6 +4,7 @@ import type {
   ActionStartEvent,
   ActionEndEvent,
   SpChangeEvent,
+  SpRegenPauseEvent,
 } from "../types/simulation";
 import type { EventHandler } from "./engine";
 import {
@@ -12,15 +13,11 @@ import {
   StaggerPipeline,
 } from "./pipeline";
 
-// Shared Pipeline Instances
 const damagePipeline = new DamagePipeline();
 const staggerPipeline = new StaggerPipeline();
 
-// --- Damage Handler ---
 export class DamageHandler implements EventHandler<DamageTickEvent> {
   handle(e: DamageTickEvent, ctx: SimulationContext) {
-    // 1. Snapshot
-    // In legacy, we might have stagger from tick.stagger
     const baseDamage = e.payload.damage;
     const baseStagger = e.payload.tickData ? e.payload.tickData.stagger : 0;
 
@@ -34,15 +31,13 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
       targetId: e.payload.targetId,
     };
 
-    // 2. Pipelines
+    // TODO: 伤害计算
     const dmgResult = damagePipeline.calculate(snapshot, ctx.state);
     const finalStagger = staggerPipeline.calculate(dmgResult, ctx.state);
 
-    // 3. Apply to State
-    // Stagger
     if (finalStagger > 0) {
       const startStagger = ctx.state.enemy.getStagger();
-      const { broken, breakEnd } = ctx.state.enemy.addStagger(
+      const { broken } = ctx.state.enemy.addStagger(
         finalStagger,
         ctx.state.getCurrentTime()
       );
@@ -50,12 +45,13 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
         e,
         `${
           e.payload.sourceId
-        } - Stagger: ${startStagger} -> ${ctx.state.enemy.getStagger()} (${finalStagger})`
+        } - Stagger: ${startStagger} -> ${ctx.state.enemy.getStagger()} (${finalStagger})${
+          broken ? " (BROKEN)" : ""
+        }`
       );
     }
 
     if (e.payload.tickData && e.payload.tickData.sp > 0) {
-      ctx.log(e, `${e.payload.sourceId} - Queueing SP Change`);
       // 击中SP恢复
       ctx.queue.enqueue({
         type: "SP_CHANGE",
@@ -64,7 +60,8 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
           actorId: e.payload.sourceId,
           spChange: e.payload.tickData.sp,
           reason: "damage",
-          sourceId: e.payload.sourceId,
+          sourceId: e.payload.actionId,
+          parent: e,
         },
       });
     }
@@ -74,8 +71,22 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
 export class ActionStartHandler implements EventHandler<ActionStartEvent> {
   handle(e: ActionStartEvent, ctx: SimulationContext) {
     ctx.log(e, `${e.payload.actorId} - ${e.payload.type}`);
+
+    const spFreezeDuration = this.getSpFreezeDuration(e);
+    if (spFreezeDuration > 0) {
+      // 暂停SP再生
+      ctx.queue.enqueue({
+        type: "SP_REGEN_PAUSE",
+        time: ctx.state.getCurrentTime(),
+        payload: {
+          sourceId: e.payload.actorId,
+          duration: spFreezeDuration,
+        },
+      });
+    }
+
     if (e.payload.spCost && e.payload.spCost > 0) {
-      //技能SP消耗
+      // 技能SP消耗
       ctx.queue.enqueue({
         type: "SP_CHANGE",
         time: ctx.state.getCurrentTime(),
@@ -84,23 +95,27 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
           spChange: -e.payload.spCost,
           reason: "skill",
           sourceId: e.payload.actionId,
+          parent: e,
         },
       });
     }
-    // 暂停SP再生
+  }
+
+  private getSpFreezeDuration(e: ActionStartEvent) {
     if (e.payload.type === "skill") {
-      ctx.log(e, `${e.payload.actorId} - Pausing SP Regen for ${0.5}`);
-      ctx.state.team.pauseSpRegen(0.5);
+      return 0.5;
     }
     if (e.payload.type === "ultimate" || e.payload.type === "link") {
-      ctx.log(
-        e,
-        `${e.payload.actorId} - Pausing SP Regen for ${
-          e.payload.freezeDuration ?? 1.5
-        }`
-      );
-      ctx.state.team.pauseSpRegen(e.payload.freezeDuration ?? 1.5);
+      return e.payload.freezeDuration ?? 1.5;
     }
+    return 0;
+  }
+}
+
+export class SpRegenPauseHandler implements EventHandler<SpRegenPauseEvent> {
+  handle(e: SpRegenPauseEvent, ctx: SimulationContext) {
+    ctx.log(e, `${e.payload.sourceId} - Sp Regen Pause: ${e.payload.duration}`);
+    ctx.state.team.pauseSpRegen(e.payload.duration);
   }
 }
 
@@ -118,6 +133,7 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
           spChange: e.payload.spGain,
           reason: "skill",
           sourceId: e.payload.actionId,
+          parent: e,
         },
       });
     } else if (e.payload.type === "execution") {
@@ -134,6 +150,7 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
           spChange: ctx.state.enemy.config.executionRecovery,
           reason: "execution",
           sourceId: e.payload.actionId,
+          parent: e,
         },
       });
     }
@@ -149,10 +166,4 @@ export class SpChangeHandler implements EventHandler<SpChangeEvent> {
       `${e.payload.actorId} - ${e.payload.reason} - SP Change: ${startSp} -> ${ctx.state.team.sp}`
     );
   }
-}
-
-// --- Time Advance (Regen) ---
-export function handleTimeAdvance(dt: number, ctx: SimulationContext) {
-  // Ticks GameState
-  ctx.state.advanceTime(dt);
 }

@@ -38,9 +38,11 @@ export interface TeamStateConfig {
   linkCdReduction: number;
 }
 
-export interface TeamResources {
+export interface TeamSnapshot {
   sp: number;
   gauge: number;
+  isSpRegenPaused: boolean;
+  spRegenPauseDuration: number;
 }
 
 export interface EnemyStateConfig {
@@ -51,8 +53,10 @@ export interface EnemyStateConfig {
   executionRecovery: number;
 }
 
-export interface EnemyResources {
+export interface EnemySnapshot {
   stagger: number;
+  isLocked: boolean;
+  lockEndTime: number;
 }
 
 export interface GameConfig {
@@ -60,10 +64,15 @@ export interface GameConfig {
   enemy: EnemyStateConfig;
 }
 
+export interface GameSnapshot {
+  team: TeamSnapshot;
+  enemy: EnemySnapshot;
+}
+
 export type SimEventType = SimEvent["type"];
 
 type SimBaseEvent<Name extends string, Data = {}> = {
-  // game time
+  // real time
   time: number;
   type: Name;
   payload: Data;
@@ -100,6 +109,7 @@ export type DamageTickEvent = SimBaseEvent<
     damage: number;
     stagger: number;
     tickData: ResolvedDamageTick;
+    actionId: string;
   }
 >;
 
@@ -110,6 +120,15 @@ export type SpChangeEvent = SimBaseEvent<
     spChange: number;
     reason: string;
     sourceId: string;
+    parent: SimEvent;
+  }
+>;
+
+export type SpRegenPauseEvent = SimBaseEvent<
+  "SP_REGEN_PAUSE",
+  {
+    sourceId: string;
+    duration: number;
   }
 >;
 
@@ -117,20 +136,23 @@ export type SimEvent =
   | ActionStartEvent
   | ActionEndEvent
   | DamageTickEvent
-  | SpChangeEvent;
+  | SpChangeEvent
+  | SpRegenPauseEvent;
 
 export type SimLogEntryBase<Name extends string, Data = {}> = {
   type: Name;
   time: number;
+  beforeSnapshot: GameSnapshot;
+  afterSnapshot: GameSnapshot;
   payload: Data;
 };
 
 export type SimLogEntry =
   | SimLogEntryBase<
-      "SP_ANCHOR",
+      "SP_REGEN_PAUSE",
       {
-        sp: number;
-        regenRate: number;
+        sourceId: string;
+        duration: number;
       }
     >
   | SimLogEntryBase<
@@ -151,4 +173,9 @@ export interface SimulationContext {
     enqueue: (event: SimEvent) => void;
   };
   log: (e: SimEvent, msg: string) => void;
+}
+
+export interface EventHookContext extends SimulationContext {
+  beforeSnapshot: GameSnapshot;
+  afterSnapshot: GameSnapshot;
 }

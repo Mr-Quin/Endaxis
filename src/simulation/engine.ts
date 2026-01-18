@@ -1,8 +1,8 @@
 import type {
   SimEvent,
-  // WorldState,
   SimulationContext,
   SimEventType,
+  EventHookContext,
 } from "../types/simulation";
 import { GameState } from "./state";
 
@@ -10,10 +10,14 @@ export interface EventHandler<E extends SimEvent> {
   handle(event: E, ctx: SimulationContext): void;
 }
 
-export type EventHook = (event: SimEvent, ctx: SimulationContext) => void;
+export type EventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
-class PriorityQueue<T extends { time: number }> {
-  private items: T[] = [];
+export class PriorityQueue<T extends { time: number }> {
+  constructor(private readonly items: T[] = []) {}
+
+  getItems() {
+    return this.items;
+  }
 
   enqueue(item: T) {
     this.items.push(item);
@@ -30,6 +34,10 @@ class PriorityQueue<T extends { time: number }> {
 
   peek(): T | undefined {
     return this.items[0];
+  }
+
+  clone() {
+    return new PriorityQueue<T>([...this.items]);
   }
 }
 
@@ -50,8 +58,12 @@ export class SimulationEngine {
     this.handlers.set(type, handler);
   }
 
-  subscribe(listener: EventHook) {
+  subscribe(listener: EventHook): () => void {
     this.listeners.add(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   enqueue(event: SimEvent) {
@@ -71,6 +83,7 @@ export class SimulationEngine {
 
     while (!this.queue.isEmpty()) {
       const event = this.queue.dequeue()!;
+      const beforeSnapshot = this.state.snapshot();
 
       if (event.time > this.state.getCurrentTime()) {
         const dt = event.time - this.state.getCurrentTime();
@@ -84,7 +97,15 @@ export class SimulationEngine {
         throw new Error(`No handler for event type: ${event.type}`);
       }
 
-      this.listeners.forEach((listener) => listener(event, ctx));
+      const afterSnapshot = this.state.snapshot();
+
+      this.listeners.forEach((listener) =>
+        listener(event, {
+          ...ctx,
+          beforeSnapshot,
+          afterSnapshot,
+        })
+      );
     }
 
     return this.state;

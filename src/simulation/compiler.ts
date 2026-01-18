@@ -114,11 +114,10 @@ function resolveAction(
     .reverse()
     .find((s) => s.node.startTime <= startTime);
 
-  let freezeDuration: number | undefined;
+  const realFreezeDuration = sourceShiftMap.get(item.id)?.amount;
 
   if (activeSourceItem) {
     const ctx = sourceShiftMap.get(activeSourceItem.id)!;
-    freezeDuration = ctx.amount;
     if (item.id === activeSourceItem.id) {
       realStartTime = round(ctx.realStart);
     } else {
@@ -218,7 +217,7 @@ function resolveAction(
       duration: Math.abs(action.triggerWindow || 0),
     },
     extensionAmount: actionExtension,
-    freezeDuration,
+    freezeDuration: realFreezeDuration,
   };
 }
 

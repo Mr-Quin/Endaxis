@@ -4,13 +4,13 @@ import type {
   EnemyStateConfig,
   SimLogEntry,
 } from "../types/simulation";
-import { SimulationEngine } from "./engine";
+import { PriorityQueue, SimulationEngine } from "./engine";
 import {
   DamageHandler,
   ActionStartHandler,
-  handleTimeAdvance,
   ActionEndHandler,
   SpChangeHandler,
+  SpRegenPauseHandler,
 } from "./handlers";
 import { GameState } from "./state";
 
@@ -62,6 +62,7 @@ export function simulate(
   engine.registerHandler("ACTION_START", new ActionStartHandler());
   engine.registerHandler("ACTION_END", new ActionEndHandler());
   engine.registerHandler("SP_CHANGE", new SpChangeHandler());
+  engine.registerHandler("SP_REGEN_PAUSE", new SpRegenPauseHandler());
 
   // enqueue base events
   timeline.actions.forEach((action) => {
@@ -100,6 +101,7 @@ export function simulate(
           damage: 0,
           stagger: tick.stagger,
           tickData: tick,
+          actionId: action.id,
         },
       });
     });
@@ -116,28 +118,22 @@ export function simulate(
   // Initial Point
   spData.push({ time: 0, value: gameState.team.sp });
   staggerData.push({ time: 0, value: 0 });
-  const simLog: SimLogEntry[] = [];
+  const simLog = new PriorityQueue<SimLogEntry>();
 
   engine.subscribe((event, ctx) => {
     switch (event.type) {
       case "ACTION_START":
-        simLog.push({
-          type: "SP_ANCHOR",
-          time: event.time,
-          payload: {
-            sp: ctx.state.team.sp,
-            regenRate: ctx.state.team.config.spRegenRate,
-          },
-        });
         break;
       case "ACTION_END":
         break;
       case "DAMAGE_TICK":
         break;
       case "SP_CHANGE":
-        simLog.push({
+        simLog.enqueue({
           type: "SP_CHANGE",
           time: event.time,
+          beforeSnapshot: ctx.beforeSnapshot,
+          afterSnapshot: ctx.afterSnapshot,
           payload: {
             sp: ctx.state.team.sp,
             change: event.payload.spChange,
@@ -145,12 +141,16 @@ export function simulate(
             reason: event.payload.reason,
           },
         });
-        simLog.push({
-          type: "SP_ANCHOR",
+        break;
+      case "SP_REGEN_PAUSE":
+        simLog.enqueue({
+          type: "SP_REGEN_PAUSE",
           time: event.time,
+          beforeSnapshot: ctx.beforeSnapshot,
+          afterSnapshot: ctx.afterSnapshot,
           payload: {
-            sp: ctx.state.team.sp,
-            regenRate: ctx.state.team.config.spRegenRate,
+            sourceId: event.payload.sourceId,
+            duration: event.payload.duration,
           },
         });
         break;

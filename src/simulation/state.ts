@@ -2,9 +2,17 @@ import type {
   EnemyStateConfig,
   TeamStateConfig,
   ActorState,
+  TeamSnapshot,
+  EnemySnapshot,
+  GameSnapshot,
 } from "../types/simulation";
 
-export class TeamState {
+interface BaseGameState<Snapshot> {
+  advanceTime(dt: number, currentTime: number): void;
+  snapshot(): Snapshot;
+}
+
+export class TeamState implements BaseGameState<TeamSnapshot> {
   sp: number;
   gauge: number;
   private isSpRegenPaused: boolean = false;
@@ -17,6 +25,15 @@ export class TeamState {
 
   advanceTime(dt: number, currentTime: number) {
     this.regenSp(dt, currentTime);
+  }
+
+  snapshot(): TeamSnapshot {
+    return {
+      sp: this.sp,
+      gauge: this.gauge,
+      isSpRegenPaused: this.isSpRegenPaused,
+      spRegenPauseDuration: this.spRegenPauseDuration,
+    };
   }
 
   modifySp(amount: number): number {
@@ -40,30 +57,20 @@ export class TeamState {
         this.spRegenPauseDuration -= dt;
         return;
       }
-      console.log(
-        `spRegenPauseEnd ${this.spRegenPauseDuration} -> ${currentTime}`
-      );
+
       effectiveDuration -= this.spRegenPauseDuration;
       this.isSpRegenPaused = false;
       this.spRegenPauseDuration = 0;
     }
 
-    console.log("spRegenPauseDuration", effectiveDuration);
-
     if (this.sp < this.config.maxSp) {
       const gain = effectiveDuration * this.config.spRegenRate;
-      console.log(
-        "regen",
-        `effective duration: ${effectiveDuration}`,
-        `regen rate: ${this.config.spRegenRate}`,
-        `gain: ${gain}`
-      );
       this.modifySp(gain);
     }
   }
 }
 
-export class EnemyState {
+export class EnemyState implements BaseGameState<EnemySnapshot> {
   private stagger: number = 0;
 
   isLocked: boolean = false;
@@ -75,7 +82,9 @@ export class EnemyState {
     amount: number,
     currentTime: number
   ): { broken: boolean; breakEnd?: number } {
-    if (amount <= 0) return { broken: false };
+    if (amount <= 0) {
+      return { broken: false };
+    }
 
     if (this.isLocked) {
       if (currentTime < this.lockEndTime) {
@@ -107,23 +116,30 @@ export class EnemyState {
       this.isLocked = false;
     }
   }
+
+  snapshot(): EnemySnapshot {
+    return {
+      stagger: this.stagger,
+      isLocked: this.isLocked,
+      lockEndTime: this.lockEndTime,
+    };
+  }
 }
 
-export class GameState {
+export class GameState implements BaseGameState<GameSnapshot> {
   team: TeamState;
   enemy: EnemyState;
   actors: Map<string, ActorState> = new Map();
   private currentTime: number = 0;
+  private initialSnapshot: GameSnapshot;
 
   constructor(teamConfig: TeamStateConfig, enemyConfig: EnemyStateConfig) {
     this.team = new TeamState(teamConfig);
     this.enemy = new EnemyState(enemyConfig);
+    this.initialSnapshot = this.snapshot();
   }
 
   advanceTime(deltaTime: number) {
-    console.log(
-      `advanceTime ${this.currentTime} -> ${this.currentTime + deltaTime}`
-    );
     this.currentTime += deltaTime;
     this.team.advanceTime(deltaTime, this.currentTime);
     this.enemy.advanceTime(deltaTime, this.currentTime);
@@ -131,5 +147,16 @@ export class GameState {
 
   getCurrentTime() {
     return this.currentTime;
+  }
+
+  getInitialSnapshot() {
+    return this.initialSnapshot;
+  }
+
+  snapshot(): GameSnapshot {
+    return {
+      team: this.team.snapshot(),
+      enemy: this.enemy.snapshot(),
+    };
   }
 }
