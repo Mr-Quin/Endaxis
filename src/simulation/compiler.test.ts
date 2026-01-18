@@ -5,8 +5,12 @@ import type { Action, ActionNode, Anomaly } from "../types/timeline";
 function createAction(action: Partial<Action>): Action {
   return {
     instanceId: action.instanceId || "",
+    id: action.id || "",
     type: "skill",
     name: "mock_skill",
+    logicalStartTime: 0,
+    element: "physical",
+    enhancementTime: 0,
     startTime: 0,
     cooldown: 0,
     spCost: 0,
@@ -29,6 +33,7 @@ function createAnomaly(anomaly: Partial<Anomaly>): Anomaly {
     type: "buff",
     duration: 0,
     offset: 0,
+    stacks: 1,
     ...anomaly,
   };
 }

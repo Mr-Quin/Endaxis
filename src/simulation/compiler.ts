@@ -104,42 +104,45 @@ function resolveAction(
   sourceShiftMap: Map<string, ShiftContext>,
   timeCtx: TimeContext
 ): ResolvedAction {
-  const a = item.node;
-  const gameStartTime = a.startTime;
+  const action = item.node;
+  const startTime = action.startTime;
 
-  let realStartTime = gameStartTime;
+  let realStartTime = startTime;
 
   // Apply Freeze Offset
   const activeSourceItem = [...stopSources]
     .reverse()
-    .find((s) => s.node.startTime <= gameStartTime);
+    .find((s) => s.node.startTime <= startTime);
+
+  let freezeDuration: number | undefined;
 
   if (activeSourceItem) {
     const ctx = sourceShiftMap.get(activeSourceItem.id)!;
+    freezeDuration = ctx.amount;
     if (item.id === activeSourceItem.id) {
       realStartTime = round(ctx.realStart);
     } else {
-      const normalShifted = gameStartTime + ctx.shift;
+      const normalShifted = startTime + ctx.shift;
       realStartTime = round(Math.max(normalShifted, ctx.realEnd));
     }
   } else {
-    realStartTime = gameStartTime;
+    realStartTime = startTime;
   }
 
   // Calculate Real Duration
   const realEndTime = timeCtx.getShiftedEndTime(
     realStartTime,
-    a.duration,
+    action.duration,
     item.id
   );
   const realDuration = round(realEndTime - realStartTime);
-  const actionExtension = round(realDuration - a.duration);
+  const actionExtension = round(realDuration - action.duration);
 
   // Resolve Effects
   const resolvedEffects: ResolvedEffect[] = [];
-  if (a.physicalAnomaly && a.physicalAnomaly.length > 0) {
+  if (action.physicalAnomaly && action.physicalAnomaly.length > 0) {
     let globalFlatIndex = 0;
-    a.physicalAnomaly.forEach((row, rowIndex) => {
+    action.physicalAnomaly.forEach((row, rowIndex) => {
       row.forEach((effect, colIndex) => {
         const uniqueId = effect._id;
         const flatIndex = globalFlatIndex++;
@@ -183,7 +186,7 @@ function resolveAction(
     });
   }
 
-  const resolvedDamageTicks: ResolvedDamageTick[] = a.damageTicks.map(
+  const resolvedDamageTicks: ResolvedDamageTick[] = action.damageTicks.map(
     (tick) => {
       const realTime = timeCtx.getShiftedEndTime(
         realStartTime,
@@ -201,18 +204,20 @@ function resolveAction(
 
   return {
     ...item,
-    gameStartTime: gameStartTime,
+    startTime,
     realStartTime,
+    duration: action.duration,
     realDuration,
     isInterrupted: false,
     effects: resolvedEffects,
     resolvedDamageTicks,
     triggerWindow: {
-      hasWindow: (a.triggerWindow || 0) >= 0,
+      hasWindow: (action.triggerWindow || 0) >= 0,
       startTime: 0,
-      duration: Math.abs(a.triggerWindow || 0),
+      duration: Math.abs(action.triggerWindow || 0),
     },
     extensionAmount: actionExtension,
+    freezeDuration,
   };
 }
 

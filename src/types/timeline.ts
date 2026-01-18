@@ -7,31 +7,50 @@ export interface Anomaly {
   type: string;
   sp?: number;
   stagger?: number;
+  stacks: number;
 }
 
 export interface DamageTick {
   offset: number;
   sp: number;
   stagger: number;
+  boundEffects?: string[];
 }
 export interface ResolvedDamageTick extends DamageTick {
   realTime: number;
   realOffset: number;
 }
+
+export type ActionType =
+  | "execution" // 处决
+  | "skill" // 技能
+  | "link" // 连携
+  | "ultimate" // 终结技
+  | "attack"; // 重击
+
 export interface Action {
+  id: string;
   instanceId: string;
-  type: string;
+  type: ActionType;
   name: string;
   startTime: number;
+  logicalStartTime: number;
   cooldown: number;
   spCost: number;
+  spGain?: number;
+  element: string;
+  librarySource?: string;
+  icon?: string;
   gaugeCost: number;
   gaugeGain: number;
   teamGaugeGain: number;
+  enhancementTime: number;
   duration: number;
   triggerWindow?: number;
   animationTime?: number;
   isDisabled?: boolean;
+  weaponId?: string | null;
+  sourceWeaponId?: string | null;
   allowedTypes: string[];
   damageTicks: DamageTick[];
   physicalAnomaly: Anomaly[][];
@@ -41,7 +60,7 @@ export interface ActionNode {
   type: "action";
   id: string;
   trackIndex: number;
-  skillId: string;
+  trackId: string;
   node: Action;
 }
 
@@ -65,8 +84,9 @@ export interface ResolvedEffect extends AnomalyNode {
 }
 
 export interface ResolvedAction extends ActionNode {
-  gameStartTime: number;
+  startTime: number;
   realStartTime: number;
+  duration: number;
   realDuration: number;
   isInterrupted: boolean;
   effects: ResolvedEffect[];
@@ -77,6 +97,7 @@ export interface ResolvedAction extends ActionNode {
   };
   resolvedDamageTicks: ResolvedDamageTick[];
   extensionAmount: number;
+  freezeDuration?: number;
 }
 
 export interface TimeExtension {
