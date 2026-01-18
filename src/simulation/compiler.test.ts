@@ -47,8 +47,8 @@ describe("compileTimeline", () => {
   ): ActionNode => ({
     id,
     type: "action",
+    trackId: "",
     trackIndex: 0,
-    skillId: "mock_skill",
     node: createAction({
       startTime,
       duration,

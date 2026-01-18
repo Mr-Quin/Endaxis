@@ -1,10 +1,11 @@
 import type {
   ActionType,
+  ResolvedEffect,
   ResolvedAction,
   ResolvedDamageTick,
-  ResolvedEffect,
 } from "./timeline";
-import {GameState} from "@/simulation/state/GameState.ts";
+import { GameState } from "@/simulation/state/GameState.ts";
+import type { StaggerSnapshot } from "@/simulation/pipeline/pipeline.ts";
 
 export interface StatBlock {
   atk: number;
@@ -14,6 +15,7 @@ export interface StatBlock {
   spRegen: number;
   critRate: number;
   critDmg: number;
+  originiumArtsPower: number;
   [key: string]: number;
 }
 
@@ -56,8 +58,8 @@ export interface EnemyStateConfig {
 
 export interface EnemySnapshot {
   stagger: number;
-  isLocked: boolean;
-  lockEndTime: number;
+  isBroken: boolean;
+  breakEndTime: number;
 }
 
 export interface GameConfig {
@@ -133,12 +135,38 @@ export type SpRegenPauseEvent = SimBaseEvent<
   }
 >;
 
+export type EffectStartEvent = SimBaseEvent<
+  "EFFECT_START",
+  {
+    effectId: string;
+    targetId: string;
+    type: string; // 'knockup', 'knockdown', etc.
+  }
+>;
+export type EffectEndEvent = SimBaseEvent<
+  "EFFECT_END",
+  {
+    effectId: string;
+    targetId: string;
+  }
+>;
+
+export type StaggerChangeEvent = SimBaseEvent<
+  "STAGGER_CHANGE",
+  {
+    snapshot: StaggerSnapshot;
+  }
+>;
+
 export type SimEvent =
   | ActionStartEvent
   | ActionEndEvent
   | DamageTickEvent
   | SpChangeEvent
-  | SpRegenPauseEvent;
+  | SpRegenPauseEvent
+  | EffectStartEvent
+  | EffectEndEvent
+  | StaggerChangeEvent;
 
 export type SimLogEntryBase<Name extends string, Data = {}> = {
   type: Name;
@@ -172,6 +200,8 @@ export type SimLogEntry =
         actionId: string;
         amount: number;
         stagger: number;
+        isBroken: boolean;
+        nodeReachedIndex?: number;
       }
     >
   | SimLogEntryBase<"DAMAGE">

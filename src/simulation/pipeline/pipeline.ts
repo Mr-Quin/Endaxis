@@ -1,4 +1,5 @@
 import { GameState } from "@/simulation/state/GameState.ts";
+import type { ResolvedAction, ResolvedDamageTick } from "@/types/timeline.ts";
 
 export interface DamageSnapshot {
   baseDamage: number;
@@ -8,6 +9,8 @@ export interface DamageSnapshot {
   tags: string[];
   sourceId: string;
   targetId: string;
+  action?: ResolvedAction;
+  tick?: ResolvedDamageTick;
 }
 
 export type DamageModifier = (
@@ -29,14 +32,39 @@ export class DamagePipeline {
   }
 }
 
-// Stagger Pipeline (Merged or Separate)
-// If Stagger is derivative of damage, it might be in DamagePipeline.
-// But we might want separate modifiers for Stagger (e.g. +Stagger Dmg).
+// Stagger Pipeline
+export interface StaggerSnapshot {
+  baseStagger: number;
+  finalStagger: number;
+  sourceId: string;
+  targetId: string;
+  boundEffects?: string[];
+}
+
 export class StaggerPipeline {
-  // Similar structure
-  calculate(damageResult: DamageSnapshot, state: GameState): number {
-    // Apply stagger modifiers to damageResult.staggerDamage
-    return damageResult.staggerDamage;
+  calculate(snapshot: StaggerSnapshot, state: GameState): number {
+    let stagger = snapshot.baseStagger;
+    if (stagger <= 0) return 0;
+
+    // 1. Arts Power Bonus for Knockup/Knockdown
+    if (snapshot.boundEffects) {
+      const boundEffects = snapshot.boundEffects;
+      const hasKnockBinding = boundEffects.some((id) => {
+        // Look up in registry if active check fails (handled by state.enemy.getEffectType logic)
+        const type = state.enemy.getEffectType(id);
+        return type === "knockup" || type === "knockdown";
+      });
+
+      if (hasKnockBinding) {
+        const actor = state.actors.get(snapshot.sourceId);
+        const originiumArtsPower = actor?.stats?.originiumArtsPower || 0;
+        const ORIGINIUM_ARTS_FACTOR = 0.005;
+        const multiplier = 1 + originiumArtsPower * ORIGINIUM_ARTS_FACTOR;
+        stagger *= multiplier;
+      }
+    }
+
+    return Math.round(stagger * 1000) / 1000;
   }
 }
 

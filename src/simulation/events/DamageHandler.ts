@@ -1,18 +1,19 @@
 import {
   DamagePipeline,
   type DamageSnapshot,
-  StaggerPipeline,
+  type StaggerSnapshot,
 } from "@/simulation/pipeline/pipeline.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import type { DamageTickEvent, SimulationContext } from "@/types/simulation.ts";
 
 const damagePipeline = new DamagePipeline();
-const staggerPipeline = new StaggerPipeline();
 
 export class DamageHandler implements EventHandler<DamageTickEvent> {
   handle(e: DamageTickEvent, ctx: SimulationContext) {
     const baseDamage = e.payload.damage;
     const baseStagger = e.payload.tickData ? e.payload.tickData.stagger : 0;
+
+    const action = ctx.getAction(e.payload.actionId);
 
     const snapshot: DamageSnapshot = {
       baseDamage,
@@ -22,26 +23,31 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
       tags: [],
       sourceId: e.payload.sourceId || "",
       targetId: e.payload.targetId,
+      action: action,
+      tick: e.payload.tickData,
     };
 
     // TODO: 伤害计算
     const dmgResult = damagePipeline.calculate(snapshot, ctx.state);
-    const finalStagger = staggerPipeline.calculate(snapshot, ctx.state);
 
-    if (finalStagger > 0) {
-      const startStagger = ctx.state.enemy.getStagger();
-      const { broken } = ctx.state.enemy.addStagger(
-        finalStagger,
-        ctx.state.getCurrentTime()
-      );
-      ctx.log(
-        e,
-        `${
-          e.payload.sourceId
-        } - Stagger: ${startStagger} -> ${ctx.state.enemy.getStagger()} (${finalStagger})${
-          broken ? " (BROKEN)" : ""
-        }`
-      );
+    // Prepare Stagger Snapshot
+    // Minimal data needed for StaggerPipeline
+    const staggerSnapshot: StaggerSnapshot = {
+      baseStagger: baseStagger,
+      finalStagger: baseStagger, // Initial value
+      sourceId: e.payload.sourceId || "",
+      targetId: e.payload.targetId,
+      boundEffects: e.payload.tickData?.boundEffects,
+    };
+
+    if (staggerSnapshot.baseStagger > 0) {
+      ctx.queue.enqueue({
+        type: "STAGGER_CHANGE",
+        time: ctx.state.getCurrentTime(),
+        payload: {
+          snapshot: staggerSnapshot,
+        },
+      });
     }
 
     if (e.payload.tickData && e.payload.tickData.sp > 0) {

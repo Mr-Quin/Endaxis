@@ -5,13 +5,17 @@ import type {
   SimLogEntry,
 } from "../types/simulation";
 import { SimulationEngine } from "./engine/SimulationEngine.ts";
-import {PriorityQueue} from "@/simulation/engine/PriorityQueue.ts";
-import {DamageHandler} from "@/simulation/events/DamageHandler.ts";
-import {ActionStartHandler} from "@/simulation/events/ActionStartHandler.ts";
-import {SpRegenPauseHandler} from "@/simulation/events/SpRegenPauseHandler.ts";
-import {ActionEndHandler} from "@/simulation/events/ActionEndHandler.ts";
-import {SpChangeHandler} from "@/simulation/events/SpChangeHandler.ts";
-import {GameState} from "@/simulation/state/GameState.ts";
+import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
+import { StaggerPipeline } from "@/simulation/pipeline/pipeline.ts";
+import { DamageHandler } from "@/simulation/events/DamageHandler.ts";
+import { ActionStartHandler } from "@/simulation/events/ActionStartHandler.ts";
+import { SpRegenPauseHandler } from "@/simulation/events/SpRegenPauseHandler.ts";
+import { ActionEndHandler } from "@/simulation/events/ActionEndHandler.ts";
+import { SpChangeHandler } from "@/simulation/events/SpChangeHandler.ts";
+import { EffectStartHandler } from "@/simulation/events/EffectStartHandler.ts";
+import { EffectEndHandler } from "@/simulation/events/EffectEndHandler.ts";
+import { StaggerChangeHandler } from "@/simulation/events/StaggerChangeHandler.ts";
+import { GameState } from "@/simulation/state/GameState.ts";
 
 const DEFAULT_TEAM_CONFIG: TeamStateConfig = {
   maxSp: 200,
@@ -62,6 +66,34 @@ export function simulate(
   engine.registerHandler("ACTION_END", new ActionEndHandler());
   engine.registerHandler("SP_CHANGE", new SpChangeHandler());
   engine.registerHandler("SP_REGEN_PAUSE", new SpRegenPauseHandler());
+  engine.registerHandler("EFFECT_START", new EffectStartHandler());
+  engine.registerHandler("EFFECT_END", new EffectEndHandler());
+  engine.registerHandler("STAGGER_CHANGE", new StaggerChangeHandler());
+
+  if (Array.isArray(systemConstants.tracks)) {
+    systemConstants.tracks.forEach((track: any) => {
+      if (!track.id) return;
+      const originiumArtsPower = Number(track.originiumArtsPower) || 0;
+      gameState.actors.set(track.id, {
+        id: track.id,
+        stats: {
+          atk: 0,
+          def: 0,
+          hpMax: 0,
+          spMax: 0,
+          spRegen: 0,
+          critRate: 0,
+          critDmg: 0,
+          originiumArtsPower,
+        },
+        resources: { hp: 0, gauge: 0 },
+        cooldowns: new Map(),
+        activeBuffs: [],
+        isCasting: false,
+        castEndTime: 0,
+      });
+    });
+  }
 
   // enqueue base events
   timeline.actions.forEach((action) => {
@@ -104,19 +136,28 @@ export function simulate(
         },
       });
     });
+
+    action.effects.forEach((effect) => {
+      engine.enqueue({
+        type: "EFFECT_START",
+        time: effect.realStartTime,
+        payload: {
+          effectId: effect.uniqueId,
+          targetId: "boss",
+          type: effect.node.type,
+        },
+      });
+      engine.enqueue({
+        type: "EFFECT_END",
+        time: effect.realStartTime + effect.realDuration,
+        payload: {
+          effectId: effect.uniqueId,
+          targetId: "boss",
+        },
+      });
+    });
   });
 
-  // 4. Run & Capture Data Points
-  const spData: { time: number; value: number }[] = [];
-  const staggerData: { time: number; value: number }[] = [];
-
-  // Capture loop
-  // Note: SimulationEngine loop doesn't have a "post-tick" hook other than subscribe.
-  // We want to capture state at every event processing.
-
-  // Initial Point
-  spData.push({ time: 0, value: gameState.team.sp });
-  staggerData.push({ time: 0, value: 0 });
   const simLog = new PriorityQueue<SimLogEntry>();
 
   engine.subscribe((event, ctx) => {
@@ -125,20 +166,40 @@ export function simulate(
         break;
       case "ACTION_END":
         break;
-      case "DAMAGE_TICK":
+      case "STAGGER_CHANGE": {
+        const enemyConfig = ctx.state.enemy.config;
+        const nodeStep =
+          enemyConfig.maxStagger / (enemyConfig.staggerNodeCount + 1);
+        const prevNode = Math.floor(
+          ctx.beforeSnapshot.enemy.stagger / nodeStep
+        );
+        const currNode = Math.floor(ctx.afterSnapshot.enemy.stagger / nodeStep);
+        const nodeReachedIndex = currNode > prevNode ? currNode : undefined;
+        const { snapshot } = event.payload;
+
+        // Recalculate amount using pipeline to get the actual applied value
+        // explicitly for logging purposes.
+        const pipeline = new StaggerPipeline();
+        const amount = pipeline.calculate(snapshot, ctx.state);
+
         simLog.enqueue({
           type: "STAGGER",
           time: event.time,
           beforeSnapshot: ctx.beforeSnapshot,
           afterSnapshot: ctx.afterSnapshot,
           payload: {
-            actorId: event.payload.targetId,
-            actionId: event.payload.actionId,
-            amount: event.payload.stagger,
+            actorId: snapshot.targetId,
+            actionId: "", // snapshot doesn't have actionId currently, let's allow empty or add it to snapshot
+            amount, // We need final.
             stagger: ctx.state.enemy.getStagger(),
+            isBroken:
+              !ctx.beforeSnapshot.enemy.isBroken &&
+              ctx.afterSnapshot.enemy.isBroken,
+            nodeReachedIndex,
           },
         });
         break;
+      }
       case "SP_CHANGE":
         simLog.enqueue({
           type: "SP_CHANGE",
@@ -168,27 +229,12 @@ export function simulate(
       default:
         break;
     }
-    const s = ctx.state as GameState;
-    if (s.team.sp !== spData.at(-1)?.value) {
-      spData.push({ time: s.getCurrentTime(), value: s.team.sp });
-    }
-    staggerData.push({ time: s.getCurrentTime(), value: s.enemy.getStagger() });
   });
 
-  const finalState = engine.run(); // finalState is GameState
-
-  // Final Point
-  spData.push({
-    time: finalState.getCurrentTime(),
-    value: finalState.team.sp,
-  });
+  const state = engine.run();
 
   return {
-    state: finalState,
+    state,
     simLog,
-    series: {
-      sp: spData,
-      stagger: staggerData,
-    },
   };
 }
