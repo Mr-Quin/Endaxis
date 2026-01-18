@@ -10,7 +10,7 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
         skillId: e.payload.skillId,
         actionId: e.payload.actionId,
         type: e.payload.type,
-        amount: e.payload.spGain,
+        spGain: e.payload.spGain,
       },
     });
     if (e.payload.spGain && e.payload.spGain > 0) {

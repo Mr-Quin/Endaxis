@@ -13,7 +13,7 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
         skillId: e.payload.skillId,
         actionId: e.payload.actionId,
         type: e.payload.type,
-        amount: e.payload.spCost,
+        spCost: e.payload.spCost,
       },
     });
 

@@ -6,7 +6,6 @@ export interface StaggerContext {
   source: ActorState;
   target: EnemyState;
   baseValue: number;
-  // ["knockup", "originium_arts"]
   tags: string[];
   state: GameState;
 }

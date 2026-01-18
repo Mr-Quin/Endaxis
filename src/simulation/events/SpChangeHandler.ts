@@ -3,6 +3,8 @@ import type { SimulationContext, SpChangeEvent } from "@/types/simulation.ts";
 
 export class SpChangeHandler implements EventHandler<SpChangeEvent> {
   handle(e: SpChangeEvent, ctx: SimulationContext) {
+    // TODO: run sp change through calculation pipeline
+
     ctx.state.team.modifySp(e.payload.spChange);
 
     ctx.simLog({

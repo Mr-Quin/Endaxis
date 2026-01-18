@@ -221,7 +221,7 @@ export type SimLogEntry =
         skillId: string;
         actionId: string;
         type: ActionType;
-        amount?: number; // spCost
+        spCost?: number;
       }
     >
   | SimLogEntryBase<
@@ -230,7 +230,7 @@ export type SimLogEntry =
         skillId: string;
         actionId: string;
         type: ActionType;
-        amount?: number; // spGain
+        spGain?: number;
       }
     >
   | SimLogEntryBase<

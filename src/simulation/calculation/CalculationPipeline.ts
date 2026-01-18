@@ -58,7 +58,7 @@ export const OriginiumArtsModifier: ModifierFn<StaggerContext> = (
   result.finalValue = newValue;
 
   result.breakdown.push({
-    source: "Arts Proficiency",
+    source: "Knock Bonus",
     type: "MULTIPLIER",
     value: multiplier,
     contribution: contribution,
