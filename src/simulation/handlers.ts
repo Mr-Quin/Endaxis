@@ -64,6 +64,7 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
           actorId: e.payload.sourceId,
           spChange: e.payload.tickData.sp,
           reason: "damage",
+          sourceId: e.payload.sourceId,
         },
       });
     }
@@ -82,6 +83,7 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
           actorId: e.payload.actorId,
           spChange: -e.payload.spCost,
           reason: "skill",
+          sourceId: e.payload.actionId,
         },
       });
     }
@@ -115,6 +117,7 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
           actorId: e.payload.actorId,
           spChange: e.payload.spGain,
           reason: "skill",
+          sourceId: e.payload.actionId,
         },
       });
     } else if (e.payload.type === "execution") {
@@ -130,6 +133,7 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
           actorId: e.payload.actorId,
           spChange: ctx.state.enemy.config.executionRecovery,
           reason: "execution",
+          sourceId: e.payload.actionId,
         },
       });
     }

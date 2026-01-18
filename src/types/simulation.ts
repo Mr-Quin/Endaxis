@@ -109,6 +109,7 @@ export type SpChangeEvent = SimBaseEvent<
     actorId: string;
     spChange: number;
     reason: string;
+    sourceId: string;
   }
 >;
 
@@ -117,6 +118,32 @@ export type SimEvent =
   | ActionEndEvent
   | DamageTickEvent
   | SpChangeEvent;
+
+export type SimLogEntryBase<Name extends string, Data = {}> = {
+  type: Name;
+  time: number;
+  payload: Data;
+};
+
+export type SimLogEntry =
+  | SimLogEntryBase<
+      "SP_ANCHOR",
+      {
+        sp: number;
+        regenRate: number;
+      }
+    >
+  | SimLogEntryBase<
+      "SP_CHANGE",
+      {
+        sp: number;
+        change: number;
+        sourceId: string;
+        reason: string;
+      }
+    >
+  | SimLogEntryBase<"DAMAGE">
+  | SimLogEntryBase<"STATE_SNAPSHOT">;
 
 export interface SimulationContext {
   state: GameState;

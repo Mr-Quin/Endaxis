@@ -19,6 +19,7 @@ export interface DamageTick {
 export interface ResolvedDamageTick extends DamageTick {
   realTime: number;
   realOffset: number;
+  time: number;
 }
 
 export type ActionType =

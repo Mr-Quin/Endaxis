@@ -198,6 +198,7 @@ function resolveAction(
         ...tick,
         realTime,
         realOffset: realTime - realStartTime,
+        time: timeCtx.toGameTime(realTime),
       };
     }
   );

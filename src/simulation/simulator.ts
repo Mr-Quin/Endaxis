@@ -1,5 +1,9 @@
 import type { ResolvedTimeline } from "../types/timeline";
-import type { TeamStateConfig, EnemyStateConfig } from "../types/simulation";
+import type {
+  TeamStateConfig,
+  EnemyStateConfig,
+  SimLogEntry,
+} from "../types/simulation";
 import { SimulationEngine } from "./engine";
 import {
   DamageHandler,
@@ -10,7 +14,6 @@ import {
 } from "./handlers";
 import { GameState } from "./state";
 
-// Configuration Defaults
 const DEFAULT_TEAM_CONFIG: TeamStateConfig = {
   maxSp: 200,
   initialSp: 200,
@@ -52,15 +55,13 @@ export function simulate(
   };
 
   const gameState = new GameState(teamConfig, enemyConfig);
-  const engine = new SimulationEngine(gameState); // Type assertion if generic issues, but state matches
+  const engine = new SimulationEngine(gameState);
 
   // 2. Register Handlers
   engine.registerHandler("DAMAGE_TICK", new DamageHandler());
   engine.registerHandler("ACTION_START", new ActionStartHandler());
   engine.registerHandler("ACTION_END", new ActionEndHandler());
   engine.registerHandler("SP_CHANGE", new SpChangeHandler());
-
-  engine.setTimeAdvanceCallback(handleTimeAdvance);
 
   // enqueue base events
   timeline.actions.forEach((action) => {
@@ -115,10 +116,47 @@ export function simulate(
   // Initial Point
   spData.push({ time: 0, value: gameState.team.sp });
   staggerData.push({ time: 0, value: 0 });
+  const simLog: SimLogEntry[] = [];
 
   engine.subscribe((event, ctx) => {
-    // Uses event to avoid unused var
-    if (!event) return;
+    switch (event.type) {
+      case "ACTION_START":
+        simLog.push({
+          type: "SP_ANCHOR",
+          time: event.time,
+          payload: {
+            sp: ctx.state.team.sp,
+            regenRate: ctx.state.team.config.spRegenRate,
+          },
+        });
+        break;
+      case "ACTION_END":
+        break;
+      case "DAMAGE_TICK":
+        break;
+      case "SP_CHANGE":
+        simLog.push({
+          type: "SP_CHANGE",
+          time: event.time,
+          payload: {
+            sp: ctx.state.team.sp,
+            change: event.payload.spChange,
+            sourceId: event.payload.sourceId,
+            reason: event.payload.reason,
+          },
+        });
+        simLog.push({
+          type: "SP_ANCHOR",
+          time: event.time,
+          payload: {
+            sp: ctx.state.team.sp,
+            regenRate: ctx.state.team.config.spRegenRate,
+          },
+        });
+        break;
+      default:
+        break;
+    }
     const s = ctx.state as GameState;
     if (s.team.sp !== spData.at(-1)?.value) {
       spData.push({ time: s.getCurrentTime(), value: s.team.sp });
@@ -136,6 +174,7 @@ export function simulate(
 
   return {
     state: finalState,
+    simLog,
     series: {
       sp: spData,
       stagger: staggerData,

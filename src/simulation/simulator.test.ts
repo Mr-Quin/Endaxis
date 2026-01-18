@@ -10,6 +10,7 @@ import type {
 } from "../types/timeline";
 import type { ActionNode } from "../types/timeline";
 import { compileTimeline } from "./compiler";
+import { projectSpSeries } from "./projection/projectSpSeries";
 
 // Helper to convert ActionNode fixture to ResolvedAction
 // Assuming 1:1 time mapping for simplicity as per user context
@@ -41,20 +42,12 @@ describe("SimulationEngine Integration", () => {
       maxSp: 300,
       spRegenRate: 8,
     });
-    console.log(JSON.stringify(result, null, 2));
 
     const expected = spData.map((p) => ({ time: p.time, value: p.sp }));
     let actual = cleanSeries(result.series.sp);
 
-    // If Actual has extra points (e.g. intermediate regen steps), we might fail.
-    // SP regen creates CONTINUOUS change. Simulator updates on EVENTS.
-    // So if an event happens at T=1, SP is updated.
-    // Fixture: {0, 100}, {0.5, 100}.
-    // Why 0.5? Maybe an event happens there?
-    // console.log("Actual SP:", JSON.stringify(actual, null, 2));
-    // ^ Enable this if needed, but 'cleanSeries' might be hiding things?
-    // Let's verify raw result first?
-    // cleanSeries serves to remove duplicates.
+    const projection = projectSpSeries(result.simLog, timeline);
+    console.log("Projection:", JSON.stringify(projection, null, 2));
 
     // Log full actual for debug
     if (result.series.sp.length > 0) {

@@ -39,9 +39,6 @@ export class SimulationEngine {
   private listeners = new Set<EventHook>();
   private state: GameState;
 
-  // Function called when time advances (for regen, dots, etc.)
-  private onTimeAdvance?: (dt: number, ctx: SimulationContext) => void;
-
   constructor(initialState: GameState) {
     this.state = initialState;
   }
@@ -55,10 +52,6 @@ export class SimulationEngine {
 
   subscribe(listener: EventHook) {
     this.listeners.add(listener);
-  }
-
-  setTimeAdvanceCallback(cb: (dt: number, ctx: SimulationContext) => void) {
-    this.onTimeAdvance = cb;
   }
 
   enqueue(event: SimEvent) {
@@ -79,13 +72,11 @@ export class SimulationEngine {
     while (!this.queue.isEmpty()) {
       const event = this.queue.dequeue()!;
 
-      // 1. Advance Time
       if (event.time > this.state.getCurrentTime()) {
         const dt = event.time - this.state.getCurrentTime();
         this.state.advanceTime(dt);
       }
 
-      // 2. Handle Event
       const handler = this.handlers.get(event.type);
       if (handler) {
         handler.handle(event, ctx);
@@ -93,7 +84,6 @@ export class SimulationEngine {
         throw new Error(`No handler for event type: ${event.type}`);
       }
 
-      // 3. Notify Listeners
       this.listeners.forEach((listener) => listener(event, ctx));
     }
 
