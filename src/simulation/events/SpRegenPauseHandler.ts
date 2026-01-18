@@ -6,7 +6,15 @@ import type {
 
 export class SpRegenPauseHandler implements EventHandler<SpRegenPauseEvent> {
   handle(e: SpRegenPauseEvent, ctx: SimulationContext) {
-    ctx.log(e, `${e.payload.sourceId} - Sp Regen Pause: ${e.payload.duration}`);
+    ctx.simLog({
+      type: "SP_REGEN_PAUSE",
+      time: e.time,
+      payload: {
+        sourceId: e.payload.sourceId,
+        duration: e.payload.duration,
+        sp: ctx.state.team.sp,
+      },
+    });
     ctx.state.team.pauseSpRegen(e.payload.duration);
   }
 }

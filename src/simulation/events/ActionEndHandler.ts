@@ -3,9 +3,17 @@ import type { ActionEndEvent, SimulationContext } from "@/types/simulation.ts";
 
 export class ActionEndHandler implements EventHandler<ActionEndEvent> {
   handle(e: ActionEndEvent, ctx: SimulationContext) {
-    ctx.log(e, `${e.payload.actorId} - ${e.payload.type}`);
+    ctx.simLog({
+      type: "ACTION_END",
+      time: e.time,
+      payload: {
+        skillId: e.payload.skillId,
+        actionId: e.payload.actionId,
+        type: e.payload.type,
+        amount: e.payload.spGain,
+      },
+    });
     if (e.payload.spGain && e.payload.spGain > 0) {
-      ctx.log(e, `${e.payload.actorId} - Sp Gain: ${e.payload.spGain}`);
       // 技能SP恢复
       ctx.queue.enqueue({
         type: "SP_CHANGE",
@@ -19,10 +27,6 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
         },
       });
     } else if (e.payload.type === "execution") {
-      ctx.log(
-        e,
-        `${e.payload.actorId} - Sp Gain: ${ctx.state.enemy.config.executionRecovery}`
-      );
       // 处决SP恢复
       ctx.queue.enqueue({
         type: "SP_CHANGE",

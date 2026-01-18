@@ -15,7 +15,7 @@ describe("SimulationEngine Integration", () => {
     });
 
     const projection = projectSpSeries(
-      result.simLog.getItems(),
+      result.simLog,
       result.state.getInitialSnapshot()
     );
 
@@ -32,7 +32,7 @@ describe("SimulationEngine Integration", () => {
     });
     console.log(result.state.enemy.config);
     const projection = projectStaggerSeries(
-      result.simLog.getItems(),
+      result.simLog,
       result.state.getInitialSnapshot(),
       125,
       0,

@@ -171,8 +171,6 @@ export type SimEvent =
 export type SimLogEntryBase<Name extends string, Data = {}> = {
   type: Name;
   time: number;
-  beforeSnapshot: GameSnapshot;
-  afterSnapshot: GameSnapshot;
   payload: Data;
 };
 
@@ -182,6 +180,7 @@ export type SimLogEntry =
       {
         sourceId: string;
         duration: number;
+        sp: number;
       }
     >
   | SimLogEntryBase<
@@ -204,15 +203,57 @@ export type SimLogEntry =
         nodeReachedIndex?: number;
       }
     >
-  | SimLogEntryBase<"DAMAGE">
-  | SimLogEntryBase<"STATE_SNAPSHOT">;
+  | SimLogEntryBase<
+      "DAMAGE_TICK",
+      {
+        targetId: string;
+        sourceId: string;
+        damage: number;
+        stagger: number;
+        tickData: ResolvedDamageTick;
+        actionId: string;
+      }
+    >
+  | SimLogEntryBase<
+      "ACTION_START",
+      {
+        skillId: string;
+        actionId: string;
+        type: ActionType;
+        amount?: number; // spCost
+      }
+    >
+  | SimLogEntryBase<
+      "ACTION_END",
+      {
+        skillId: string;
+        actionId: string;
+        type: ActionType;
+        amount?: number; // spGain
+      }
+    >
+  | SimLogEntryBase<
+      "EFFECT_START",
+      {
+        effectId: string;
+        targetId: string;
+        type: string;
+      }
+    >
+  | SimLogEntryBase<
+      "EFFECT_END",
+      {
+        effectId: string;
+        targetId: string;
+      }
+    >;
 
 export interface SimulationContext {
   state: GameState;
   queue: {
     enqueue: (event: SimEvent) => void;
   };
-  log: (e: SimEvent, msg: string) => void;
+  simLog: (entry: SimLogEntry) => void;
   getAction: (id: string) => ResolvedAction | undefined;
 }
 

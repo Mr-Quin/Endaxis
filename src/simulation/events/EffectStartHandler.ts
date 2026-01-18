@@ -9,6 +9,14 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
     const { effectId, type } = event.payload;
     // TODO: handle buff/debuff/status
     ctx.state.enemy.addEffect(effectId, type);
-    ctx.log(event, `Effect Start: ${type} (${effectId})`);
+    ctx.simLog({
+      type: "EFFECT_START",
+      time: event.time,
+      payload: {
+        effectId: event.payload.effectId,
+        targetId: event.payload.targetId,
+        type: event.payload.type,
+      },
+    });
   }
 }

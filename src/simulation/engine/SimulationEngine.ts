@@ -1,9 +1,10 @@
 import type { ResolvedTimeline } from "@/types/timeline.ts";
 import type {
-  EventHookContext,
   SimEvent,
   SimEventType,
   SimulationContext,
+  SimLogEntry,
+  EventHookContext,
 } from "../../types/simulation.ts";
 import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
@@ -16,6 +17,7 @@ export class SimulationEngine {
   private handlers = new Map<SimEventType, EventHandler<SimEvent>>();
   private listeners = new Set<SimEventHook>();
   private state: GameState;
+  private simLog = new PriorityQueue<SimLogEntry>();
 
   constructor(initialState: GameState, private timeline: ResolvedTimeline) {
     this.state = initialState;
@@ -48,26 +50,27 @@ export class SimulationEngine {
     return this.timeline.actionMap.get(id);
   }
 
+  getSimLog(): SimLogEntry[] {
+    return this.simLog.toArray();
+  }
+
   run() {
     const ctx: SimulationContext = {
       state: this.state,
       queue: { enqueue: this.enqueue.bind(this) },
-      // TODO: log should output structured events
-      log: (e: SimEvent, msg: string) => {
-        console.log(
-          `[${this.state.getCurrentTime().toFixed(3)}] [${e.type}] ${msg}`
-        );
+      simLog: (entry: SimLogEntry) => {
+        this.simLog.enqueue(entry);
       },
       getAction: this.getAction.bind(this),
     };
 
     while (!this.queue.isEmpty()) {
       const event = this.queue.dequeue()!;
-      const beforeSnapshot = this.state.snapshot();
 
       if (event.time > this.state.getCurrentTime()) {
         const dt = event.time - this.state.getCurrentTime();
         this.state.advanceTime(dt);
+        // TODO: may need emit simLog events for state changes
       }
 
       const handler = this.handlers.get(event.type);
@@ -76,16 +79,6 @@ export class SimulationEngine {
       } else {
         throw new Error(`No handler for event type: ${event.type}`);
       }
-
-      const afterSnapshot = this.state.snapshot();
-
-      this.listeners.forEach((listener) =>
-        listener(event, {
-          ...ctx,
-          beforeSnapshot,
-          afterSnapshot,
-        })
-      );
     }
 
     return this.state;

@@ -1,12 +1,7 @@
 import type { ResolvedTimeline } from "../types/timeline";
-import type {
-  TeamStateConfig,
-  EnemyStateConfig,
-  SimLogEntry,
-} from "../types/simulation";
-import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
-import { StaggerPipeline } from "@/simulation/pipeline/pipeline.ts";
+import type { TeamStateConfig, EnemyStateConfig } from "../types/simulation";
 import { createEngine } from "./engine/createEngine.ts";
+import { formatSimLogEntry } from "./formatSimLogEntry.ts";
 
 const DEFAULT_TEAM_CONFIG: TeamStateConfig = {
   maxSp: 200,
@@ -76,7 +71,6 @@ export function simulate(
     });
   }
 
-  // enqueue base events
   timeline.actions.forEach((action) => {
     engine.enqueue({
       type: "ACTION_START",
@@ -139,80 +133,13 @@ export function simulate(
     });
   });
 
-  const simLog = new PriorityQueue<SimLogEntry>();
-
-  engine.subscribe((event, ctx) => {
-    switch (event.type) {
-      case "ACTION_START":
-        break;
-      case "ACTION_END":
-        break;
-      case "STAGGER_CHANGE": {
-        const enemyConfig = ctx.state.enemy.config;
-        const nodeStep =
-          enemyConfig.maxStagger / (enemyConfig.staggerNodeCount + 1);
-        const prevNode = Math.floor(
-          ctx.beforeSnapshot.enemy.stagger / nodeStep
-        );
-        const currNode = Math.floor(ctx.afterSnapshot.enemy.stagger / nodeStep);
-        const nodeReachedIndex = currNode > prevNode ? currNode : undefined;
-        const { snapshot } = event.payload;
-
-        // Recalculate amount using pipeline to get the actual applied value
-        // explicitly for logging purposes.
-        const pipeline = new StaggerPipeline();
-        const amount = pipeline.calculate(snapshot, ctx.state);
-
-        simLog.enqueue({
-          type: "STAGGER",
-          time: event.time,
-          beforeSnapshot: ctx.beforeSnapshot,
-          afterSnapshot: ctx.afterSnapshot,
-          payload: {
-            actorId: snapshot.targetId,
-            actionId: "", // snapshot doesn't have actionId currently, let's allow empty or add it to snapshot
-            amount, // We need final.
-            stagger: ctx.state.enemy.getStagger(),
-            isBroken:
-              !ctx.beforeSnapshot.enemy.isBroken &&
-              ctx.afterSnapshot.enemy.isBroken,
-            nodeReachedIndex,
-          },
-        });
-        break;
-      }
-      case "SP_CHANGE":
-        simLog.enqueue({
-          type: "SP_CHANGE",
-          time: event.time,
-          beforeSnapshot: ctx.beforeSnapshot,
-          afterSnapshot: ctx.afterSnapshot,
-          payload: {
-            sp: ctx.state.team.sp,
-            change: event.payload.spChange,
-            sourceId: event.payload.sourceId,
-            reason: event.payload.reason,
-          },
-        });
-        break;
-      case "SP_REGEN_PAUSE":
-        simLog.enqueue({
-          type: "SP_REGEN_PAUSE",
-          time: event.time,
-          beforeSnapshot: ctx.beforeSnapshot,
-          afterSnapshot: ctx.afterSnapshot,
-          payload: {
-            sourceId: event.payload.sourceId,
-            duration: event.payload.duration,
-          },
-        });
-        break;
-      default:
-        break;
-    }
-  });
-
   const state = engine.run();
+
+  const simLog = engine.getSimLog();
+
+  simLog.forEach((entry) => {
+    console.log(formatSimLogEntry(entry));
+  });
 
   return {
     state,

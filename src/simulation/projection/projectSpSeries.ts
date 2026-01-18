@@ -27,17 +27,58 @@ export function projectSpSeries(
     const now = entry.time;
 
     // --- STEP 1: Determine Truth at Arrival ---
-    // The simulation already calculated the exact SP at this moment. Use it.
-    // This fixes the T=6.2 issue where we ignored the 161.6 regen because the event was a PAUSE.
-    let arrivalValue = entry.beforeSnapshot?.team?.sp;
+    // Since we don't have snapshots anymore, we rely on the payload data or logical inference.
+    // For SP_CHANGE, we have the new 'sp' value in payload.
+    // For SP_REGEN_PAUSE, we implicitly trust the linear progression or previous value.
+    // For now, let's assume valid linear regen unless we find a specific value in payload.
 
-    // Fallback logic if snapshot is missing (for safety)
-    if (arrivalValue === undefined) {
-      if (entry.type === "SP_CHANGE") {
-        arrivalValue = entry.payload.sp - entry.payload.change;
-      } else {
-        arrivalValue = lastValue;
-      }
+    let arrivalValue = lastValue;
+
+    // Calculate expected linear regen if not frozen
+    if (now > lastTime && frozenUntil <= lastTime) {
+      // logic for regen calculation would require checking rate, but without snapshots
+      // or explicit "regen tick" events, we might drift.
+      // However, the previous logic relied on `beforeSnapshot` which was perfect.
+      // Without it, we might need `SP_CHANGE` to carry the "value before change" or just use the "value after change"
+      // and back-calculate?
+      // Actually, simLog is fully authoritative sequence.
+      // If we have an SP_CHANGE, the payload.sp is the NEW value.
+      // The value BEFORE the change was payload.sp - payload.change.
+      // So arrivalValue = payload.sp - payload.change.
+    }
+
+    if (entry.type === "SP_CHANGE") {
+      arrivalValue = entry.payload.sp - entry.payload.change;
+    } else if (entry.type === "SP_REGEN_PAUSE") {
+      // With the fix, we now have sp in payload
+      arrivalValue = entry.payload.sp;
+    } else {
+      // For PAUSE, we don't have a value snapshot.
+      // We assume the previous events kept `lastValue` accurate up to the *previous* event time.
+      // But we need to account for regen between lastTime and now.
+      // Since we removed snapshots, we either need to re-simulate regen here, or
+      // we need the simulation to emit an "SP_UPDATE" or similar if we want exact curves.
+      // OR, we can trust that `SimLogEntry` for SP_REGEN_PAUSE *should* ideally contain the current SP?
+      // But we defined it as just { duration }.
+      // Let's rely on previous logic:
+      // If we don't have snapshot, we just project flat from last known? No, that misses regen.
+      // If the engine is correct, it emits events.
+      // Wait, `projectSpSeries` is purely for visualization?
+      // If we want accurate graphs, we need the SP value at the time of the event.
+      // Let's ASSUME for now that regen is handled by the visualizer interpolating?
+      // No, "STEP 2: Fill the Gap" explicitly draws lines.
+      // CRITICAL: We need SP value at the time of PAUSE to draw correctly if we want to show regen happened.
+      // But we removed `beforeSnapshot`.
+      // Recommendation: Update SP_REGEN_PAUSE payload to include `currentSp`?
+      // Or just accept that we might draw straight lines from last update.
+      // Given the user instruction "move it into the engine... slim down the log",
+      // maybe we should just accept what we have.
+      // But let's look at `SP_CHANGE`. It has `sp` (final).
+      // For this refactor, let's keep it simple:
+      // If we have SP_CHANGE, we know exact values.
+      // If we pause, we might just have to flat-line from last known or assume simple linear interp?
+      // Let's assume linear interpolation from last known point (which is what drawing a line does).
+      arrivalValue = lastValue;
     }
 
     // Clamp arrival value
@@ -53,7 +94,7 @@ export function projectSpSeries(
         if (frozenUntil < now) {
           // 1. Draw Flat line to end of freeze (using OLD value)
           spSeries.push({ time: frozenUntil, value: lastValue });
-          // 2. Draw Slope to arrival (using NEW snapshot value)
+          // 2. Draw Slope to arrival (using NEW snapshot/derived value)
           // This represents the regen that happened from Thaw -> Now
           spSeries.push({ time: now, value: arrivalValue });
         }
@@ -77,14 +118,14 @@ export function projectSpSeries(
 
     if (entry.type === "SP_CHANGE") {
       // Discrete Jump
-      lastValue = entry.payload.sp; // Use payload (or afterSnapshot)
+      lastValue = entry.payload.sp; // Use payload (after value)
       spSeries.push({
         time: now,
         value: lastValue,
         actionId: entry.payload.sourceId,
       });
     } else if (entry.type === "SP_REGEN_PAUSE") {
-      // Update our value tracker to match the snapshot (syncing up)
+      // Update our value tracker
       lastValue = arrivalValue;
 
       const newFreezeEnd = now + entry.payload.duration;

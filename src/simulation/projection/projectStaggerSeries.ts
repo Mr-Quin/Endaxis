@@ -29,7 +29,7 @@ export function projectStaggerSeries(
 
   logs.forEach((log) => {
     if (log.type === "STAGGER") {
-      // Before change point
+      // Before change: we can infer previous from current - amount or just use currentStagger tracker
       points.push({ time: log.time, val: currentStagger });
 
       // After change

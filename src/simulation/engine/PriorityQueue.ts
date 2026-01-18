@@ -23,6 +23,10 @@ export class PriorityQueue<T extends { time: number }> {
   }
 
   clone() {
-    return new PriorityQueue<T>([...this.items]);
+    return new PriorityQueue<T>(this.toArray());
+  }
+
+  toArray() {
+    return [...this.items];
   }
 }

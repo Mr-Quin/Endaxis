@@ -13,16 +13,24 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
 
     const amount = staggerPipeline.calculate(snapshot, ctx.state);
 
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      return;
+    }
 
-    const startStagger = ctx.state.enemy.getStagger();
+    const wasBroken = ctx.state.enemy.isBroken;
     ctx.state.enemy.addStagger(amount, ctx.state.getCurrentTime());
+    const isBroken = ctx.state.enemy.isBroken;
 
-    ctx.log(
-      e,
-      `Stagger Change: ${startStagger} -> ${ctx.state.enemy.getStagger()} (+${amount})${
-        ctx.state.enemy.isBroken ? " (BROKEN)" : ""
-      }`
-    );
+    ctx.simLog({
+      type: "STAGGER",
+      time: e.time,
+      payload: {
+        actorId: e.payload.snapshot.targetId,
+        actionId: "",
+        amount,
+        stagger: ctx.state.enemy.getStagger(),
+        isBroken: !wasBroken && isBroken,
+      },
+    });
   }
 }

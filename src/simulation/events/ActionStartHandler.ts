@@ -6,7 +6,16 @@ import type {
 
 export class ActionStartHandler implements EventHandler<ActionStartEvent> {
   handle(e: ActionStartEvent, ctx: SimulationContext) {
-    ctx.log(e, `${e.payload.actorId} - ${e.payload.type}`);
+    ctx.simLog({
+      type: "ACTION_START",
+      time: e.time,
+      payload: {
+        skillId: e.payload.skillId,
+        actionId: e.payload.actionId,
+        type: e.payload.type,
+        amount: e.payload.spCost,
+      },
+    });
 
     const spFreezeDuration = this.getSpFreezeDuration(e);
     if (spFreezeDuration > 0) {
