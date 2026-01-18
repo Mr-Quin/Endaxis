@@ -74,6 +74,10 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     return this.activeEffects.get(id);
   }
 
+  hasEffectType(type: string): boolean {
+    return this.activeEffects.values().some((t) => t === type);
+  }
+
   snapshot(): EnemySnapshot {
     return {
       stagger: this.stagger,

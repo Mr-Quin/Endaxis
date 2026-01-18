@@ -5,7 +5,6 @@ import type {
   ResolvedDamageTick,
 } from "./timeline";
 import { GameState } from "@/simulation/state/GameState.ts";
-import type { StaggerSnapshot } from "@/simulation/pipeline/pipeline.ts";
 
 export interface StatBlock {
   atk: number;
@@ -154,7 +153,9 @@ export type EffectEndEvent = SimBaseEvent<
 export type StaggerChangeEvent = SimBaseEvent<
   "STAGGER_CHANGE",
   {
-    snapshot: StaggerSnapshot;
+    stagger: number;
+    sourceId: string;
+    targetId: string;
   }
 >;
 

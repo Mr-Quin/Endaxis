@@ -3,31 +3,47 @@ import type {
   SimulationContext,
   StaggerChangeEvent,
 } from "@/types/simulation.ts";
-import { StaggerPipeline } from "@/simulation/pipeline/pipeline.ts";
-
-const staggerPipeline = new StaggerPipeline();
+import {
+  CalculationPipeline,
+  OriginiumArtsModifier,
+} from "../calculation/CalculationPipeline";
+import type { StaggerContext } from "../calculation/type";
 
 export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
+  private pipeline = new CalculationPipeline<StaggerContext>();
+
+  constructor() {
+    this.pipeline.add(OriginiumArtsModifier);
+  }
+
   handle(e: StaggerChangeEvent, ctx: SimulationContext) {
-    const { snapshot } = e.payload;
+    const { stagger, sourceId } = e.payload;
 
-    const amount = staggerPipeline.calculate(snapshot, ctx.state);
+    const staggerCtx: StaggerContext = {
+      source: {} as any,
+      target: ctx.state.enemy,
+      baseValue: stagger,
+      tags: [],
+      state: ctx.state,
+    };
 
-    if (amount <= 0) {
+    const result = this.pipeline.execute(staggerCtx, stagger);
+
+    if (result.finalValue <= 0) {
       return;
     }
 
     const wasBroken = ctx.state.enemy.isBroken;
-    ctx.state.enemy.addStagger(amount, ctx.state.getCurrentTime());
+    ctx.state.enemy.addStagger(result.finalValue, ctx.state.getCurrentTime());
     const isBroken = ctx.state.enemy.isBroken;
 
     ctx.simLog({
       type: "STAGGER",
       time: e.time,
       payload: {
-        actorId: e.payload.snapshot.targetId,
+        actorId: e.payload.targetId,
         actionId: "",
-        amount,
+        amount: result.finalValue,
         stagger: ctx.state.enemy.getStagger(),
         isBroken: !wasBroken && isBroken,
       },
