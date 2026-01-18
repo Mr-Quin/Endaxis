@@ -9,6 +9,9 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
 
   nodeStep: number = 0;
 
+  // effectId -> type
+  private activeEffects: Map<string, string> = new Map();
+
   constructor(readonly config: EnemyStateConfig) {
     this.nodeStep = this.config.maxStagger / (this.config.staggerNodeCount + 1);
   }
@@ -52,16 +55,11 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     if (this.isBroken && this.breakEndTime < currentTime) {
       this.isBroken = false;
     }
+    // TODO: effect expiration
   }
-
-  // effectId -> type
-  activeEffects: Map<string, string> = new Map();
-  // effectId -> type (All known effects)
-  effectRegistry: Map<string, string> = new Map();
 
   addEffect(effectId: string, type: string) {
     this.activeEffects.set(effectId, type);
-    this.effectRegistry.set(effectId, type);
   }
 
   removeEffect(id: string) {

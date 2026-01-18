@@ -11,7 +11,7 @@ import { EnemyState } from "@/simulation/state/EnemyState.ts";
 export class GameState implements BaseGameState<GameSnapshot> {
   team: TeamState;
   enemy: EnemyState;
-  actors: Map<string, ActorState> = new Map();
+  private actors: Map<string, ActorState> = new Map();
   private currentTime: number = 0;
   private initialSnapshot: GameSnapshot;
 
@@ -25,6 +25,18 @@ export class GameState implements BaseGameState<GameSnapshot> {
     this.currentTime += deltaTime;
     this.team.advanceTime(deltaTime, this.currentTime);
     this.enemy.advanceTime(deltaTime, this.currentTime);
+  }
+
+  setActor(actor: ActorState) {
+    this.actors.set(actor.id, actor);
+  }
+
+  getActor(id: string): ActorState {
+    const actor = this.actors.get(id);
+    if (!actor) {
+      throw new Error(`Actor ${id} not found`);
+    }
+    return actor;
   }
 
   getCurrentTime() {

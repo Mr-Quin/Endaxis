@@ -56,8 +56,8 @@ export class StaggerPipeline {
       });
 
       if (hasKnockBinding) {
-        const actor = state.actors.get(snapshot.sourceId);
-        const originiumArtsPower = actor?.stats?.originiumArtsPower || 0;
+        const actor = state.getActor(snapshot.sourceId);
+        const originiumArtsPower = actor.stats.originiumArtsPower || 0;
         const ORIGINIUM_ARTS_FACTOR = 0.005;
         const multiplier = 1 + originiumArtsPower * ORIGINIUM_ARTS_FACTOR;
         stagger *= multiplier;
@@ -68,13 +68,9 @@ export class StaggerPipeline {
   }
 }
 
-// Example Stat Calculator (Framework)
 export class StatCalculator {
-  // Logic to compute dynamic stats from WorldState
   static getActorStats(actorId: string, state: GameState) {
-    const actor = state.actors.get(actorId);
-    if (!actor) return null;
-    // Apply buffs to base stats...
+    const actor = state.getActor(actorId);
     return actor.stats;
   }
 }

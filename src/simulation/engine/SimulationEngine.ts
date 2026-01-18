@@ -7,7 +7,7 @@ import type {
 } from "../../types/simulation.ts";
 import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import {GameState} from "@/simulation/state/GameState.ts";
+import { GameState } from "@/simulation/state/GameState.ts";
 
 export type EventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
@@ -19,6 +19,10 @@ export class SimulationEngine {
 
   constructor(initialState: GameState, private timeline: ResolvedTimeline) {
     this.state = initialState;
+  }
+
+  getState() {
+    return this.state;
   }
 
   registerHandler<E extends SimEvent>(

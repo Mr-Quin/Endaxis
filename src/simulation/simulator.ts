@@ -4,18 +4,9 @@ import type {
   EnemyStateConfig,
   SimLogEntry,
 } from "../types/simulation";
-import { SimulationEngine } from "./engine/SimulationEngine.ts";
 import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import { StaggerPipeline } from "@/simulation/pipeline/pipeline.ts";
-import { DamageHandler } from "@/simulation/events/DamageHandler.ts";
-import { ActionStartHandler } from "@/simulation/events/ActionStartHandler.ts";
-import { SpRegenPauseHandler } from "@/simulation/events/SpRegenPauseHandler.ts";
-import { ActionEndHandler } from "@/simulation/events/ActionEndHandler.ts";
-import { SpChangeHandler } from "@/simulation/events/SpChangeHandler.ts";
-import { EffectStartHandler } from "@/simulation/events/EffectStartHandler.ts";
-import { EffectEndHandler } from "@/simulation/events/EffectEndHandler.ts";
-import { StaggerChangeHandler } from "@/simulation/events/StaggerChangeHandler.ts";
-import { GameState } from "@/simulation/state/GameState.ts";
+import { createEngine } from "./engine/createEngine.ts";
 
 const DEFAULT_TEAM_CONFIG: TeamStateConfig = {
   maxSp: 200,
@@ -57,24 +48,14 @@ export function simulate(
     executionRecovery: Number(systemConstants.executionRecovery) || 25,
   };
 
-  const gameState = new GameState(teamConfig, enemyConfig);
-  const engine = new SimulationEngine(gameState, timeline);
-
-  // 2. Register Handlers
-  engine.registerHandler("DAMAGE_TICK", new DamageHandler());
-  engine.registerHandler("ACTION_START", new ActionStartHandler());
-  engine.registerHandler("ACTION_END", new ActionEndHandler());
-  engine.registerHandler("SP_CHANGE", new SpChangeHandler());
-  engine.registerHandler("SP_REGEN_PAUSE", new SpRegenPauseHandler());
-  engine.registerHandler("EFFECT_START", new EffectStartHandler());
-  engine.registerHandler("EFFECT_END", new EffectEndHandler());
-  engine.registerHandler("STAGGER_CHANGE", new StaggerChangeHandler());
+  const engine = createEngine(teamConfig, enemyConfig, timeline);
+  const gameState = engine.getState();
 
   if (Array.isArray(systemConstants.tracks)) {
     systemConstants.tracks.forEach((track: any) => {
       if (!track.id) return;
       const originiumArtsPower = Number(track.originiumArtsPower) || 0;
-      gameState.actors.set(track.id, {
+      gameState.setActor({
         id: track.id,
         stats: {
           atk: 0,
