@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { simulate } from "./simulator";
-import {
-  simulatorFixture2,
-  simulatorFixture1,
-} from "./fixture/simulator.fixture";
+import { simulatorFixture1 } from "./fixture/simulator.fixture";
 import { compileTimeline } from "./compiler";
 import { projectSpSeries } from "./projection/projectSpSeries";
 import { projectStaggerSeries } from "./projection/projectStaggerSeries";

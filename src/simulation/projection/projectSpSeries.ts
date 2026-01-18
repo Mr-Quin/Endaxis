@@ -1,7 +1,4 @@
 import type { GameSnapshot, SimLogEntry } from "@/types/simulation";
-import type { ResolvedTimeline } from "@/types/timeline";
-
-import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 
 export function projectSpSeries(
   simLog: SimLogEntry[],

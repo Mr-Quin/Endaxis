@@ -9,12 +9,12 @@ import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import { GameState } from "@/simulation/state/GameState.ts";
 
-export type EventHook = (event: SimEvent, ctx: EventHookContext) => void;
+type SimEventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
 export class SimulationEngine {
   private queue = new PriorityQueue<SimEvent>();
   private handlers = new Map<SimEventType, EventHandler<SimEvent>>();
-  private listeners = new Set<EventHook>();
+  private listeners = new Set<SimEventHook>();
   private state: GameState;
 
   constructor(initialState: GameState, private timeline: ResolvedTimeline) {
@@ -32,7 +32,7 @@ export class SimulationEngine {
     this.handlers.set(type, handler);
   }
 
-  subscribe(listener: EventHook): () => void {
+  subscribe(listener: SimEventHook): () => void {
     this.listeners.add(listener);
 
     return () => {
@@ -52,6 +52,7 @@ export class SimulationEngine {
     const ctx: SimulationContext = {
       state: this.state,
       queue: { enqueue: this.enqueue.bind(this) },
+      // TODO: log should output structured events
       log: (e: SimEvent, msg: string) => {
         console.log(
           `[${this.state.getCurrentTime().toFixed(3)}] [${e.type}] ${msg}`
