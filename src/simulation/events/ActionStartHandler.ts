@@ -1,0 +1,49 @@
+import type { EventHandler } from "@/simulation/events/EventHandler.ts";
+import type {
+  ActionStartEvent,
+  SimulationContext,
+} from "@/types/simulation.ts";
+
+export class ActionStartHandler implements EventHandler<ActionStartEvent> {
+  handle(e: ActionStartEvent, ctx: SimulationContext) {
+    ctx.log(e, `${e.payload.actorId} - ${e.payload.type}`);
+
+    const spFreezeDuration = this.getSpFreezeDuration(e);
+    if (spFreezeDuration > 0) {
+      // 暂停SP再生
+      ctx.queue.enqueue({
+        type: "SP_REGEN_PAUSE",
+        time: ctx.state.getCurrentTime(),
+        payload: {
+          sourceId: e.payload.actorId,
+          duration: spFreezeDuration,
+        },
+      });
+    }
+
+    if (e.payload.spCost && e.payload.spCost > 0) {
+      // 技能SP消耗
+      ctx.queue.enqueue({
+        type: "SP_CHANGE",
+        time: ctx.state.getCurrentTime(),
+        payload: {
+          actorId: e.payload.actorId,
+          spChange: -e.payload.spCost,
+          reason: "skill",
+          sourceId: e.payload.actionId,
+          parent: e,
+        },
+      });
+    }
+  }
+
+  private getSpFreezeDuration(e: ActionStartEvent) {
+    if (e.payload.type === "skill") {
+      return 0.5;
+    }
+    if (e.payload.type === "ultimate" || e.payload.type === "link") {
+      return e.payload.freezeDuration ?? 1.5;
+    }
+    return 0;
+  }
+}

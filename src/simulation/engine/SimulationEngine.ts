@@ -1,45 +1,15 @@
+import type { ResolvedTimeline } from "@/types/timeline.ts";
 import type {
-  SimEvent,
-  SimulationContext,
-  SimEventType,
   EventHookContext,
-} from "../types/simulation";
-import { GameState } from "./state";
-
-export interface EventHandler<E extends SimEvent> {
-  handle(event: E, ctx: SimulationContext): void;
-}
+  SimEvent,
+  SimEventType,
+  SimulationContext,
+} from "../../types/simulation.ts";
+import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
+import type { EventHandler } from "@/simulation/events/EventHandler.ts";
+import {GameState} from "@/simulation/state/GameState.ts";
 
 export type EventHook = (event: SimEvent, ctx: EventHookContext) => void;
-
-export class PriorityQueue<T extends { time: number }> {
-  constructor(private readonly items: T[] = []) {}
-
-  getItems() {
-    return this.items;
-  }
-
-  enqueue(item: T) {
-    this.items.push(item);
-    this.items.sort((a, b) => a.time - b.time);
-  }
-
-  dequeue(): T | undefined {
-    return this.items.shift();
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  peek(): T | undefined {
-    return this.items[0];
-  }
-
-  clone() {
-    return new PriorityQueue<T>([...this.items]);
-  }
-}
 
 export class SimulationEngine {
   private queue = new PriorityQueue<SimEvent>();
@@ -47,7 +17,7 @@ export class SimulationEngine {
   private listeners = new Set<EventHook>();
   private state: GameState;
 
-  constructor(initialState: GameState) {
+  constructor(initialState: GameState, private timeline: ResolvedTimeline) {
     this.state = initialState;
   }
 
@@ -70,6 +40,10 @@ export class SimulationEngine {
     this.queue.enqueue(event);
   }
 
+  getAction(id: string) {
+    return this.timeline.actionMap.get(id);
+  }
+
   run() {
     const ctx: SimulationContext = {
       state: this.state,
@@ -79,6 +53,7 @@ export class SimulationEngine {
           `[${this.state.getCurrentTime().toFixed(3)}] [${e.type}] ${msg}`
         );
       },
+      getAction: this.getAction.bind(this),
     };
 
     while (!this.queue.isEmpty()) {

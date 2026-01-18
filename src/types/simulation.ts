@@ -1,9 +1,10 @@
-import type { GameState } from "@/simulation/state";
 import type {
   ActionType,
+  ResolvedAction,
   ResolvedDamageTick,
   ResolvedEffect,
 } from "./timeline";
+import {GameState} from "@/simulation/state/GameState.ts";
 
 export interface StatBlock {
   atk: number;
@@ -164,6 +165,15 @@ export type SimLogEntry =
         reason: string;
       }
     >
+  | SimLogEntryBase<
+      "STAGGER",
+      {
+        actorId: string;
+        actionId: string;
+        amount: number;
+        stagger: number;
+      }
+    >
   | SimLogEntryBase<"DAMAGE">
   | SimLogEntryBase<"STATE_SNAPSHOT">;
 
@@ -173,6 +183,7 @@ export interface SimulationContext {
     enqueue: (event: SimEvent) => void;
   };
   log: (e: SimEvent, msg: string) => void;
+  getAction: (id: string) => ResolvedAction | undefined;
 }
 
 export interface EventHookContext extends SimulationContext {

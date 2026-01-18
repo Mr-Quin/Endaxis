@@ -1,4 +1,4 @@
-import type { GameState } from "../simulation/state";
+import { GameState } from "@/simulation/state/GameState.ts";
 
 export interface DamageSnapshot {
   baseDamage: number;

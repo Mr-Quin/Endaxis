@@ -4,15 +4,14 @@ import type {
   EnemyStateConfig,
   SimLogEntry,
 } from "../types/simulation";
-import { PriorityQueue, SimulationEngine } from "./engine";
-import {
-  DamageHandler,
-  ActionStartHandler,
-  ActionEndHandler,
-  SpChangeHandler,
-  SpRegenPauseHandler,
-} from "./handlers";
-import { GameState } from "./state";
+import { SimulationEngine } from "./engine/SimulationEngine.ts";
+import {PriorityQueue} from "@/simulation/engine/PriorityQueue.ts";
+import {DamageHandler} from "@/simulation/events/DamageHandler.ts";
+import {ActionStartHandler} from "@/simulation/events/ActionStartHandler.ts";
+import {SpRegenPauseHandler} from "@/simulation/events/SpRegenPauseHandler.ts";
+import {ActionEndHandler} from "@/simulation/events/ActionEndHandler.ts";
+import {SpChangeHandler} from "@/simulation/events/SpChangeHandler.ts";
+import {GameState} from "@/simulation/state/GameState.ts";
 
 const DEFAULT_TEAM_CONFIG: TeamStateConfig = {
   maxSp: 200,
@@ -55,7 +54,7 @@ export function simulate(
   };
 
   const gameState = new GameState(teamConfig, enemyConfig);
-  const engine = new SimulationEngine(gameState);
+  const engine = new SimulationEngine(gameState, timeline);
 
   // 2. Register Handlers
   engine.registerHandler("DAMAGE_TICK", new DamageHandler());
@@ -127,6 +126,18 @@ export function simulate(
       case "ACTION_END":
         break;
       case "DAMAGE_TICK":
+        simLog.enqueue({
+          type: "STAGGER",
+          time: event.time,
+          beforeSnapshot: ctx.beforeSnapshot,
+          afterSnapshot: ctx.afterSnapshot,
+          payload: {
+            actorId: event.payload.targetId,
+            actionId: event.payload.actionId,
+            amount: event.payload.stagger,
+            stagger: ctx.state.enemy.getStagger(),
+          },
+        });
         break;
       case "SP_CHANGE":
         simLog.enqueue({
