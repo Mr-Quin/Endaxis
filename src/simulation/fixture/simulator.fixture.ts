@@ -1,5 +1,4 @@
-import type { ActionNode } from "@/types/timeline";
-import type { ScenarioData } from "../compiler/types";
+import type { ScenarioData, ActionNode } from "../compiler/types";
 import { scenario } from "../compiler/fixture/scenario-2";
 
 type LegacySimulatorFixture = {

@@ -1,5 +1,5 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
-import type { TeamSnapshot, TeamConfig } from "@/types/simulation.ts";
+import type { TeamSnapshot, TeamConfig } from "@/simulation/state/types.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";
 
 export class TeamState implements BaseGameState<TeamSnapshot> {

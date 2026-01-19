@@ -1,4 +1,4 @@
-import type { TimeExtension } from "@/types/timeline";
+import type { TimeExtension } from "../types";
 
 export const timeExtensions: TimeExtension[] = [
   {

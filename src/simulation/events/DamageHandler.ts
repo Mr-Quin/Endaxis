@@ -1,5 +1,6 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import type { DamageTickEvent, SimulationContext } from "@/types/simulation.ts";
+import type { DamageTickEvent } from "@/simulation/events/event.types.ts";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 
 export class DamageHandler implements EventHandler<DamageTickEvent> {
   handle(e: DamageTickEvent, ctx: SimulationContext) {

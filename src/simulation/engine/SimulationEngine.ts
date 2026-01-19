@@ -1,17 +1,17 @@
-import type { ResolvedTimeline } from "@/types/timeline.ts";
-import type {
-  SimEvent,
-  SimEventType,
-  SimulationContext,
-  SimLogEntry,
-  EventHookContext,
-  ActorSnapshot,
-  EnemyConfig,
-  TeamConfig,
-} from "../../types/simulation.ts";
+import type { ActorSnapshot, EnemyConfig, TeamConfig } from "../state/types.ts";
 import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import { GameState } from "@/simulation/state/GameState.ts";
+import type {
+  SimEvent,
+  SimEventType,
+  SimLogEntry,
+} from "@/simulation/events/event.types.ts";
+import type {
+  EventHookContext,
+  SimulationContext,
+} from "@/simulation/engine/SimulationContext.ts";
+import type { ResolvedTimeline } from "../compiler/types.ts";
 
 type SimEventHook = (event: SimEvent, ctx: EventHookContext) => void;
 

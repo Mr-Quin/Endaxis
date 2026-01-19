@@ -1,5 +1,6 @@
-import type { EnemyConfig, SimLogEntry } from "@/types/simulation";
-import type { GameSnapshot } from "@/types/simulation";
+import type { EnemyConfig } from "@/simulation/state/types.ts";
+import type { GameSnapshot } from "@/simulation/state/types.ts";
+import type { SimLogEntry } from "@/simulation/events/event.types.ts";
 
 export interface StaggerData {
   points: { time: number; val: number }[];

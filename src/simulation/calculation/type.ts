@@ -1,4 +1,4 @@
-import type { ActorSnapshot } from "@/types/simulation";
+import type { ActorSnapshot } from "@/simulation/state/types.ts";
 import type { EnemyState } from "../state/EnemyState";
 import type { GameState } from "../state/GameState";
 

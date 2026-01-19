@@ -1,4 +1,4 @@
-import type { SimLogEntry } from "@/types/simulation";
+import type { SimLogEntry } from "@/simulation/events/event.types.ts";
 
 function withPrefix(entry: SimLogEntry, message: string) {
   return `[${entry.time.toFixed(3)}] [${entry.type}] ${message}`;

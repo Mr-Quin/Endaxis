@@ -1,13 +1,11 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import type {
-  SimulationContext,
-  StaggerChangeEvent,
-} from "@/types/simulation.ts";
 import {
   CalculationPipeline,
   OriginiumArtsModifier,
 } from "../calculation/CalculationPipeline";
 import type { StaggerContext } from "../calculation/type";
+import type { StaggerChangeEvent } from "@/simulation/events/event.types.ts";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 
 export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
   private pipeline = new CalculationPipeline<StaggerContext>();

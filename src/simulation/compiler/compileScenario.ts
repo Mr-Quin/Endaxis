@@ -1,6 +1,6 @@
-import type { ActionNode } from "@/types/timeline";
 import { compileTimeline } from "./compileTimeline";
 import type {
+  ActionNode,
   ActorStats,
   CompiledScenario,
   GameDatabase,
@@ -9,7 +9,7 @@ import type {
   SystemConstants,
 } from "./types";
 import { createDefaultStats } from "@/utils/coreStats";
-import type { ActorSnapshot } from "@/types/simulation";
+import type { ActorSnapshot } from "@/simulation/state/types.ts";
 
 function normalizeTracks(tracks: ScenarioTrack[]): ScenarioTrack[] {
   return tracks.map((track) => {

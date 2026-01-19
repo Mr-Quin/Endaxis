@@ -1,4 +1,5 @@
-import type { GameSnapshot, SimLogEntry } from "@/types/simulation";
+import type { GameSnapshot } from "@/simulation/state/types.ts";
+import type { SimLogEntry } from "@/simulation/events/event.types.ts";
 
 export function projectSpSeries(
   simLog: SimLogEntry[],

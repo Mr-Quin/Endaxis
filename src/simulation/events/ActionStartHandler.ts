@@ -1,8 +1,6 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import type {
-  ActionStartEvent,
-  SimulationContext,
-} from "@/types/simulation.ts";
+import type { ActionStartEvent } from "@/simulation/events/event.types.ts";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 
 export class ActionStartHandler implements EventHandler<ActionStartEvent> {
   handle(e: ActionStartEvent, ctx: SimulationContext) {

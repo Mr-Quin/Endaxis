@@ -1,11 +1,6 @@
-import type { ResolvedTimeline } from "../types/timeline";
-import type {
-  TeamConfig,
-  EnemyConfig,
-  ActorSnapshot,
-} from "../types/simulation";
+import type { TeamConfig, EnemyConfig, ActorSnapshot } from "./state/types.ts";
 import { createEngine } from "./engine/createEngine.ts";
-import { formatSimLogEntry } from "./formatSimLogEntry.ts";
+import type { ResolvedTimeline } from "./compiler/types.ts";
 
 export function simulate(
   timeline: ResolvedTimeline,

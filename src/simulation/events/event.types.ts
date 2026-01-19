@@ -1,75 +1,12 @@
-import type { ActorStats } from "@/simulation/compiler/types";
-import type {
-  ActionType,
-  ResolvedEffect,
-  ResolvedAction,
-  ResolvedDamageTick,
-} from "./timeline";
-import { GameState } from "@/simulation/state/GameState.ts";
-
-export interface ActorSnapshot {
-  id: string;
-  stats: ActorStats;
-  resources: {
-    hp: number;
-    gauge: number;
-  };
-  cooldowns: Map<string, number>;
-  activeBuffs: Map<string, ResolvedEffect>;
-  activeAction?: ResolvedAction;
-}
-
-export interface TeamConfig {
-  maxSp: number;
-  initialSp: number;
-  spRegenRate: number;
-  skillSpCostDefault: number;
-  linkCdReduction: number;
-}
-
-export interface TeamSnapshot {
-  sp: number;
-  spRegenRate: number;
-  maxSp: number;
-  isSpRegenPaused: boolean;
-  spRegenPauseDuration: number;
-}
-
-export interface EnemyConfig {
-  maxStagger: number;
-  staggerNodeCount: number;
-  staggerNodeDuration: number;
-  staggerBreakDuration: number;
-  executionRecovery: number;
-}
-
-export interface EnemySnapshot {
-  stagger: number;
-  isBroken: boolean;
-  isLocked: boolean;
-  breakEndTime: number;
-  lockEndTime: number;
-}
-
-export interface GameConfig {
-  team: TeamConfig;
-  enemy: EnemyConfig;
-}
-
-export interface GameSnapshot {
-  team: TeamSnapshot;
-  enemy: EnemySnapshot;
-}
+import type { ActionType, ResolvedDamageTick } from "../compiler/types";
 
 export type SimEventType = SimEvent["type"];
-
 type SimBaseEvent<Name extends string, Data = {}> = {
   // real time
   time: number;
   type: Name;
   payload: Data;
 };
-
 export type ActionStartEvent = SimBaseEvent<
   "ACTION_START",
   {
@@ -81,7 +18,6 @@ export type ActionStartEvent = SimBaseEvent<
     freezeDuration?: number;
   }
 >;
-
 export type ActionEndEvent = SimBaseEvent<
   "ACTION_END",
   {
@@ -92,7 +28,6 @@ export type ActionEndEvent = SimBaseEvent<
     type: ActionType;
   }
 >;
-
 export type DamageTickEvent = SimBaseEvent<
   "DAMAGE_TICK",
   {
@@ -104,7 +39,6 @@ export type DamageTickEvent = SimBaseEvent<
     actionId: string;
   }
 >;
-
 export type SpChangeEvent = SimBaseEvent<
   "SP_CHANGE",
   {
@@ -115,7 +49,6 @@ export type SpChangeEvent = SimBaseEvent<
     parent: SimEvent;
   }
 >;
-
 export type SpRegenPauseEvent = SimBaseEvent<
   "SP_REGEN_PAUSE",
   {
@@ -123,7 +56,6 @@ export type SpRegenPauseEvent = SimBaseEvent<
     duration: number;
   }
 >;
-
 export type EffectStartEvent = SimBaseEvent<
   "EFFECT_START",
   {
@@ -140,7 +72,6 @@ export type EffectEndEvent = SimBaseEvent<
     type: string;
   }
 >;
-
 export type StaggerChangeEvent = SimBaseEvent<
   "STAGGER_CHANGE",
   {
@@ -150,7 +81,6 @@ export type StaggerChangeEvent = SimBaseEvent<
     targetId: string;
   }
 >;
-
 export type SimEvent =
   | ActionStartEvent
   | ActionEndEvent
@@ -160,13 +90,11 @@ export type SimEvent =
   | EffectStartEvent
   | EffectEndEvent
   | StaggerChangeEvent;
-
 export type SimLogEntryBase<Name extends string, Data = {}> = {
   type: Name;
   time: number;
   payload: Data;
 };
-
 export type SimLogEntry =
   | SimLogEntryBase<
       "SP_REGEN_PAUSE",
@@ -243,17 +171,3 @@ export type SimLogEntry =
         type: string;
       }
     >;
-
-export interface SimulationContext {
-  state: GameState;
-  queue: {
-    enqueue: (event: SimEvent) => void;
-  };
-  simLog: (entry: SimLogEntry) => void;
-  getAction: (id: string) => ResolvedAction | undefined;
-}
-
-export interface EventHookContext extends SimulationContext {
-  beforeSnapshot: GameSnapshot;
-  afterSnapshot: GameSnapshot;
-}

@@ -1,4 +1,4 @@
-import type { ActionNode } from "@/types/timeline";
+import type { ActionNode } from "../types";
 
 export const actionNodes: ActionNode[] = [
   {

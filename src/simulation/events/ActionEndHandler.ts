@@ -1,5 +1,6 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import type { ActionEndEvent, SimulationContext } from "@/types/simulation.ts";
+import type { ActionEndEvent } from "@/simulation/events/event.types.ts";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 
 export class ActionEndHandler implements EventHandler<ActionEndEvent> {
   handle(e: ActionEndEvent, ctx: SimulationContext) {

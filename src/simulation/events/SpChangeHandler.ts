@@ -1,5 +1,6 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
-import type { SimulationContext, SpChangeEvent } from "@/types/simulation.ts";
+import type { SpChangeEvent } from "@/simulation/events/event.types.ts";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 
 export class SpChangeHandler implements EventHandler<SpChangeEvent> {
   handle(e: SpChangeEvent, ctx: SimulationContext) {

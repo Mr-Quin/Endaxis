@@ -4,7 +4,7 @@ import type {
   EnemyConfig,
   GameSnapshot,
   TeamConfig,
-} from "@/types/simulation.ts";
+} from "@/simulation/state/types.ts";
 import { TeamState } from "@/simulation/state/TeamState.ts";
 import { EnemyState } from "@/simulation/state/EnemyState.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";

@@ -1,5 +1,5 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
-import type { EnemySnapshot, EnemyConfig } from "@/types/simulation.ts";
+import type { EnemySnapshot, EnemyConfig } from "@/simulation/state/types.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";
 
 export class EnemyState implements BaseGameState<EnemySnapshot> {

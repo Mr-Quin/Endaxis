@@ -1,13 +1,13 @@
+import { TimeContext } from "./timeContext";
 import type {
+  Connection,
   ActionNode,
   ResolvedTimeline,
   ResolvedAction,
   ResolvedEffect,
   ResolvedDamageTick,
   TimeExtension,
-} from "../../types/timeline";
-import { TimeContext } from "./timeContext";
-import type { Connection } from "./types";
+} from "./types";
 
 interface ShiftContext {
   shift: number;

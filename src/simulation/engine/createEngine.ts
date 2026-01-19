@@ -2,9 +2,8 @@ import type {
   ActorSnapshot,
   EnemyConfig,
   TeamConfig,
-} from "@/types/simulation";
+} from "@/simulation/state/types.ts";
 import { SimulationEngine } from "./SimulationEngine";
-import type { ResolvedTimeline } from "@/types/timeline";
 import { DamageHandler } from "../events/DamageHandler";
 import { ActionStartHandler } from "../events/ActionStartHandler";
 import { ActionEndHandler } from "../events/ActionEndHandler";
@@ -13,6 +12,7 @@ import { SpRegenPauseHandler } from "../events/SpRegenPauseHandler";
 import { EffectStartHandler } from "../events/EffectStartHandler";
 import { EffectEndHandler } from "../events/EffectEndHandler";
 import { StaggerChangeHandler } from "../events/StaggerChangeHandler";
+import type { ResolvedTimeline } from "../compiler/types";
 
 export function createEngine(
   teamConfig: TeamConfig,

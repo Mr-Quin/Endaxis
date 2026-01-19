@@ -1,4 +1,4 @@
-import type { ActorSnapshot } from "@/types/simulation";
+import type { ActorSnapshot } from "@/simulation/state/types.ts";
 import type { BaseGameState } from "./BaseGameState";
 
 export class ActorState implements BaseGameState<ActorSnapshot> {

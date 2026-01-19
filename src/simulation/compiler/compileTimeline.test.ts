@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { compileTimeline } from "./compileTimeline";
-import type { Action, ActionNode, Anomaly } from "../../types/timeline";
+import type { Action, ActionNode, Anomaly } from "./types";
 
 function createAction(action: Partial<Action>): Action {
   return {
