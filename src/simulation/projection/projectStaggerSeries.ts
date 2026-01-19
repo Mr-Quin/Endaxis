@@ -11,7 +11,8 @@ export interface StaggerData {
 export function projectStaggerSeries(
   logs: SimLogEntry[],
   initial: GameSnapshot,
-  { maxStagger, staggerBreakDuration, staggerNodeCount }: EnemyConfig
+  { maxStagger, staggerBreakDuration, staggerNodeCount }: EnemyConfig,
+  timelineDuration: number = 120
 ): StaggerData {
   const points: { time: number; val: number }[] = [];
   const lockSegments: { start: number; end: number }[] = [];
@@ -53,11 +54,14 @@ export function projectStaggerSeries(
       if (!prev || !curr) continue;
 
       if (curr.time === prev.time && Math.abs(curr.val - prev.val) < 0.001) {
-        continue; // Skip exact dupes
+        continue;
       }
       cleanPoints.push(curr);
     }
   }
+
+  const finalPoint = { time: timelineDuration, val: currentStagger };
+  cleanPoints.push(finalPoint);
 
   return {
     points: cleanPoints,

@@ -17,6 +17,8 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
   snapshot(): TeamSnapshot {
     return {
       sp: this.sp,
+      spRegenRate: this.config.spRegenRate,
+      maxSp: this.config.maxSp,
       isSpRegenPaused: this.isSpRegenPaused,
       spRegenPauseDuration: this.spRegenPauseDuration,
     };
@@ -30,7 +32,7 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
     if (amount === 0) {
       return this.sp;
     }
-    this.sp = Math.min(Math.max(0, this.sp + amount), this.config.maxSp);
+    this.sp = this.sp + amount;
     return this.sp;
   }
 
@@ -40,6 +42,10 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
   }
 
   private regenSp(dt: number, currentTime: number) {
+    if (this.sp >= this.config.maxSp) {
+      return;
+    }
+
     let effectiveDuration = dt;
 
     if (this.isSpRegenPaused) {

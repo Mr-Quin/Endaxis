@@ -2,15 +2,16 @@ import type { GameSnapshot, SimLogEntry } from "@/types/simulation";
 
 export function projectSpSeries(
   simLog: SimLogEntry[],
-  initialSnapshot: GameSnapshot
+  initialSnapshot: GameSnapshot,
+  timelineDuration = 120
 ) {
-  const spSeries: { time: number; value: number; actionId?: string }[] = [];
+  const spSeries: { time: number; sp: number; actionId?: string }[] = [];
 
   let lastTime = 0;
   let lastValue = initialSnapshot.team.sp;
   let frozenUntil = 0;
 
-  spSeries.push({ time: 0, value: lastValue });
+  spSeries.push({ time: 0, sp: lastValue });
 
   for (let i = 0; i < simLog.length; i++) {
     const entry = simLog[i];
@@ -34,19 +35,17 @@ export function projectSpSeries(
       arrivalValue = lastValue;
     }
 
-    arrivalValue = Math.max(0, arrivalValue);
-
     if (now > lastTime) {
       if (frozenUntil > lastTime) {
         if (frozenUntil < now) {
-          spSeries.push({ time: frozenUntil, value: lastValue });
-          spSeries.push({ time: now, value: arrivalValue });
+          spSeries.push({ time: frozenUntil, sp: lastValue });
+          spSeries.push({ time: now, sp: arrivalValue });
         } else {
-          spSeries.push({ time: now, value: lastValue });
+          spSeries.push({ time: now, sp: lastValue });
           arrivalValue = lastValue;
         }
       } else {
-        spSeries.push({ time: now, value: arrivalValue });
+        spSeries.push({ time: now, sp: arrivalValue });
       }
     }
 
@@ -54,7 +53,7 @@ export function projectSpSeries(
       lastValue = entry.payload.sp;
       spSeries.push({
         time: now,
-        value: lastValue,
+        sp: lastValue,
         actionId: entry.payload.sourceId,
       });
     } else if (entry.type === "SP_REGEN_PAUSE") {
@@ -80,7 +79,7 @@ export function projectSpSeries(
       }
 
       if (nextEventTime > newFreezeEnd) {
-        spSeries.push({ time: newFreezeEnd, value: lastValue });
+        spSeries.push({ time: newFreezeEnd, sp: lastValue });
         lastTime = Math.max(lastTime, newFreezeEnd);
       }
     }
@@ -89,7 +88,18 @@ export function projectSpSeries(
   }
 
   if (frozenUntil > lastTime) {
-    spSeries.push({ time: frozenUntil, value: lastValue });
+    spSeries.push({ time: frozenUntil, sp: lastValue });
+    lastTime = frozenUntil;
+  }
+
+  const maxSp = initialSnapshot.team.maxSp;
+  const regenRate = initialSnapshot.team.spRegenRate;
+  const regenDuration = (maxSp - lastValue) / regenRate;
+  const regenEndTime = lastTime + regenDuration;
+  spSeries.push({ time: regenEndTime, sp: maxSp });
+
+  if (regenEndTime < timelineDuration) {
+    spSeries.push({ time: timelineDuration, sp: maxSp });
   }
 
   return spSeries;

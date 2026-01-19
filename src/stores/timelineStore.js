@@ -4,7 +4,10 @@ import { watchThrottled } from '@vueuse/core'
 import { executeFetch } from '@/api/fetchStrategy.js'
 import { compressGzip, decompressGzip } from '@/utils/gzipUtils'
 import { CORE_STATS, createDefaultStats } from '@/utils/coreStats.js'
-import { compileTimeline } from '../simulation/compiler/compileTimeline'
+import { compileScenario } from '@/simulation/compiler/compileScenario'
+import { simulate } from '@/simulation/simulator'
+import { projectSpSeries } from '@/simulation/projection/projectSpSeries'
+import { projectStaggerSeries } from '@/simulation/projection/projectStaggerSeries'
 
 const uid = () => Math.random().toString(36).substring(2, 9)
 
@@ -2134,25 +2137,35 @@ export const useTimelineStore = defineStore('timeline', () => {
         useNewCompiler.value = !useNewCompiler.value;
     }
 
-    const compiledTimeline = computed(() => {
-        const actionNodes = [];
-        tracks.value.forEach((track, trackIndex) => {
-            track.actions.forEach(action => {
-                actionNodes.push({
-                    type: 'action',
-                    id: action.instanceId,
-                    trackIndex,
-                    skillId: action.dataId,
-                    node: {
-                        ...action,
-                        startTime: action.logicalStartTime ?? action.startTime,
-                        physicalAnomaly: action.physicalAnomaly || []
-                    }
-                });
-            });
-        });
+    const compiledScenario = computed(() => {
+        const currentScenario = scenarioList.value.find(s => s.id === activeScenarioId.value);
+        if (!currentScenario) return null;
+        const { timeline, actors, teamConfig, enemyConfig } = compileScenario(currentScenario.data, { systemConstants: systemConstants.value });
+        return { timeline, actors, teamConfig, enemyConfig };
+    });
 
-        return compileTimeline(actionNodes, connections.value);
+    const compiledTimeline = computed(() => {
+        return compiledScenario.value?.timeline;
+    });
+
+    const simulation = computed(() => {
+        const scenario = compiledScenario.value;
+        if (!scenario) return null;
+        const timeline = scenario.timeline;
+        const teamConfig = scenario.teamConfig;
+        const enemyConfig = scenario.enemyConfig;
+        const actors = scenario.actors;
+        return simulate(timeline, teamConfig, enemyConfig, actors);
+    });
+
+    const spSeries = computed(() => {
+        if (!simulation.value) return [];
+        return projectSpSeries(simulation.value.simLog, simulation.value.state.getInitialSnapshot());
+    });
+
+    const staggerSeries = computed(() => {
+        if (!simulation.value) return [];
+        return projectStaggerSeries(simulation.value.simLog, simulation.value.state.getInitialSnapshot(), compiledScenario.value.enemyConfig);
     });
 
     const timeContext = computed(() => compiledTimeline.value.timeContext);
@@ -3008,6 +3021,6 @@ export const useTimelineStore = defineStore('timeline', () => {
         equipmentCategoryOverrides, updateEquipmentCategoryOverride,
         activeSetBonusLibrary, addSetBonusStatus, getActiveSetBonusCategories,
         misc,
-        useNewCompiler, compiledTimeline,
+        useNewCompiler, compiledTimeline, spSeries, staggerSeries
     }
 })

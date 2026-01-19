@@ -29,6 +29,8 @@ export interface TeamConfig {
 
 export interface TeamSnapshot {
   sp: number;
+  spRegenRate: number;
+  maxSp: number;
   isSpRegenPaused: boolean;
   spRegenPauseDuration: number;
 }
