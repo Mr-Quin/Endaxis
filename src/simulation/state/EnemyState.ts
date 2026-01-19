@@ -5,10 +5,11 @@ import type { SimulationEngine } from "../engine/SimulationEngine";
 export class EnemyState implements BaseGameState<EnemySnapshot> {
   private stagger: number = 0;
 
-  isBroken: boolean = false;
-  breakEndTime: number = 0;
+  private breakEndTime: number = 0;
+  private lockEndTime: number = -1;
 
   nodeStep: number = 0;
+  private currentTime: number = 0;
 
   // effectId -> type
   private activeEffects: Map<string, string> = new Map();
@@ -17,46 +18,70 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     this.nodeStep = this.config.maxStagger / (this.config.staggerNodeCount + 1);
   }
 
+  isLocked(currentTime: number): boolean {
+    return currentTime < this.lockEndTime - 0.0001;
+  }
+
+  isBroken(currentTime: number): boolean {
+    return currentTime < this.breakEndTime - 0.0001;
+  }
+
   addStagger(
     amount: number,
     currentTime: number
-  ): { broken: boolean; breakEnd?: number; nodeReachedIndex?: number } {
-    if (this.isBroken) return { broken: false, nodeReachedIndex: -1 };
+  ): {
+    broken: boolean;
+    breakEnd?: number;
+    nodeReachedIndex?: number;
+    nodeEndTime?: number;
+  } {
+    if (this.isBroken(currentTime)) {
+      return { broken: true };
+    }
+
     const oldStagger = this.stagger;
     this.stagger = Math.max(0, this.stagger + amount);
 
+    if (this.isLocked(currentTime)) {
+      return { broken: false };
+    }
+
     const hasNodes = this.config.staggerNodeCount > 0;
 
-    let nodeReachedIndex = -1;
+    if (this.stagger >= this.config.maxStagger - 0.0001) {
+      this.stagger = 0;
+      const breakDuration = this.config.staggerBreakDuration;
+      const breakEnd = this.engine.getShiftedTime(currentTime, breakDuration);
+      this.breakEndTime = breakEnd;
+      this.lock(breakEnd);
+      return { broken: true, breakEnd };
+    }
 
     if (hasNodes) {
-      const prevNodeIdx = Math.floor(oldStagger / this.nodeStep);
-      const currNodeIdx = Math.floor(this.stagger / this.nodeStep);
+      const prevNodeIdx = Math.floor(oldStagger / this.nodeStep + 0.0001);
+      const currNodeIdx = Math.floor(this.stagger / this.nodeStep + 0.0001);
+
       if (currNodeIdx > prevNodeIdx) {
-        nodeReachedIndex = currNodeIdx;
+        const nodeDuration = this.config.staggerNodeDuration;
+        const nodeEnd = this.engine.getShiftedTime(currentTime, nodeDuration);
+        this.lock(nodeEnd);
+        return {
+          broken: false,
+          nodeReachedIndex: currNodeIdx,
+          nodeEndTime: nodeEnd,
+        };
       }
     }
 
-    if (this.stagger >= this.config.maxStagger) {
-      this.stagger = 0;
-      this.isBroken = true;
-      const breakDuration = this.config.staggerBreakDuration;
-      this.breakEndTime = currentTime + breakDuration;
-      return { broken: true, breakEnd: this.breakEndTime };
-    }
-
-    return { broken: false, nodeReachedIndex };
+    return { broken: false };
   }
 
   getStagger() {
     return this.stagger;
   }
 
-  advanceTime(dt: number, currentTime: number) {
-    if (this.isBroken && this.breakEndTime < currentTime) {
-      this.isBroken = false;
-    }
-    // TODO: effect expiration
+  advanceTime(_dt: number, currentTime: number) {
+    this.currentTime = currentTime;
   }
 
   addEffect(effectId: string, type: string) {
@@ -82,8 +107,14 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
   snapshot(): EnemySnapshot {
     return {
       stagger: this.stagger,
-      isBroken: this.isBroken,
+      isBroken: this.isBroken(this.currentTime),
+      isLocked: this.isLocked(this.currentTime),
       breakEndTime: this.breakEndTime,
+      lockEndTime: this.lockEndTime,
     };
+  }
+
+  private lock(untilTime: number) {
+    this.lockEndTime = untilTime;
   }
 }

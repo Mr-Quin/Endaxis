@@ -3,7 +3,6 @@ import type {
   EnemyConfig,
   TeamConfig,
 } from "@/types/simulation";
-import { GameState } from "../state/GameState";
 import { SimulationEngine } from "./SimulationEngine";
 import type { ResolvedTimeline } from "@/types/timeline";
 import { DamageHandler } from "../events/DamageHandler";

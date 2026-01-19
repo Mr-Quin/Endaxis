@@ -46,7 +46,9 @@ export interface EnemyConfig {
 export interface EnemySnapshot {
   stagger: number;
   isBroken: boolean;
+  isLocked: boolean;
   breakEndTime: number;
+  lockEndTime: number;
 }
 
 export interface GameConfig {
@@ -191,7 +193,9 @@ export type SimLogEntry =
         amount: number;
         stagger: number;
         isBroken: boolean;
+        breakEndTime?: number;
         nodeReachedIndex?: number;
+        nodeEndTime?: number;
       }
     >
   | SimLogEntryBase<

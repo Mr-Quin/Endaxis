@@ -67,7 +67,7 @@ export class SimulationEngine {
   }
 
   getShiftedTime(startTime: number, duration: number) {
-    return this.timeContext.getShiftedEndTime(startTime, duration);
+    return this.timeline.timeContext.getShiftedEndTime(startTime, duration);
   }
 
   run() {

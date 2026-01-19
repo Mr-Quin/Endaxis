@@ -35,9 +35,8 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
       return;
     }
 
-    const wasBroken = ctx.state.enemy.isBroken;
-    ctx.state.enemy.addStagger(result.finalValue, ctx.state.getCurrentTime());
-    const isBroken = ctx.state.enemy.isBroken;
+    const { broken, breakEnd, nodeReachedIndex, nodeEndTime } =
+      ctx.state.enemy.addStagger(result.finalValue, ctx.state.getCurrentTime());
 
     ctx.simLog({
       type: "STAGGER",
@@ -47,7 +46,10 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
         actionId: e.payload.actionId,
         amount: result.finalValue,
         stagger: ctx.state.enemy.getStagger(),
-        isBroken: !wasBroken && isBroken,
+        isBroken: broken,
+        breakEndTime: breakEnd,
+        nodeReachedIndex,
+        nodeEndTime,
       },
     });
   }

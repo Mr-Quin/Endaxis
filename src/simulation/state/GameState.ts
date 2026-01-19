@@ -19,10 +19,10 @@ export class GameState implements BaseGameState<GameSnapshot> {
   constructor(
     teamConfig: TeamConfig,
     enemyConfig: EnemyConfig,
-    private engine: SimulationEngine
+    _engine: SimulationEngine
   ) {
-    this.team = new TeamState(teamConfig, engine);
-    this.enemy = new EnemyState(enemyConfig, engine);
+    this.team = new TeamState(teamConfig, _engine);
+    this.enemy = new EnemyState(enemyConfig, _engine);
     this.initialSnapshot = this.snapshot();
   }
 

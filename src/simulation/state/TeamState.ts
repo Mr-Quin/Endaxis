@@ -7,12 +7,12 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
   private isSpRegenPaused: boolean = false;
   private spRegenPauseDuration: number = 0;
 
-  constructor(readonly config: TeamConfig, private engine: SimulationEngine) {
+  constructor(readonly config: TeamConfig, _engine: SimulationEngine) {
     this.sp = config.initialSp || 0;
   }
 
-  advanceTime(dt: number, currentTime: number) {
-    this.regenSp(dt, currentTime);
+  advanceTime(dt: number, _currentTime: number) {
+    this.regenSp(dt);
   }
 
   snapshot(): TeamSnapshot {
@@ -42,7 +42,7 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
     this.spRegenPauseDuration += duration;
   }
 
-  private regenSp(dt: number, currentTime: number) {
+  private regenSp(dt: number) {
     if (this.sp >= this.config.maxSp) {
       return;
     }

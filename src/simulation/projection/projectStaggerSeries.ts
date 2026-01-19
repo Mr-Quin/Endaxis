@@ -4,26 +4,35 @@ import type { GameSnapshot } from "@/types/simulation";
 export interface StaggerData {
   points: { time: number; val: number }[];
   lockSegments: { start: number; end: number }[];
-  nodeSegments: { start: number; end: number; nodeIndex: number }[]; // Only if needed? Fixture doesn't show structure but exists
+  nodeSegments: {
+    start: number;
+    end: number;
+    nodeIndex: number;
+    thresholdVal: number;
+  }[];
   nodeStep: number;
 }
 
 export function projectStaggerSeries(
   logs: SimLogEntry[],
   initial: GameSnapshot,
-  { maxStagger, staggerBreakDuration, staggerNodeCount }: EnemyConfig,
+  { maxStagger, staggerNodeCount }: EnemyConfig,
   timelineDuration: number = 120
 ): StaggerData {
   const points: { time: number; val: number }[] = [];
   const lockSegments: { start: number; end: number }[] = [];
-  const nodeSegments: { start: number; end: number; nodeIndex: number }[] = [];
+  const nodeSegments: {
+    start: number;
+    end: number;
+    nodeIndex: number;
+    thresholdVal: number;
+  }[] = [];
 
   const nodeStep = maxStagger / (staggerNodeCount + 1);
 
   points.push({ time: 0, val: initial.enemy.stagger });
 
   let currentStagger = initial.enemy.stagger;
-  let brokenAtTime = -1;
 
   logs.forEach((log) => {
     if (log.type === "STAGGER") {
@@ -32,12 +41,23 @@ export function projectStaggerSeries(
       currentStagger = log.payload.stagger;
       points.push({ time: log.time, val: currentStagger });
 
-      if (log.payload.isBroken) {
+      if (log.payload.isBroken && log.payload.breakEndTime) {
         lockSegments.push({
           start: log.time,
-          end: log.time + staggerBreakDuration,
+          end: log.payload.breakEndTime,
         });
-        brokenAtTime = log.time;
+      }
+
+      if (
+        log.payload.nodeReachedIndex !== undefined &&
+        log.payload.nodeEndTime
+      ) {
+        nodeSegments.push({
+          start: log.time,
+          end: log.payload.nodeEndTime,
+          nodeIndex: log.payload.nodeReachedIndex,
+          thresholdVal: log.payload.nodeReachedIndex * nodeStep,
+        });
       }
     }
   });

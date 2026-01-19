@@ -3,142 +3,150 @@
 exports[`SimulationEngine Integration > should match SP snapshot 1`] = `
 [
   {
+    "sp": 200,
     "time": 0,
-    "value": 200,
   },
   {
     "actionId": "inst_hkc1ibd",
+    "sp": 100,
     "time": 0,
-    "value": 100,
   },
   {
+    "sp": 100,
     "time": 0.5,
-    "value": 100,
   },
   {
+    "sp": 121.6,
     "time": 3.2,
-    "value": 121.6,
   },
   {
     "actionId": "inst_83xf30r",
+    "sp": 139.6,
     "time": 3.2,
-    "value": 139.6,
   },
   {
     "actionId": "inst_6wgpfl3",
+    "sp": 39.599999999999994,
     "time": 3.2,
-    "value": 39.599999999999994,
   },
   {
+    "sp": 39.599999999999994,
     "time": 3.7,
-    "value": 39.599999999999994,
   },
   {
+    "sp": 45.199999999999996,
     "time": 4.4,
-    "value": 45.199999999999996,
   },
   {
+    "sp": 45.199999999999996,
     "time": 4.9,
-    "value": 45.199999999999996,
   },
   {
+    "sp": 70,
     "time": 8,
-    "value": 70,
   },
   {
+    "sp": 70,
     "time": 8.5,
-    "value": 70,
   },
   {
+    "sp": 78.8,
     "time": 9.6,
-    "value": 78.8,
   },
   {
     "actionId": "inst_nxhwtu6",
+    "sp": 96.8,
     "time": 9.6,
-    "value": 96.8,
   },
   {
+    "sp": 126.4,
     "time": 13.3,
-    "value": 126.4,
   },
   {
     "actionId": "inst_95ddgxo",
+    "sp": 144.4,
     "time": 13.3,
-    "value": 144.4,
   },
   {
     "actionId": "inst_wi5a1dj",
+    "sp": 44.400000000000006,
     "time": 13.3,
-    "value": 44.400000000000006,
   },
   {
+    "sp": 44.400000000000006,
     "time": 13.8,
-    "value": 44.400000000000006,
   },
   {
+    "sp": 70.80000000000001,
     "time": 17.1,
-    "value": 70.80000000000001,
   },
   {
     "actionId": "inst_9u3lc19",
+    "sp": 88.80000000000001,
     "time": 17.1,
-    "value": 88.80000000000001,
   },
   {
+    "sp": 100,
     "time": 18.5,
-    "value": 100,
   },
   {
+    "sp": 100,
     "time": 19,
-    "value": 100,
   },
   {
+    "sp": 120,
     "time": 21.5,
-    "value": 120,
   },
   {
     "actionId": "inst_7d7vbcy",
+    "sp": 138,
     "time": 21.5,
-    "value": 138,
   },
   {
+    "sp": 138,
     "time": 21.8,
-    "value": 138,
   },
   {
+    "sp": 138,
     "time": 22.3,
-    "value": 138,
   },
   {
+    "sp": 155.6,
     "time": 24.5,
-    "value": 155.6,
   },
   {
+    "sp": 155.6,
     "time": 25,
-    "value": 155.6,
   },
   {
+    "sp": 166.79999999999998,
     "time": 26.4,
-    "value": 166.79999999999998,
   },
   {
     "actionId": "inst_ai1qx5h",
+    "sp": 191.79999999999998,
     "time": 26.4,
-    "value": 191.79999999999998,
   },
   {
+    "sp": 192.6,
     "time": 26.5,
-    "value": 192.6,
   },
   {
     "actionId": "inst_8ka0n5b",
+    "sp": 92.6,
     "time": 26.5,
-    "value": 92.6,
   },
   {
+    "sp": 92.6,
     "time": 27,
-    "value": 92.6,
+  },
+  {
+    "sp": 300,
+    "time": 52.925,
+  },
+  {
+    "sp": 300,
+    "time": 120,
   },
 ]
 `;
@@ -147,7 +155,7 @@ exports[`SimulationEngine Integration > should match Stagger snapshot 1`] = `
 {
   "lockSegments": [
     {
-      "end": 31.5,
+      "end": 32.8,
       "start": 21.5,
     },
   ],
@@ -260,6 +268,10 @@ exports[`SimulationEngine Integration > should match Stagger snapshot 1`] = `
     },
     {
       "time": 26.9,
+      "val": 0,
+    },
+    {
+      "time": 120,
       "val": 0,
     },
   ],
