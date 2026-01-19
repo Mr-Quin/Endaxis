@@ -57,12 +57,25 @@ export function normalizeScenario(scenario: ScenarioData) {
   };
 }
 
+const DEFAULT_SYSTEM_CONSTANTS: SystemConstants = {
+  maxSp: 300,
+  initialSp: 200,
+  spRegenRate: 8,
+  skillSpCostDefault: 100,
+  linkCdReduction: 0,
+  maxStagger: 100,
+  staggerNodeCount: 0,
+  staggerNodeDuration: 2,
+  staggerBreakDuration: 10,
+  executionRecovery: 25,
+};
+
 export function compileScenario(
   scenario: ScenarioData,
   {
     systemConstants,
   }: {
-    systemConstants?: SystemConstants;
+    systemConstants?: Partial<SystemConstants>;
     db?: GameDatabase;
   } = {}
 ): CompiledScenario {
@@ -71,9 +84,10 @@ export function compileScenario(
   const compiledTimeline = compileTimeline(actions, scenario.connections);
 
   const mergedSystemConstants = {
+    ...DEFAULT_SYSTEM_CONSTANTS,
     ...systemConstants,
     ...scenario.systemConstants,
-  } as SystemConstants;
+  };
 
   return {
     timeline: compiledTimeline,

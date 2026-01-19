@@ -2,7 +2,7 @@ import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
 import type { TeamSnapshot, TeamConfig } from "@/types/simulation.ts";
 
 export class TeamState implements BaseGameState<TeamSnapshot> {
-  sp: number;
+  private sp: number;
   private isSpRegenPaused: boolean = false;
   private spRegenPauseDuration: number = 0;
 
@@ -20,6 +20,10 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
       isSpRegenPaused: this.isSpRegenPaused,
       spRegenPauseDuration: this.spRegenPauseDuration,
     };
+  }
+
+  getSp(): number {
+    return this.sp;
   }
 
   modifySp(amount: number): number {

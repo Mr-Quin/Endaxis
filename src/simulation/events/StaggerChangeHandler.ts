@@ -17,10 +17,12 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
   }
 
   handle(e: StaggerChangeEvent, ctx: SimulationContext) {
-    const { stagger, sourceId } = e.payload;
+    const { stagger, actorId: sourceId } = e.payload;
+
+    const actor = ctx.state.getActor(sourceId);
 
     const staggerCtx: StaggerContext = {
-      source: {} as any,
+      source: actor,
       target: ctx.state.enemy,
       baseValue: stagger,
       tags: [],
@@ -41,8 +43,8 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
       type: "STAGGER",
       time: e.time,
       payload: {
-        actorId: e.payload.targetId,
-        actionId: "",
+        actorId: actor.id,
+        actionId: e.payload.actionId,
         amount: result.finalValue,
         stagger: ctx.state.enemy.getStagger(),
         isBroken: !wasBroken && isBroken,

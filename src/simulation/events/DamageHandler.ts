@@ -26,7 +26,8 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
         time: ctx.state.getCurrentTime(),
         payload: {
           stagger: e.payload.tickData.stagger,
-          sourceId: e.payload.sourceId,
+          actorId: e.payload.sourceId,
+          actionId: e.payload.actionId,
           targetId: e.payload.targetId,
         },
       });

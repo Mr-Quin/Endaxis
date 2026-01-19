@@ -77,11 +77,17 @@ export interface ScenarioTrack {
 
   // stats
   stats: ActorStats;
-  // @deprecated - use stats.ult_charge_eff
+  /**
+   * @deprecated - use stats.ult_charge_eff
+   */
   gaugeEfficiency: number;
-  // @deprecated - use stats.originium_arts_power
+  /**
+   * @deprecated - use stats.originium_arts_power
+   */
   originiumArtsPower: number;
-  // @deprecated - use stats.link_cd_reduction
+  /**
+   * @deprecated - use stats.link_cd_reduction
+   */
   linkCdReduction: number;
 
   // config

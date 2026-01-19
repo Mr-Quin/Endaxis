@@ -24,6 +24,10 @@ export function createEngine(
   const gameState = new GameState(teamConfig, enemyConfig);
   const engine = new SimulationEngine(gameState, timeline);
 
+  actors.forEach((actor) => {
+    gameState.setActor(actor);
+  });
+
   engine.registerHandler("DAMAGE_TICK", new DamageHandler());
   engine.registerHandler("ACTION_START", new ActionStartHandler());
   engine.registerHandler("ACTION_END", new ActionEndHandler());

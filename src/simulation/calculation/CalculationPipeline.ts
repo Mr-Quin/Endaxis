@@ -45,7 +45,7 @@ export const OriginiumArtsModifier: ModifierFn<StaggerContext> = (
 
   if (!hasKnock) return;
 
-  const artsPower = ctx.source.stats.originiumArtsPower || 0;
+  const artsPower = ctx.source.stats.originium_arts_power || 0;
   if (artsPower <= 0) return;
 
   const factor = 0.005;

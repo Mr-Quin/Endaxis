@@ -1,4 +1,4 @@
-import type { SimLogEntry } from "@/types/simulation";
+import type { EnemyConfig, SimLogEntry } from "@/types/simulation";
 import type { GameSnapshot } from "@/types/simulation";
 
 export interface StaggerData {
@@ -11,9 +11,7 @@ export interface StaggerData {
 export function projectStaggerSeries(
   logs: SimLogEntry[],
   initial: GameSnapshot,
-  maxStagger: number,
-  staggerNodeCount: number,
-  staggerBreakDuration: number
+  { maxStagger, staggerBreakDuration, staggerNodeCount }: EnemyConfig
 ): StaggerData {
   const points: { time: number; val: number }[] = [];
   const lockSegments: { start: number; end: number }[] = [];
@@ -21,7 +19,6 @@ export function projectStaggerSeries(
 
   const nodeStep = maxStagger / (staggerNodeCount + 1);
 
-  // Initial Point
   points.push({ time: 0, val: initial.enemy.stagger });
 
   let currentStagger = initial.enemy.stagger;
@@ -29,42 +26,21 @@ export function projectStaggerSeries(
 
   logs.forEach((log) => {
     if (log.type === "STAGGER") {
-      // Before change: we can infer previous from current - amount or just use currentStagger tracker
       points.push({ time: log.time, val: currentStagger });
 
-      // After change
       currentStagger = log.payload.stagger;
       points.push({ time: log.time, val: currentStagger });
 
-      // Check break
       if (log.payload.isBroken) {
-        // Start lock segment
         lockSegments.push({
           start: log.time,
-          end: log.time + staggerBreakDuration, // Simplified: assuming fixed duration for now
+          end: log.time + staggerBreakDuration,
         });
         brokenAtTime = log.time;
       }
-
-      // Node segments could be tracked similarly if we had start/end for them
-      // Logic for fixture matching relies mainly on points and lock segments
     }
-    // We might need to handle resetting Stagger after break expires?
-    // In simulation, enemy state handles reset. Does log verify this?
-    // The "STAGGER" logs only happen on change.
-    // If break expires and stagger stays 0, no event?
-    // We might need to inject points for break expiry?
-    // Simulation state logic:
-    // When damage happens, if broken, addStagger usually does nothing or adds to 0?
-    // If we want visualization of "Reset to 0" or holding at 0, the points should reflect that.
   });
 
-  // Post-process points to ensure "0" is recorded after break if no other events happened?
-  // Current logic in EnemyState: when break triggers, stagger resets to 0 immediately.
-  // The log payload will show stagger = 0.
-  // So points will go: [t, oldVal], [t, 0].
-
-  // Clean up adjacent duplicates?
   const cleanPoints: { time: number; val: number }[] = [];
   if (points.length > 0) {
     const first = points[0];

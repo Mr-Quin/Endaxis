@@ -18,9 +18,11 @@ export function formatSimLogEntry(entry: SimLogEntry) {
     case "STAGGER":
       return withPrefix(
         entry,
-        `stagger accumulated ${entry.payload.stagger.toFixed(
+        `${entry.payload.actorId} ${
+          entry.payload.actionId
+        } ${entry.payload.stagger.toFixed(1)} (${entry.payload.amount.toFixed(
           1
-        )} (delta ${entry.payload.amount.toFixed(1)})`
+        )}) ${entry.payload.isBroken ? "(BROKEN)" : ""}`
       );
     case "SP_CHANGE":
       return withPrefix(
@@ -35,6 +37,6 @@ export function formatSimLogEntry(entry: SimLogEntry) {
     case "EFFECT_START":
       return withPrefix(entry, `effect start ${entry.payload.type}`);
     case "EFFECT_END":
-      return withPrefix(entry, `effect end`);
+      return withPrefix(entry, `effect end ${entry.payload.type}`);
   }
 }

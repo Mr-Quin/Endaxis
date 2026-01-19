@@ -72,6 +72,7 @@ export function simulate(
         payload: {
           effectId: effect.uniqueId,
           targetId: "boss",
+          type: effect.node.type,
         },
       });
     });

@@ -125,7 +125,7 @@ export type EffectStartEvent = SimBaseEvent<
   {
     effectId: string;
     targetId: string;
-    type: string; // 'knockup', 'knockdown', etc.
+    type: string;
   }
 >;
 export type EffectEndEvent = SimBaseEvent<
@@ -133,6 +133,7 @@ export type EffectEndEvent = SimBaseEvent<
   {
     effectId: string;
     targetId: string;
+    type: string;
   }
 >;
 
@@ -140,7 +141,8 @@ export type StaggerChangeEvent = SimBaseEvent<
   "STAGGER_CHANGE",
   {
     stagger: number;
-    sourceId: string;
+    actorId: string;
+    actionId: string;
     targetId: string;
   }
 >;
@@ -232,6 +234,7 @@ export type SimLogEntry =
       {
         effectId: string;
         targetId: string;
+        type: string;
       }
     >;
 

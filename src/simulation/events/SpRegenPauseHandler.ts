@@ -12,7 +12,7 @@ export class SpRegenPauseHandler implements EventHandler<SpRegenPauseEvent> {
       payload: {
         sourceId: e.payload.sourceId,
         duration: e.payload.duration,
-        sp: ctx.state.team.sp,
+        sp: ctx.state.team.getSp(),
       },
     });
     ctx.state.team.pauseSpRegen(e.payload.duration);

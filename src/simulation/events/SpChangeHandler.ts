@@ -11,7 +11,7 @@ export class SpChangeHandler implements EventHandler<SpChangeEvent> {
       type: "SP_CHANGE",
       time: e.time,
       payload: {
-        sp: ctx.state.team.sp,
+        sp: ctx.state.team.getSp(),
         change: e.payload.spChange,
         sourceId: e.payload.sourceId,
         reason: e.payload.reason,
