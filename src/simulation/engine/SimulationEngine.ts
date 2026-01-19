@@ -5,6 +5,9 @@ import type {
   SimulationContext,
   SimLogEntry,
   EventHookContext,
+  ActorSnapshot,
+  EnemyConfig,
+  TeamConfig,
 } from "../../types/simulation.ts";
 import { PriorityQueue } from "@/simulation/engine/PriorityQueue.ts";
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
@@ -19,8 +22,17 @@ export class SimulationEngine {
   private state: GameState;
   private simLog = new PriorityQueue<SimLogEntry>();
 
-  constructor(initialState: GameState, private timeline: ResolvedTimeline) {
-    this.state = initialState;
+  constructor(
+    private timeline: ResolvedTimeline,
+    teamConfig: TeamConfig,
+    enemyConfig: EnemyConfig,
+    private actors: ActorSnapshot[]
+  ) {
+    this.state = new GameState(teamConfig, enemyConfig, this);
+
+    this.actors.forEach((actor) => {
+      this.state.setActor(actor);
+    });
   }
 
   getState() {
@@ -52,6 +64,10 @@ export class SimulationEngine {
 
   getSimLog(): SimLogEntry[] {
     return this.simLog.toArray();
+  }
+
+  getShiftedTime(startTime: number, duration: number) {
+    return this.timeContext.getShiftedEndTime(startTime, duration);
   }
 
   run() {

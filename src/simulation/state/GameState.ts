@@ -7,6 +7,7 @@ import type {
 } from "@/types/simulation.ts";
 import { TeamState } from "@/simulation/state/TeamState.ts";
 import { EnemyState } from "@/simulation/state/EnemyState.ts";
+import type { SimulationEngine } from "../engine/SimulationEngine";
 
 export class GameState implements BaseGameState<GameSnapshot> {
   team: TeamState;
@@ -15,9 +16,13 @@ export class GameState implements BaseGameState<GameSnapshot> {
   private currentTime: number = 0;
   private initialSnapshot: GameSnapshot;
 
-  constructor(teamConfig: TeamConfig, enemyConfig: EnemyConfig) {
-    this.team = new TeamState(teamConfig);
-    this.enemy = new EnemyState(enemyConfig);
+  constructor(
+    teamConfig: TeamConfig,
+    enemyConfig: EnemyConfig,
+    private engine: SimulationEngine
+  ) {
+    this.team = new TeamState(teamConfig, engine);
+    this.enemy = new EnemyState(enemyConfig, engine);
     this.initialSnapshot = this.snapshot();
   }
 

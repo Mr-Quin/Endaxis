@@ -21,12 +21,12 @@ export function createEngine(
   actors: ActorSnapshot[],
   timeline: ResolvedTimeline
 ) {
-  const gameState = new GameState(teamConfig, enemyConfig);
-  const engine = new SimulationEngine(gameState, timeline);
-
-  actors.forEach((actor) => {
-    gameState.setActor(actor);
-  });
+  const engine = new SimulationEngine(
+    timeline,
+    teamConfig,
+    enemyConfig,
+    actors
+  );
 
   engine.registerHandler("DAMAGE_TICK", new DamageHandler());
   engine.registerHandler("ACTION_START", new ActionStartHandler());

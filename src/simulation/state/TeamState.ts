@@ -1,12 +1,13 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
 import type { TeamSnapshot, TeamConfig } from "@/types/simulation.ts";
+import type { SimulationEngine } from "../engine/SimulationEngine";
 
 export class TeamState implements BaseGameState<TeamSnapshot> {
   private sp: number;
   private isSpRegenPaused: boolean = false;
   private spRegenPauseDuration: number = 0;
 
-  constructor(readonly config: TeamConfig) {
+  constructor(readonly config: TeamConfig, private engine: SimulationEngine) {
     this.sp = config.initialSp || 0;
   }
 
