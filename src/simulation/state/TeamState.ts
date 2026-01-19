@@ -1,15 +1,13 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
-import type { TeamSnapshot, TeamStateConfig } from "@/types/simulation.ts";
+import type { TeamSnapshot, TeamConfig } from "@/types/simulation.ts";
 
 export class TeamState implements BaseGameState<TeamSnapshot> {
   sp: number;
-  gauge: number;
   private isSpRegenPaused: boolean = false;
   private spRegenPauseDuration: number = 0;
 
-  constructor(readonly config: TeamStateConfig) {
+  constructor(readonly config: TeamConfig) {
     this.sp = config.initialSp || 0;
-    this.gauge = 0;
   }
 
   advanceTime(dt: number, currentTime: number) {
@@ -19,7 +17,6 @@ export class TeamState implements BaseGameState<TeamSnapshot> {
   snapshot(): TeamSnapshot {
     return {
       sp: this.sp,
-      gauge: this.gauge,
       isSpRegenPaused: this.isSpRegenPaused,
       spRegenPauseDuration: this.spRegenPauseDuration,
     };

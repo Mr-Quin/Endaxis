@@ -1,5 +1,5 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
-import type { EnemySnapshot, EnemyStateConfig } from "@/types/simulation.ts";
+import type { EnemySnapshot, EnemyConfig } from "@/types/simulation.ts";
 
 export class EnemyState implements BaseGameState<EnemySnapshot> {
   private stagger: number = 0;
@@ -12,7 +12,7 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
   // effectId -> type
   private activeEffects: Map<string, string> = new Map();
 
-  constructor(readonly config: EnemyStateConfig) {
+  constructor(readonly config: EnemyConfig) {
     this.nodeStep = this.config.maxStagger / (this.config.staggerNodeCount + 1);
   }
 

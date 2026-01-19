@@ -4,7 +4,7 @@ import { watchThrottled } from '@vueuse/core'
 import { executeFetch } from '@/api/fetchStrategy.js'
 import { compressGzip, decompressGzip } from '@/utils/gzipUtils'
 import { CORE_STATS, createDefaultStats } from '@/utils/coreStats.js'
-import { compileTimeline } from '../simulation/compiler'
+import { compileTimeline } from '../simulation/compiler/compileTimeline'
 
 const uid = () => Math.random().toString(36).substring(2, 9)
 
@@ -2152,11 +2152,7 @@ export const useTimelineStore = defineStore('timeline', () => {
             });
         });
 
-        const options = {
-            connections: connections.value
-        };
-
-        return compileTimeline(actionNodes, options);
+        return compileTimeline(actionNodes, connections.value);
     });
 
     const timeContext = computed(() => compiledTimeline.value.timeContext);

@@ -1,4 +1,8 @@
-import type { EnemyStateConfig, TeamStateConfig } from "@/types/simulation";
+import type {
+  ActorSnapshot,
+  EnemyConfig,
+  TeamConfig,
+} from "@/types/simulation";
 import { GameState } from "../state/GameState";
 import { SimulationEngine } from "./SimulationEngine";
 import type { ResolvedTimeline } from "@/types/timeline";
@@ -12,8 +16,9 @@ import { EffectEndHandler } from "../events/EffectEndHandler";
 import { StaggerChangeHandler } from "../events/StaggerChangeHandler";
 
 export function createEngine(
-  teamConfig: TeamStateConfig,
-  enemyConfig: EnemyStateConfig,
+  teamConfig: TeamConfig,
+  enemyConfig: EnemyConfig,
+  actors: ActorSnapshot[],
   timeline: ResolvedTimeline
 ) {
   const gameState = new GameState(teamConfig, enemyConfig);

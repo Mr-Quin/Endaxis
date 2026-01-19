@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { compileTimeline } from "./compiler";
-import type { Action, ActionNode, Anomaly } from "../types/timeline";
+import { compileTimeline } from "./compileTimeline";
+import type { Action, ActionNode, Anomaly } from "../../types/timeline";
 
 function createAction(action: Partial<Action>): Action {
   return {
@@ -310,7 +310,7 @@ describe("compileTimeline", () => {
       },
     ];
 
-    const result = compileTimeline([producer, consumer], { connections });
+    const result = compileTimeline([producer, consumer], connections);
 
     const rProd = result.actions.find((a) => a.id === "PROD")!;
     const effect = rProd.effects[0];

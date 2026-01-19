@@ -5,20 +5,9 @@ import type {
   ResolvedEffect,
   ResolvedDamageTick,
   TimeExtension,
-} from "../types/timeline";
-import { TimeContext } from "./time-context";
-
-export interface CompileOptions {
-  connections?: Array<{
-    id: string;
-    fromEffectId?: string;
-    toEffectId?: string;
-    from?: string;
-    to?: string;
-    isConsumption?: boolean;
-    consumptionOffset?: number;
-  }>;
-}
+} from "../../types/timeline";
+import { TimeContext } from "./timeContext";
+import type { Connection } from "./types";
 
 interface ShiftContext {
   shift: number;
@@ -31,10 +20,6 @@ function round(num: number, factor: number = 1000): number {
   return Math.round(num * factor) / factor;
 }
 
-/**
- * Calculates time shifts caused by "stop sources" (Ultimates/Links).
- * Returns the map of shifts and the linear list of time extensions.
- */
 function calculateTimeShifts(startSortedActions: ActionNode[]) {
   const stopSources = startSortedActions.filter((item) => {
     const a = item.node;
@@ -95,9 +80,7 @@ function calculateTimeShifts(startSortedActions: ActionNode[]) {
   return { stopSources, sourceShiftMap, timeExtensions };
 }
 
-/**
- * Resolves a single action's logical/real time and its effects.
- */
+// 计算动作的逻辑时间
 function resolveAction(
   item: ActionNode,
   stopSources: ActionNode[],
@@ -221,13 +204,9 @@ function resolveAction(
   };
 }
 
-/**
- * Resolves consumption logic (effects consumed by other actions).
- * Mutates resolvedActions in place (updates isConsumed and displayDuration).
- */
 function resolveConsumption(
   resolvedActions: ResolvedAction[],
-  connections: CompileOptions["connections"]
+  connections: Connection[]
 ) {
   if (!connections) return;
 
@@ -285,20 +264,17 @@ function resolveActions(
 
 export function compileTimeline(
   actions: ActionNode[],
-  options: CompileOptions = {}
+  connections: Connection[] = []
 ): ResolvedTimeline {
-  // 1. Sort actions by Logical Time
-  const sortedActions = [...actions].sort(
+  const sortedActions = actions.toSorted(
     (a, b) => a.node.startTime - b.node.startTime
   );
 
-  // 2. Calculate Shifts
   const { stopSources, sourceShiftMap, timeExtensions } =
     calculateTimeShifts(sortedActions);
 
   const timeCtx = new TimeContext(timeExtensions);
 
-  // 3. Resolve Actions
   const { resolvedActions, actionMap, effectMap } = resolveActions(
     sortedActions,
     stopSources,
@@ -306,10 +282,10 @@ export function compileTimeline(
     timeCtx
   );
 
-  // 4. Resolve Consumption
-  resolveConsumption(resolvedActions, options.connections);
+  if (connections.length > 0) {
+    resolveConsumption(resolvedActions, connections);
+  }
 
-  // 5. Calculate Meta
   const totalDuration = resolvedActions.reduce(
     (max, a) => Math.max(max, round(a.realStartTime + a.realDuration)),
     0
@@ -323,7 +299,6 @@ export function compileTimeline(
     timeContext: timeCtx,
     meta: {
       totalDuration,
-      totalDamage: 0,
     },
   };
 }

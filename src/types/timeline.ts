@@ -1,4 +1,4 @@
-import type { TimeContext } from "../simulation/time-context";
+import type { TimeContext } from "../simulation/compiler/timeContext";
 
 export interface Anomaly {
   _id: string;
@@ -7,7 +7,7 @@ export interface Anomaly {
   type: string;
   sp?: number;
   stagger?: number;
-  stacks: number;
+  stacks: number | string; // numeric string
 }
 
 export interface DamageTick {
@@ -45,7 +45,7 @@ export interface Action {
   gaugeCost: number;
   gaugeGain: number;
   teamGaugeGain: number;
-  enhancementTime: number;
+  enhancementTime?: number;
   duration: number;
   triggerWindow?: number;
   animationTime?: number;
@@ -55,6 +55,10 @@ export interface Action {
   allowedTypes: string[];
   damageTicks: DamageTick[];
   physicalAnomaly: Anomaly[][];
+
+  isLocked?: boolean;
+  customBars?: any[];
+  customColor?: string | null;
 }
 
 export interface ActionNode {
@@ -118,6 +122,5 @@ export interface ResolvedTimeline {
   timeContext: TimeContext;
   meta: {
     totalDuration: number;
-    totalDamage: number;
   };
 }

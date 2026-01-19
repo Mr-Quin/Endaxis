@@ -1,9 +1,9 @@
-import type { ActorState } from "@/types/simulation";
+import type { ActorSnapshot } from "@/types/simulation";
 import type { EnemyState } from "../state/EnemyState";
 import type { GameState } from "../state/GameState";
 
 export interface StaggerContext {
-  source: ActorState;
+  source: ActorSnapshot;
   target: EnemyState;
   baseValue: number;
   tags: string[];

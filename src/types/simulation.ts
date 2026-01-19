@@ -1,3 +1,4 @@
+import type { ActorStats } from "@/simulation/compiler/types";
 import type {
   ActionType,
   ResolvedEffect,
@@ -6,33 +7,19 @@ import type {
 } from "./timeline";
 import { GameState } from "@/simulation/state/GameState.ts";
 
-export interface StatBlock {
-  atk: number;
-  def: number;
-  hpMax: number;
-  spMax: number;
-  spRegen: number;
-  critRate: number;
-  critDmg: number;
-  originiumArtsPower: number;
-  [key: string]: number;
-}
-
-export interface ActorState {
+export interface ActorSnapshot {
   id: string;
-  stats: StatBlock;
+  stats: ActorStats;
   resources: {
     hp: number;
-    // ultimate gauge
     gauge: number;
   };
   cooldowns: Map<string, number>;
-  activeBuffs: ResolvedEffect[];
-  isCasting: boolean;
-  castEndTime: number;
+  activeBuffs: Map<string, ResolvedEffect>;
+  activeAction?: ResolvedAction;
 }
 
-export interface TeamStateConfig {
+export interface TeamConfig {
   maxSp: number;
   initialSp: number;
   spRegenRate: number;
@@ -42,12 +29,11 @@ export interface TeamStateConfig {
 
 export interface TeamSnapshot {
   sp: number;
-  gauge: number;
   isSpRegenPaused: boolean;
   spRegenPauseDuration: number;
 }
 
-export interface EnemyStateConfig {
+export interface EnemyConfig {
   maxStagger: number;
   staggerNodeCount: number;
   staggerNodeDuration: number;
@@ -62,8 +48,8 @@ export interface EnemySnapshot {
 }
 
 export interface GameConfig {
-  team: TeamStateConfig;
-  enemy: EnemyStateConfig;
+  team: TeamConfig;
+  enemy: EnemyConfig;
 }
 
 export interface GameSnapshot {
