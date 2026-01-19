@@ -2140,7 +2140,12 @@ export const useTimelineStore = defineStore('timeline', () => {
     const compiledScenario = computed(() => {
         const currentScenario = scenarioList.value.find(s => s.id === activeScenarioId.value);
         if (!currentScenario) return null;
-        const { timeline, actors, teamConfig, enemyConfig } = compileScenario(currentScenario.data, { systemConstants: systemConstants.value });
+        const { timeline, actors, teamConfig, enemyConfig } = compileScenario(
+            {
+                ...currentScenario.data,
+                tracks: tracks.value // add tracks as a dependency
+            }
+            , { systemConstants: systemConstants.value });
         return { timeline, actors, teamConfig, enemyConfig };
     });
 

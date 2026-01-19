@@ -82,10 +82,6 @@ export function simulate(
 
   const simLog = engine.getSimLog();
 
-  simLog.forEach((entry) => {
-    console.log(formatSimLogEntry(entry));
-  });
-
   return {
     state,
     simLog,

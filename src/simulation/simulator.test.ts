@@ -4,6 +4,7 @@ import { simulatorFixture1 } from "./fixture/simulator.fixture";
 import { projectSpSeries } from "./projection/projectSpSeries";
 import { projectStaggerSeries } from "./projection/projectStaggerSeries";
 import { compileScenario } from "./compiler/compileScenario";
+import { formatSimLogEntry } from "./formatSimLogEntry";
 
 describe("SimulationEngine Integration", () => {
   it("should match SP snapshot", () => {
@@ -12,6 +13,10 @@ describe("SimulationEngine Integration", () => {
     );
 
     const result = simulate(timeline, teamConfig, enemyConfig, actors);
+
+    result.simLog.forEach((entry) => {
+      console.log(formatSimLogEntry(entry));
+    });
 
     const projection = projectSpSeries(
       result.simLog,
