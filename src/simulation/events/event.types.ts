@@ -1,11 +1,21 @@
-import type { ActionType, ResolvedDamageTick } from "../compiler/types";
+import type { ActionType } from "../compiler/types";
 import type { Effect, EffectSnapshot } from "../effects/Effect";
+
+export type EntityType = "PLAYER" | "ENEMY" | "SUMMON" | "ENVIRONMENT";
+
+export interface SimEntityId {
+  id: string;
+  type: EntityType;
+}
 
 export type SimEventType = SimEvent["type"];
 type SimBaseEvent<Name extends string, Data = {}> = {
   // real time
   time: number;
   type: Name;
+  source: SimEntityId;
+  target?: SimEntityId;
+  rootSource?: SimEntityId;
   payload: Data;
 };
 export type ActionStartEvent = SimBaseEvent<

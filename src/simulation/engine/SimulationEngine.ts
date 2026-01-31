@@ -12,8 +12,7 @@ import type {
   SimulationContext,
 } from "@/simulation/engine/SimulationContext.ts";
 import type { ResolvedTimeline } from "../compiler/types.ts";
-import { TriggerManager } from "../effects/TriggerManager.ts";
-import type { AnyEffectTrigger } from "../effects/Effect.ts";
+import type { SimEntityId } from "@/simulation/events/event.types.ts";
 
 type SimEventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
@@ -23,7 +22,6 @@ export class SimulationEngine {
   private listeners = new Set<SimEventHook>();
   private state: GameState;
   private simLog = new PriorityQueue<SimLogEntry>();
-  private triggerManager = new TriggerManager();
 
   constructor(
     private timeline: ResolvedTimeline,
@@ -47,14 +45,6 @@ export class SimulationEngine {
     handler: EventHandler<E>,
   ) {
     this.handlers.set(type, handler);
-  }
-
-  registerTrigger(trigger: AnyEffectTrigger) {
-    this.triggerManager.register(trigger);
-  }
-
-  removeTrigger(trigger: AnyEffectTrigger) {
-    this.triggerManager.remove(trigger);
   }
 
   subscribe(listener: SimEventHook): () => void {
@@ -83,12 +73,9 @@ export class SimulationEngine {
 
   run() {
     const ctx: SimulationContext = {
+      engine: this,
       state: this.state,
       queue: { enqueue: this.enqueue.bind(this) },
-      trigger: {
-        register: this.registerTrigger.bind(this),
-        remove: this.removeTrigger.bind(this),
-      },
       simLog: (entry: SimLogEntry) => {
         this.simLog.enqueue(entry);
       },
@@ -113,10 +100,25 @@ export class SimulationEngine {
         throw new Error(`No handler for event type: ${event.type}`);
       }
 
-      // 处理触发器
-      this.triggerManager.checkTriggers(event, ctx);
+      this.notifyParticipants(event, ctx);
     }
 
     return this.state;
+  }
+
+  notifyParticipants(event: SimEvent, ctx: SimulationContext) {
+    const ids = [event.source, event.target, event.rootSource].filter(
+      Boolean,
+    ) as SimEntityId[];
+    const uniqueIds = new Map<string, SimEntityId>();
+    for (const entityId of ids) {
+      if (!uniqueIds.has(entityId.id)) {
+        uniqueIds.set(entityId.id, entityId);
+      }
+    }
+
+    for (const entityId of uniqueIds.values()) {
+      this.state.getEntity(entityId)?.onEvent(event, ctx);
+    }
   }
 }

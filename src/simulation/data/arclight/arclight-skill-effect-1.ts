@@ -21,6 +21,9 @@ export const ArclightSkillEffect1 = new Effect({
         ctx.queue.enqueue({
           type: "DAMAGE_TICK",
           time: ctx.state.getCurrentTime(),
+          source: event.source,
+          target: event.target ?? { id: event.payload.targetId, type: "ENEMY" },
+          rootSource: event.rootSource,
           payload: {
             actorId: event.payload.actorId,
             targetId: event.payload.targetId,
@@ -42,6 +45,9 @@ export const ArclightSkillEffect1 = new Effect({
         ctx.queue.enqueue({
           type: "EFFECT_END",
           time: ctx.state.getCurrentTime(),
+          source: event.source,
+          target: event.target ?? { id: event.payload.targetId, type: "ENEMY" },
+          rootSource: event.rootSource,
           payload: {
             type: "consumption",
             effectInstanceId: electrificationEffect[0]!.id,

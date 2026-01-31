@@ -6,24 +6,22 @@ export class EffectEndHandler implements EventHandler<EffectEndEvent> {
   handle(event: EffectEndEvent, ctx: SimulationContext) {
     const { effectInstanceId } = event.payload;
 
-    const removed = ctx.state.enemy.effects.remove(effectInstanceId);
+    const target = event.target
+      ? ctx.state.getEntity(event.target)
+      : ctx.state.enemy;
+    const removed = target?.effects.remove(effectInstanceId);
 
     if (!removed) {
       // 状态已经被移除
       return;
     }
 
-    // 移除所有触发器
-    removed.effect.triggers.forEach((trigger) => {
-      ctx.trigger.remove(trigger);
-    });
-
     ctx.simLog({
       type: "EFFECT_END",
       time: event.time,
       payload: {
         effectId: removed.effect.id,
-        targetId: "",
+        targetId: event.target?.id ?? "",
         type: event.payload.type,
       },
     });

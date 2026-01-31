@@ -28,6 +28,8 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
         ctx.queue.enqueue({
           type: "EFFECT_START",
           time: e.time,
+          source: { id: e.payload.actorId, type: "PLAYER" },
+          target: { id: e.payload.actorId, type: "PLAYER" },
           payload: {
             actorId: e.payload.actorId,
             actionId: e.payload.actionId,
@@ -44,6 +46,8 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
       ctx.queue.enqueue({
         type: "SP_REGEN_PAUSE",
         time: ctx.state.getCurrentTime(),
+        source: { id: e.payload.actorId, type: "PLAYER" },
+        target: { id: e.payload.actorId, type: "PLAYER" },
         payload: {
           sourceId: e.payload.actorId,
           duration: spFreezeDuration,
@@ -56,6 +60,8 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
       ctx.queue.enqueue({
         type: "SP_CHANGE",
         time: ctx.state.getCurrentTime(),
+        source: { id: e.payload.actorId, type: "PLAYER" },
+        target: { id: e.payload.actorId, type: "PLAYER" },
         payload: {
           actorId: e.payload.actorId,
           spChange: -e.payload.spCost,
@@ -70,6 +76,8 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
       ctx.queue.enqueue({
         type: "DAMAGE_TICK",
         time: tick.realTime,
+        source: { id: action.trackId, type: "PLAYER" },
+        target: { id: "boss", type: "ENEMY" },
         payload: {
           actorId: action.trackId,
           targetId: "boss",

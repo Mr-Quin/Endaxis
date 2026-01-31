@@ -1,6 +1,8 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
 import type { EnemySnapshot, EnemyConfig } from "@/simulation/state/types.ts";
+import type { SimEvent } from "@/simulation/events/event.types.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";
+import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 import { EffectManager } from "./EffectManager";
 
 export class EnemyState implements BaseGameState<EnemySnapshot> {
@@ -88,6 +90,8 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
   advanceTime(_dt: number, currentTime: number) {
     this.currentTime = currentTime;
   }
+
+  onEvent(_event: SimEvent, _ctx: SimulationContext) {}
 
   snapshot(): EnemySnapshot {
     return {

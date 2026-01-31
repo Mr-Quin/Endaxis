@@ -1,0 +1,230 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scenario-1-arc-perlica 1`] = `
+[
+  {
+    "payload": {
+      "actionId": "inst_judlezw",
+      "skillId": "PERLICA_skill",
+      "spCost": 100,
+      "type": "skill",
+    },
+    "time": 5,
+    "type": "ACTION_START",
+  },
+  {
+    "payload": {
+      "effectSnapshot": {
+        "currentStacks": 1,
+        "duration": Infinity,
+        "id": "ELEMENT_HEAT",
+        "maxStacks": 4,
+        "name": "Heat Affliction",
+        "properties": {},
+        "stackStrategy": "REFRESH_DURATION",
+        "startTime": 5,
+        "tags": [
+          "ELEMENT_HEAT",
+        ],
+        "type": "UNKNOWN",
+      },
+      "targetId": "boss",
+    },
+    "time": 5,
+    "type": "EFFECT_START",
+  },
+  {
+    "payload": {
+      "duration": 0.5,
+      "sourceId": "PERLICA",
+      "sp": 240,
+    },
+    "time": 5,
+    "type": "SP_REGEN_PAUSE",
+  },
+  {
+    "payload": {
+      "change": -100,
+      "reason": "skill",
+      "sourceId": "inst_judlezw",
+      "sp": 140,
+    },
+    "time": 5,
+    "type": "SP_CHANGE",
+  },
+  {
+    "payload": {
+      "actionId": "inst_judlezw",
+      "actorId": "PERLICA",
+      "damage": 0,
+      "stagger": 10,
+      "targetId": "boss",
+    },
+    "time": 5,
+    "type": "DAMAGE_TICK",
+  },
+  {
+    "payload": {
+      "actionId": "inst_judlezw",
+      "actorId": "PERLICA",
+      "amount": 10,
+      "breakEndTime": undefined,
+      "isBroken": false,
+      "nodeEndTime": undefined,
+      "nodeReachedIndex": undefined,
+      "stagger": 10,
+    },
+    "time": 5,
+    "type": "STAGGER",
+  },
+  {
+    "payload": {
+      "actorId": "PERLICA",
+      "reactionName": "Arts Reaction HEAT",
+    },
+    "time": 5.2,
+    "type": "REACTION_OCCURRED",
+  },
+  {
+    "payload": {
+      "effectId": "ELEMENT_HEAT",
+      "targetId": "boss",
+      "type": "consumption",
+    },
+    "time": 5.2,
+    "type": "EFFECT_END",
+  },
+  {
+    "payload": {
+      "effectSnapshot": {
+        "currentStacks": 1,
+        "duration": Infinity,
+        "id": "ELEMENT_ELECTRIFICATION",
+        "maxStacks": 1,
+        "name": "Electrification",
+        "properties": {},
+        "stackStrategy": "REFRESH_DURATION",
+        "startTime": 0,
+        "tags": [
+          "ELEMENT_ELECTRIFICATION",
+        ],
+        "type": "UNKNOWN",
+      },
+      "targetId": "boss",
+    },
+    "time": 5.2,
+    "type": "EFFECT_START",
+  },
+  {
+    "payload": {
+      "actionId": "inst_judlezw",
+      "skillId": "PERLICA_skill",
+      "spGain": undefined,
+      "type": "skill",
+    },
+    "time": 5.8,
+    "type": "ACTION_END",
+  },
+  {
+    "payload": {
+      "actionId": "inst_mquf3gw",
+      "skillId": "ARCLIGHT_skill",
+      "spCost": 100,
+      "type": "skill",
+    },
+    "time": 5.8,
+    "type": "ACTION_START",
+  },
+  {
+    "payload": {
+      "effectSnapshot": {
+        "currentStacks": 1,
+        "duration": 0,
+        "id": "arclight_skill_effect_1",
+        "maxStacks": 1,
+        "name": "Tempestuous Arc Effect",
+        "properties": {},
+        "stackStrategy": "REFRESH_DURATION",
+        "startTime": 5.8,
+        "tags": [],
+        "type": "buff",
+      },
+      "targetId": "ARCLIGHT",
+    },
+    "time": 5.8,
+    "type": "EFFECT_START",
+  },
+  {
+    "payload": {
+      "duration": 0.5,
+      "sourceId": "ARCLIGHT",
+      "sp": 142.4,
+    },
+    "time": 5.8,
+    "type": "SP_REGEN_PAUSE",
+  },
+  {
+    "payload": {
+      "change": -100,
+      "reason": "skill",
+      "sourceId": "inst_mquf3gw",
+      "sp": 42.400000000000006,
+    },
+    "time": 5.8,
+    "type": "SP_CHANGE",
+  },
+  {
+    "payload": {
+      "actionId": "inst_mquf3gw",
+      "actorId": "ARCLIGHT",
+      "damage": 0,
+      "stagger": 10,
+      "targetId": "boss",
+    },
+    "time": 5.8,
+    "type": "DAMAGE_TICK",
+  },
+  {
+    "payload": {
+      "effectId": "arclight_skill_effect_1",
+      "targetId": "ARCLIGHT",
+      "type": "expiration",
+    },
+    "time": 5.8,
+    "type": "EFFECT_END",
+  },
+  {
+    "payload": {
+      "actionId": "inst_mquf3gw",
+      "actorId": "ARCLIGHT",
+      "amount": 10,
+      "breakEndTime": undefined,
+      "isBroken": false,
+      "nodeEndTime": undefined,
+      "nodeReachedIndex": undefined,
+      "stagger": 20,
+    },
+    "time": 5.8,
+    "type": "STAGGER",
+  },
+  {
+    "payload": {
+      "actionId": "inst_mquf3gw",
+      "skillId": "ARCLIGHT_skill",
+      "spGain": undefined,
+      "type": "skill",
+    },
+    "time": 6.8,
+    "type": "ACTION_END",
+  },
+  {
+    "payload": {
+      "effectId": "ELEMENT_ELECTRIFICATION",
+      "targetId": "boss",
+      "type": "expiration",
+    },
+    "time": Infinity,
+    "type": "EFFECT_END",
+  },
+]
+`;

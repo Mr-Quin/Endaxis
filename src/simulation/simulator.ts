@@ -17,6 +17,8 @@ export function simulate(
     engine.enqueue({
       type: "ACTION_START",
       time: action.realStartTime,
+      source: { id: action.trackId, type: "PLAYER" },
+      target: { id: action.trackId, type: "PLAYER" },
       payload: {
         skillId: action.node.id || "",
         actionId: action.id,
@@ -30,6 +32,8 @@ export function simulate(
     engine.enqueue({
       type: "ACTION_END",
       time: action.realStartTime + action.realDuration,
+      source: { id: action.trackId, type: "PLAYER" },
+      target: { id: action.trackId, type: "PLAYER" },
       payload: {
         skillId: action.node.id || "",
         actionId: action.id,
@@ -55,6 +59,8 @@ export function simulate(
       engine.enqueue({
         type: "EFFECT_START",
         time: effect.startTime,
+        source: { id: action.trackId, type: "PLAYER" },
+        target: { id: "boss", type: "ENEMY" },
         payload: {
           actorId: action.trackId,
           actionId: action.id,

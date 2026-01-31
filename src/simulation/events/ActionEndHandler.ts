@@ -19,6 +19,8 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
       ctx.queue.enqueue({
         type: "SP_CHANGE",
         time: ctx.state.getCurrentTime(),
+        source: { id: e.payload.actorId, type: "PLAYER" },
+        target: { id: e.payload.actorId, type: "PLAYER" },
         payload: {
           actorId: e.payload.actorId,
           spChange: e.payload.spGain,
@@ -32,6 +34,8 @@ export class ActionEndHandler implements EventHandler<ActionEndEvent> {
       ctx.queue.enqueue({
         type: "SP_CHANGE",
         time: ctx.state.getCurrentTime(),
+        source: { id: e.payload.actorId, type: "PLAYER" },
+        target: { id: e.payload.actorId, type: "PLAYER" },
         payload: {
           actorId: e.payload.actorId,
           spChange: ctx.state.enemy.config.executionRecovery,

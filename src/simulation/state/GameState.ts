@@ -7,6 +7,7 @@ import type {
 } from "@/simulation/state/types.ts";
 import { TeamState } from "@/simulation/state/TeamState.ts";
 import { EnemyState } from "@/simulation/state/EnemyState.ts";
+import type { SimEntityId } from "@/simulation/events/event.types.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";
 import { ActorState } from "./ActorState";
 
@@ -43,6 +44,21 @@ export class GameState implements BaseGameState<GameSnapshot> {
       throw new Error(`Actor ${id} not found`);
     }
     return actor;
+  }
+
+  getEntity(entity: SimEntityId): ActorState | EnemyState | undefined {
+    if (entity.type === "ENEMY") {
+      if (entity.id !== "boss") {
+        return undefined;
+      }
+      return this.enemy;
+    }
+
+    if (entity.type === "PLAYER") {
+      return this.actors.get(entity.id);
+    }
+
+    return undefined;
   }
 
   getCurrentTime() {

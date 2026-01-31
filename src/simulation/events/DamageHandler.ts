@@ -21,6 +21,9 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
       ctx.queue.enqueue({
         type: "STAGGER_CHANGE",
         time: ctx.state.getCurrentTime(),
+        source: e.source,
+        target: e.target ?? { id: e.payload.targetId, type: "ENEMY" },
+        rootSource: e.rootSource,
         payload: {
           stagger: e.payload.stagger,
           actorId: e.payload.actorId,
@@ -35,6 +38,9 @@ export class DamageHandler implements EventHandler<DamageTickEvent> {
       ctx.queue.enqueue({
         type: "SP_CHANGE",
         time: ctx.state.getCurrentTime(),
+        source: e.source,
+        target: e.source,
+        rootSource: e.rootSource,
         payload: {
           actorId: e.payload.actorId,
           spChange: e.payload.sp,

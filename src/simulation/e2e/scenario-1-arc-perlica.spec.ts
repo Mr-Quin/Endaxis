@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { expect, test } from "vitest";
 import { compileScenario } from "../compiler/compileScenario";
 import { scenario } from "./scenario-1-arc-perlica";
 import { simulate } from "../simulator";
@@ -12,4 +12,6 @@ test("scenario-1-arc-perlica", () => {
   simLog.forEach((entry) => {
     console.log(formatSimLogEntry(entry));
   });
+
+  expect(simLog).toMatchSnapshot();
 });

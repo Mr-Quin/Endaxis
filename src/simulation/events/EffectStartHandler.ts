@@ -7,6 +7,10 @@ import { ReactionRegistry } from "@/simulation/effects/reactions";
 export class EffectStartHandler implements EventHandler<EffectStartEvent> {
   handle(event: EffectStartEvent, ctx: SimulationContext) {
     const { effect } = event.payload;
+    const fallbackTarget =
+      event.payload.targetId === "boss"
+        ? { id: "boss", type: "ENEMY" }
+        : { id: event.payload.targetId, type: "PLAYER" };
 
     const target =
       event.payload.targetId === "boss"
@@ -32,6 +36,9 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
         ctx.queue.enqueue({
           type: "EFFECT_END",
           time: ctx.state.getCurrentTime(),
+          source: event.source,
+          target: event.target ?? fallbackTarget,
+          rootSource: event.rootSource,
           payload: {
             effectInstanceId: id,
             type: "consumption",
@@ -43,6 +50,9 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
         ctx.queue.enqueue({
           type: "EFFECT_START",
           time: ctx.state.getCurrentTime(),
+          source: event.source,
+          target: event.target ?? fallbackTarget,
+          rootSource: event.rootSource,
           payload: {
             effect: newEff,
             targetId: event.payload.targetId,
@@ -58,10 +68,6 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
 
     const appliedInstance = target.effects.add(new Effect(effect));
 
-    appliedInstance.effect.triggers.forEach((trigger) => {
-      ctx.trigger.register(trigger);
-    });
-
     ctx.simLog({
       type: "EFFECT_START",
       time: event.time,
@@ -74,6 +80,9 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
     ctx.queue.enqueue({
       type: "EFFECT_END",
       time: effect.startTime + effect.duration,
+      source: event.source,
+      target: event.target ?? fallbackTarget,
+      rootSource: event.rootSource,
       payload: {
         effectInstanceId: appliedInstance.id,
         type: "expiration",
