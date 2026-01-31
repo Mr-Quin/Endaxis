@@ -72,7 +72,7 @@ export type ActorStatKeys = keyof ActorStats;
 
 export interface ScenarioTrack {
   // 角色名
-  id: string;
+  id: string | null;
   actions: Action[];
 
   // stats
@@ -121,7 +121,7 @@ export interface CompiledScenario {
 
 export interface Anomaly {
   _id: string;
-  offset: number;
+  offset?: number;
   duration: number;
   type: string;
   sp?: number;

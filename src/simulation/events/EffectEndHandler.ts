@@ -13,6 +13,11 @@ export class EffectEndHandler implements EventHandler<EffectEndEvent> {
       return;
     }
 
+    // 移除所有触发器
+    removed.effect.triggers.forEach((trigger) => {
+      ctx.trigger.remove(trigger);
+    });
+
     ctx.simLog({
       type: "EFFECT_END",
       time: event.time,

@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { EffectManager } from "./EffectManager";
-import { Effect } from "../effects/types";
+import { Effect } from "../effects/Effect";
 
 describe("EffectManager", () => {
   let manager: EffectManager;
 
   beforeEach(() => {
-    manager = new EffectManager();
+    manager = new EffectManager("owner");
   });
 
   it("添加状态", () => {

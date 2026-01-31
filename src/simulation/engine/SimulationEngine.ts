@@ -12,6 +12,8 @@ import type {
   SimulationContext,
 } from "@/simulation/engine/SimulationContext.ts";
 import type { ResolvedTimeline } from "../compiler/types.ts";
+import { TriggerManager } from "../effects/TriggerManager.ts";
+import type { AnyEffectTrigger } from "../effects/Effect.ts";
 
 type SimEventHook = (event: SimEvent, ctx: EventHookContext) => void;
 
@@ -21,6 +23,7 @@ export class SimulationEngine {
   private listeners = new Set<SimEventHook>();
   private state: GameState;
   private simLog = new PriorityQueue<SimLogEntry>();
+  private triggerManager = new TriggerManager();
 
   constructor(
     private timeline: ResolvedTimeline,
@@ -44,6 +47,14 @@ export class SimulationEngine {
     handler: EventHandler<E>,
   ) {
     this.handlers.set(type, handler);
+  }
+
+  registerTrigger(trigger: AnyEffectTrigger) {
+    this.triggerManager.register(trigger);
+  }
+
+  removeTrigger(trigger: AnyEffectTrigger) {
+    this.triggerManager.remove(trigger);
   }
 
   subscribe(listener: SimEventHook): () => void {
@@ -74,6 +85,10 @@ export class SimulationEngine {
     const ctx: SimulationContext = {
       state: this.state,
       queue: { enqueue: this.enqueue.bind(this) },
+      trigger: {
+        register: this.registerTrigger.bind(this),
+        remove: this.removeTrigger.bind(this),
+      },
       simLog: (entry: SimLogEntry) => {
         this.simLog.enqueue(entry);
       },
@@ -83,18 +98,23 @@ export class SimulationEngine {
     while (!this.queue.isEmpty()) {
       const event = this.queue.dequeue()!;
 
+      // 时间流逝
       if (event.time > this.state.getCurrentTime()) {
         const dt = event.time - this.state.getCurrentTime();
         this.state.advanceTime(dt);
         // TODO: may need emit simLog events for state changes
       }
 
+      // 处理事件
       const handler = this.handlers.get(event.type);
       if (handler) {
         handler.handle(event, ctx);
       } else {
         throw new Error(`No handler for event type: ${event.type}`);
       }
+
+      // 处理触发器
+      this.triggerManager.checkTriggers(event, ctx);
     }
 
     return this.state;

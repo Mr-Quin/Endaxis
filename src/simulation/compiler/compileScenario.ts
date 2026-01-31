@@ -25,7 +25,7 @@ function processActors(tracks: ScenarioTrack[]): ActorSnapshot[] {
     .filter((t) => !!t.id)
     .map((track) => {
       return {
-        id: track.id,
+        id: track.id as string,
         stats: track.stats,
         resources: { hp: track.stats.hp, gauge: track.initialGauge },
         cooldowns: new Map(),
@@ -77,7 +77,7 @@ export function compileScenario(
   }: {
     systemConstants?: Partial<SystemConstants>;
     db?: GameDatabase;
-  } = {}
+  } = {},
 ): CompiledScenario {
   const { actions, actors } = normalizeScenario(scenario);
 

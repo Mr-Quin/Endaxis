@@ -6,7 +6,7 @@ export class ActorState implements BaseGameState<ActorSnapshot> {
   public effects: EffectManager;
 
   constructor(public readonly snapshotData: ActorSnapshot) {
-    this.effects = new EffectManager();
+    this.effects = new EffectManager(this.snapshotData.id);
   }
 
   get id() {

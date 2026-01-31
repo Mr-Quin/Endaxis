@@ -20,7 +20,7 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     private engine: SimulationEngine,
   ) {
     this.nodeStep = this.config.maxStagger / (this.config.staggerNodeCount + 1);
-    this.effects = new EffectManager();
+    this.effects = new EffectManager("enemy");
   }
 
   isLocked(currentTime: number): boolean {

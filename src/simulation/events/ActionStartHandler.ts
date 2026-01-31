@@ -1,6 +1,8 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import type { ActionStartEvent } from "@/simulation/events/event.types.ts";
 import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
+import { SKILL_EFFECT_MAP } from "../effects/skillEffectMap";
+import { assert } from "@/utils/assert";
 
 export class ActionStartHandler implements EventHandler<ActionStartEvent> {
   handle(e: ActionStartEvent, ctx: SimulationContext) {
@@ -14,6 +16,27 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
         spCost: e.payload.spCost,
       },
     });
+
+    const action = ctx.getAction(e.payload.actionId);
+
+    assert(action !== undefined, "Action not found");
+
+    const skillEffects = SKILL_EFFECT_MAP[e.payload.skillId];
+    if (skillEffects) {
+      for (const effect of skillEffects) {
+        effect.startTime = e.time;
+        ctx.queue.enqueue({
+          type: "EFFECT_START",
+          time: e.time,
+          payload: {
+            actorId: e.payload.actorId,
+            actionId: e.payload.actionId,
+            targetId: e.payload.actorId,
+            effect: effect,
+          },
+        });
+      }
+    }
 
     const spFreezeDuration = this.getSpFreezeDuration(e);
     if (spFreezeDuration > 0) {
@@ -42,6 +65,21 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
         },
       });
     }
+
+    action.resolvedDamageTicks.forEach((tick) => {
+      ctx.queue.enqueue({
+        type: "DAMAGE_TICK",
+        time: tick.realTime,
+        payload: {
+          actorId: action.trackId,
+          targetId: "boss",
+          damage: 0,
+          stagger: tick.stagger,
+          actionId: action.id,
+          sp: tick.sp,
+        },
+      });
+    });
   }
 
   private getSpFreezeDuration(e: ActionStartEvent) {

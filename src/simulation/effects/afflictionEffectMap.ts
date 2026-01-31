@@ -1,4 +1,4 @@
-import { Effect } from "./types";
+import { Effect } from "./Effect";
 
 export const AfflictionEffectMap = {
   PHYSICAL_VULNERABLE: Effect.PhysicalVulnerable().clone(),

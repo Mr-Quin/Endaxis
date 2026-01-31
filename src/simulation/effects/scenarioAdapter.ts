@@ -1,4 +1,4 @@
-import type { EffectTag } from "./types";
+import type { EffectTag } from "./Effect";
 
 export const SCNEARIO_EFFECT_TYPE_MAP = {
   armor_break: "PHYSICAL_BREACH",

@@ -1,5 +1,5 @@
 import type { ActionType, ResolvedDamageTick } from "../compiler/types";
-import type { EffectSnapshot } from "../effects/types";
+import type { Effect, EffectSnapshot } from "../effects/Effect";
 
 export type SimEventType = SimEvent["type"];
 type SimBaseEvent<Name extends string, Data = {}> = {
@@ -33,11 +33,11 @@ export type DamageTickEvent = SimBaseEvent<
   "DAMAGE_TICK",
   {
     targetId: string;
-    sourceId: string;
+    actorId: string;
+    actionId: string;
     damage: number;
     stagger: number;
-    tickData: ResolvedDamageTick;
-    actionId: string;
+    sp?: number;
   }
 >;
 export type SpChangeEvent = SimBaseEvent<
@@ -63,7 +63,7 @@ export type EffectStartEvent = SimBaseEvent<
     actorId: string;
     actionId?: string;
     targetId: string;
-    effect: EffectSnapshot;
+    effect: Effect;
   }
 >;
 export type EffectEndEvent = SimBaseEvent<
@@ -134,10 +134,9 @@ export type SimLogEntry =
       "DAMAGE_TICK",
       {
         targetId: string;
-        sourceId: string;
+        actorId: string;
         damage: number;
         stagger: number;
-        tickData: ResolvedDamageTick;
         actionId: string;
       }
     >

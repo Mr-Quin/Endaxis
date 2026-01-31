@@ -1,8 +1,8 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import type { EffectStartEvent } from "@/simulation/events/event.types.ts";
 import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
-import { Effect } from "@/simulation/effects/types";
-import { ReactionRegistry } from "@/simulation/mechanics/reactions";
+import { Effect } from "@/simulation/effects/Effect";
+import { ReactionRegistry } from "@/simulation/effects/reactions";
 
 export class EffectStartHandler implements EventHandler<EffectStartEvent> {
   handle(event: EffectStartEvent, ctx: SimulationContext) {
@@ -15,6 +15,7 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
 
     const incoming = new Effect(effect);
 
+    // 检查是否触发反应
     const reaction = ReactionRegistry.check(target.effects, incoming);
 
     if (reaction) {
@@ -56,6 +57,10 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
     }
 
     const appliedInstance = target.effects.add(new Effect(effect));
+
+    appliedInstance.effect.triggers.forEach((trigger) => {
+      ctx.trigger.register(trigger);
+    });
 
     ctx.simLog({
       type: "EFFECT_START",

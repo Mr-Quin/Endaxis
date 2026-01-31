@@ -1,5 +1,5 @@
 import type { SimulationContext } from "../engine/SimulationContext";
-import type { SimEvent } from "../events/event.types";
+import type { SimEvent, SimEventType } from "../events/event.types";
 
 export type ElementalEffectTag =
   // 法术
@@ -35,16 +35,31 @@ export type EffectTag =
   // 减抗
   | "DEBUFF_RES_DOWN";
 
-export interface EffectTrigger<T extends SimEvent = SimEvent> {
-  event: T["type"];
+export interface EffectTrigger<T extends SimEventType = SimEventType> {
+  event: T;
+  ownerId?: string;
 
-  sourceMustBeWearer?: boolean;
   cooldownId?: string;
   cooldownDuration?: number;
 
-  condition?: (event: T, ctx: SimulationContext) => boolean;
+  once?: boolean;
 
-  action: (event: T, ctx: SimulationContext) => void;
+  sourceCondition?: "self";
+  condition?: (
+    event: Extract<SimEvent, { type: T }>,
+    ctx: SimulationContext,
+  ) => boolean;
+
+  action: (
+    event: Extract<SimEvent, { type: T }>,
+    ctx: SimulationContext,
+  ) => void;
+}
+
+export function createEffectTrigger<T extends SimEventType>(
+  trigger: EffectTrigger<T>,
+): EffectTrigger<T> {
+  return trigger;
 }
 
 export interface EffectSnapshot {
@@ -63,6 +78,10 @@ export interface EffectSnapshot {
     [key: string]: any;
   };
 }
+
+export type AnyEffectTrigger = {
+  [K in SimEventType]: EffectTrigger<K>;
+}[SimEventType];
 
 export class Effect {
   id: string;
@@ -85,13 +104,13 @@ export class Effect {
     [key: string]: any;
   };
 
-  triggers: EffectTrigger[];
+  triggers: AnyEffectTrigger[];
 
   constructor(
     data: Partial<EffectSnapshot> & {
       id: string;
       tags: EffectTag[];
-      triggers?: EffectTrigger[];
+      triggers?: AnyEffectTrigger[];
     },
   ) {
     this.id = data.id;
@@ -128,7 +147,10 @@ export class Effect {
   }
 
   clone() {
-    return new Effect(this.snapshot());
+    return new Effect({
+      ...this.snapshot(),
+      triggers: this.triggers,
+    });
   }
 
   static PhysicalVulnerable() {

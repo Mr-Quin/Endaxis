@@ -3,6 +3,7 @@ import { createEngine } from "./engine/createEngine.ts";
 import type { ResolvedTimeline } from "./compiler/types.ts";
 import { SCNEARIO_EFFECT_TYPE_MAP } from "./effects/scenarioAdapter.ts";
 import { AfflictionEffectMap } from "./effects/afflictionEffectMap.ts";
+import { formatSimLogEntry } from "./formatSimLogEntry.ts";
 
 export function simulate(
   timeline: ResolvedTimeline,
@@ -38,21 +39,6 @@ export function simulate(
       },
     });
 
-    action.resolvedDamageTicks.forEach((tick) => {
-      engine.enqueue({
-        type: "DAMAGE_TICK",
-        time: tick.realTime,
-        payload: {
-          sourceId: action.trackId,
-          targetId: "boss",
-          damage: 0,
-          stagger: tick.stagger,
-          tickData: tick,
-          actionId: action.id,
-        },
-      });
-    });
-
     action.effects.forEach((resolvedEffect) => {
       const tag =
         SCNEARIO_EFFECT_TYPE_MAP[
@@ -73,7 +59,7 @@ export function simulate(
           actorId: action.trackId,
           actionId: action.id,
           targetId: "boss",
-          effect: effect.snapshot(),
+          effect: effect.clone(),
         },
       });
     });
@@ -82,6 +68,10 @@ export function simulate(
   const state = engine.run();
 
   const simLog = engine.getSimLog();
+
+  simLog.forEach((log) => {
+    console.log(formatSimLogEntry(log));
+  });
 
   return {
     state,

@@ -4,7 +4,7 @@ import {
   type EffectTag,
   type ElementalEffectTag,
   type PhysicalEffectTag,
-} from "../effects/types";
+} from "./Effect";
 import { assert } from "@/utils/assert";
 import { AfflictionEffectMap } from "@/simulation/effects/afflictionEffectMap";
 

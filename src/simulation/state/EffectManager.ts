@@ -1,5 +1,5 @@
-import { Effect } from "../effects/types";
-import type { EffectTag } from "../effects/types";
+import { Effect } from "../effects/Effect";
+import type { EffectTag } from "../effects/Effect";
 
 export type EffectInstance = {
   id: string;
@@ -11,7 +11,7 @@ export class EffectManager {
   private effectInstances: Map<string, EffectInstance> = new Map();
   private tagCounts: Map<EffectTag, number> = new Map();
 
-  constructor() {}
+  constructor(private ownerId: string) {}
 
   add(effect: Effect): EffectInstance {
     const existing = this.getByEffectId(effect.id);
@@ -28,6 +28,11 @@ export class EffectManager {
 
     this.effectInstances.set(instanceId, { id: instanceId, effect });
     this.updateTags(effect, 1);
+
+    // 绑定ownerId
+    effect.triggers.forEach((trigger) => {
+      trigger.ownerId = this.ownerId;
+    });
 
     return {
       id: instanceId,
