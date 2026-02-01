@@ -1,5 +1,5 @@
 import type { ActionType } from "../compiler/types";
-import type { Effect, EffectSnapshot } from "../effects/Effect";
+import type { EffectDefinition, EffectSnapshot } from "../effects/Effect";
 
 export type EntityType = "PLAYER" | "ENEMY" | "SUMMON" | "ENVIRONMENT";
 
@@ -73,7 +73,7 @@ export type EffectStartEvent = SimBaseEvent<
     actorId: string;
     actionId?: string;
     targetId: string;
-    effect: Effect;
+    effect: EffectDefinition;
   }
 >;
 export type EffectEndEvent = SimBaseEvent<

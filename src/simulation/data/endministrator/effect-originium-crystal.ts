@@ -1,6 +1,6 @@
-import { createEffectTrigger, Effect } from "../../effects/Effect";
+import { createEffectTrigger, EffectDefinition } from "../../effects/Effect";
 
-export const effectOriginiumCrystal = new Effect({
+export const effectOriginiumCrystal = new EffectDefinition({
   id: "endministrator_effect_originium_crystal",
   name: "Originium Crystal",
   type: "buff",
@@ -29,7 +29,7 @@ export const effectOriginiumCrystal = new Effect({
           type: "DAMAGE_TICK",
           time: ctx.state.getCurrentTime(),
           source: event.source,
-          target: event.target ?? { id: event.payload.targetId, type: "ENEMY" },
+          target: event.target,
           rootSource: event.rootSource,
           payload: {
             actorId: event.payload.actorId,

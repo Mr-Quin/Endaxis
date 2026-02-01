@@ -1,6 +1,6 @@
 import type { BaseGameState } from "@/simulation/state/BaseGameState.ts";
 import type { EnemySnapshot, EnemyConfig } from "@/simulation/state/types.ts";
-import type { SimEvent } from "@/simulation/events/event.types.ts";
+import type { SimEvent, SimEntityId } from "@/simulation/events/event.types.ts";
 import type { SimulationEngine } from "../engine/SimulationEngine";
 import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
 import { EffectManager } from "./EffectManager";
@@ -14,15 +14,16 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
   nodeStep: number = 0;
   private currentTime: number = 0;
 
-  // effectId -> type
-  public effects: EffectManager;
+  readonly effects: EffectManager;
+  readonly id: SimEntityId;
 
   constructor(
     readonly config: EnemyConfig,
     private engine: SimulationEngine,
   ) {
     this.nodeStep = this.config.maxStagger / (this.config.staggerNodeCount + 1);
-    this.effects = new EffectManager("enemy");
+    this.id = { id: "boss", type: "ENEMY" };
+    this.effects = new EffectManager(this.id);
   }
 
   isLocked(currentTime: number): boolean {
@@ -91,7 +92,9 @@ export class EnemyState implements BaseGameState<EnemySnapshot> {
     this.currentTime = currentTime;
   }
 
-  onEvent(_event: SimEvent, _ctx: SimulationContext) {}
+  onEvent(event: SimEvent, ctx: SimulationContext) {
+    this.effects.handleEvent(event, ctx);
+  }
 
   snapshot(): EnemySnapshot {
     return {

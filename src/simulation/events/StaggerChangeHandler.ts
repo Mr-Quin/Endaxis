@@ -40,7 +40,7 @@ export class StaggerChangeHandler implements EventHandler<StaggerChangeEvent> {
       type: "STAGGER",
       time: e.time,
       payload: {
-        actorId: actor.id,
+        actorId: actor.id.id,
         actionId: e.payload.actionId,
         amount: result.finalValue,
         stagger: ctx.state.enemy.getStagger(),

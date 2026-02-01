@@ -20,7 +20,7 @@ export class EffectEndHandler implements EventHandler<EffectEndEvent> {
       type: "EFFECT_END",
       time: event.time,
       payload: {
-        effectId: removed.effect.id,
+        effectId: removed.def.id,
         targetId: event.target?.id ?? "",
         type: event.payload.type,
       },

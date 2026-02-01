@@ -1,5 +1,9 @@
 import type { SimulationContext } from "../engine/SimulationContext";
-import type { SimEvent, SimEventType } from "../events/event.types";
+import type {
+  SimEntityId,
+  SimEvent,
+  SimEventType,
+} from "../events/event.types";
 
 export type ElementalEffectTag =
   // 法术
@@ -29,11 +33,7 @@ export type PhysicalEffectTag =
 
 export type EffectTag =
   | ElementalEffectTag
-  | PhysicalEffectTag
-  // 增伤
-  | "PHYSICAL_BONUS"
-  // 减抗
-  | "DEBUFF_RES_DOWN";
+  | PhysicalEffectTag;
 
 export interface EffectTrigger<T extends SimEventType = SimEventType> {
   event: T;
@@ -48,11 +48,13 @@ export interface EffectTrigger<T extends SimEventType = SimEventType> {
   condition?: (
     event: Extract<SimEvent, { type: T }>,
     ctx: SimulationContext,
+    inst: EffectInstance,
   ) => boolean;
 
   action: (
     event: Extract<SimEvent, { type: T }>,
     ctx: SimulationContext,
+    inst: EffectInstance,
   ) => void;
 }
 
@@ -61,6 +63,8 @@ export function createEffectTrigger<T extends SimEventType>(
 ): EffectTrigger<T> {
   return trigger;
 }
+
+export type StackStrategy = "REFRESH_DURATION" | "INDEPENDENT" | "ADD_DURATION";
 
 export interface EffectSnapshot {
   id: string;
@@ -71,7 +75,7 @@ export interface EffectSnapshot {
   duration: number;
   startTime: number;
   maxStacks: number;
-  stackStrategy: "REFRESH_DURATION" | "INDEPENDENT" | "ADD_DURATION";
+  stackStrategy: StackStrategy;
   currentStacks: number;
   properties: {
     value?: number;
@@ -83,28 +87,24 @@ export type AnyEffectTrigger = {
   [K in SimEventType]: EffectTrigger<K>;
 }[SimEventType];
 
-export class Effect {
-  id: string;
-  name: string;
-  description?: string;
-  type: string;
+export class EffectDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly type: string;
 
-  tags: EffectTag[];
+  readonly tags: EffectTag[];
 
-  duration: number;
-  startTime: number = 0;
+  readonly duration: number;
+  readonly maxStacks: number = 1;
+  readonly stackStrategy: StackStrategy = "INDEPENDENT";
 
-  maxStacks: number = 1;
-  stackStrategy: "REFRESH_DURATION" | "INDEPENDENT" | "ADD_DURATION" =
-    "REFRESH_DURATION";
-  currentStacks: number = 1;
-
-  properties: {
+  readonly properties: {
     value?: number;
     [key: string]: any;
   };
 
-  triggers: AnyEffectTrigger[];
+  readonly triggers: AnyEffectTrigger[];
 
   constructor(
     data: Partial<EffectSnapshot> & {
@@ -116,45 +116,32 @@ export class Effect {
     this.id = data.id;
     this.name = data.name || "";
     this.description = data.description || "";
-    this.startTime = data.startTime ?? 0;
     this.type = data.type || "UNKNOWN";
     this.tags = data.tags;
     this.duration = data.duration ?? Infinity;
     this.maxStacks = data.maxStacks || 1;
     this.stackStrategy = data.stackStrategy || "REFRESH_DURATION";
-    this.currentStacks = data.currentStacks ?? 1;
     this.properties = data.properties || {};
     this.triggers = data.triggers || [];
   }
 
-  isStackable() {
-    return this.maxStacks > 1;
-  }
-
-  snapshot(): EffectSnapshot {
-    return {
+  clone() {
+    return new EffectDefinition({
       id: this.id,
       name: this.name,
       type: this.type,
+      description: this.description,
       tags: this.tags,
       duration: this.duration,
-      startTime: this.startTime,
       maxStacks: this.maxStacks,
       stackStrategy: this.stackStrategy,
-      currentStacks: this.currentStacks,
       properties: this.properties,
-    };
-  }
-
-  clone() {
-    return new Effect({
-      ...this.snapshot(),
       triggers: this.triggers,
     });
   }
 
   static PhysicalVulnerable() {
-    return new Effect({
+    return new EffectDefinition({
       id: "PHYSICAL_VULNERABLE",
       tags: ["PHYSICAL_VULNERABLE"],
       name: "Physical Affliction",
@@ -165,7 +152,7 @@ export class Effect {
   }
 
   static PhysicalKnockDown() {
-    return new Effect({
+    return new EffectDefinition({
       id: "PHYSICAL_KNOCK_DOWN",
       tags: ["PHYSICAL_KNOCK_DOWN"],
       name: "Physical Affliction",
@@ -176,7 +163,7 @@ export class Effect {
   }
 
   static PhysicalLift() {
-    return new Effect({
+    return new EffectDefinition({
       id: "PHYSICAL_LIFT",
       tags: ["PHYSICAL_LIFT"],
       name: "Physical Affliction",
@@ -187,7 +174,7 @@ export class Effect {
   }
 
   static PhysicalBreach() {
-    return new Effect({
+    return new EffectDefinition({
       id: "PHYSICAL_BREACH",
       tags: ["PHYSICAL_BREACH"],
       name: "Physical Affliction",
@@ -198,7 +185,7 @@ export class Effect {
   }
 
   static PhysicalCrush() {
-    return new Effect({
+    return new EffectDefinition({
       id: "PHYSICAL_CRUSH",
       tags: ["PHYSICAL_CRUSH"],
       name: "Physical Affliction",
@@ -209,7 +196,7 @@ export class Effect {
   }
 
   static ElementCryo() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_CRYO",
       tags: ["ELEMENT_CRYO"],
       name: "Cryo Afflication",
@@ -220,7 +207,7 @@ export class Effect {
   }
 
   static ElementHeat() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_HEAT",
       tags: ["ELEMENT_HEAT"],
       name: "Heat Affliction",
@@ -231,7 +218,7 @@ export class Effect {
   }
 
   static ElementElectric() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_ELECTRIC",
       tags: ["ELEMENT_ELECTRIC"],
       name: "Electric Affliction",
@@ -242,7 +229,7 @@ export class Effect {
   }
 
   static ElementNature() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_NATURE",
       tags: ["ELEMENT_NATURE"],
       name: "Nature Affliction",
@@ -253,7 +240,7 @@ export class Effect {
   }
 
   static ElementHeatBurst() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_HEAT_BURST",
       tags: ["ELEMENT_HEAT_BURST"],
       name: "Heat Burst",
@@ -262,7 +249,7 @@ export class Effect {
   }
 
   static ElementCryoBurst() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_CRYO_BURST",
       tags: ["ELEMENT_CRYO_BURST"],
       name: "Cryo Burst",
@@ -271,7 +258,7 @@ export class Effect {
   }
 
   static ElementElectricBurst() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_ELECTRIC_BURST",
       tags: ["ELEMENT_ELECTRIC_BURST"],
       name: "Electric Burst",
@@ -280,7 +267,7 @@ export class Effect {
   }
 
   static ElementNatureBurst() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_NATURE_BURST",
       tags: ["ELEMENT_NATURE_BURST"],
       name: "Nature Burst",
@@ -289,7 +276,7 @@ export class Effect {
   }
 
   static ElementCombustion() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_COMBUSTION",
       tags: ["ELEMENT_COMBUSTION"],
       name: "Combustion",
@@ -298,7 +285,7 @@ export class Effect {
   }
 
   static ElementElectrification() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_ELECTRIFICATION",
       tags: ["ELEMENT_ELECTRIFICATION"],
       name: "Electrification",
@@ -307,7 +294,7 @@ export class Effect {
   }
 
   static ElementSolidification() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_SOLIDIFICATION",
       tags: ["ELEMENT_SOLIDIFICATION"],
       name: "Solidification",
@@ -316,11 +303,67 @@ export class Effect {
   }
 
   static ElementCorrosion() {
-    return new Effect({
+    return new EffectDefinition({
       id: "ELEMENT_CORROSION",
       tags: ["ELEMENT_CORROSION"],
       name: "Corrosion",
       duration: Number.POSITIVE_INFINITY,
     });
+  }
+}
+
+export class EffectInstance {
+  public store = new Map<string, any>();
+  public stacks: { expiry: number }[] = [];
+  public triggers: AnyEffectTrigger[];
+
+  constructor(
+    public readonly id: string,
+    public readonly def: EffectDefinition,
+    public readonly owner: SimEntityId,
+    public readonly source: SimEntityId,
+    public readonly startTime: number,
+  ) {
+    this.triggers = def.triggers.map((trigger) => ({
+      ...trigger,
+      ownerId: owner.id,
+    }));
+    this.addStack(startTime);
+  }
+
+  addStack(time: number) {
+    if (this.stacks.length < this.def.maxStacks) {
+      this.stacks.push({ expiry: time + this.def.duration });
+      return;
+    }
+
+    if (this.def.stackStrategy === "REFRESH_DURATION") {
+      this.stacks.forEach((stack) => {
+        stack.expiry = time + this.def.duration;
+      });
+    } else if (this.def.stackStrategy === "ADD_DURATION") {
+      this.stacks.forEach((stack) => {
+        stack.expiry += this.def.duration;
+      });
+    }
+  }
+
+  get currentStacks() {
+    return this.stacks.length;
+  }
+
+  snapshot(): EffectSnapshot {
+    return {
+      id: this.def.id,
+      name: this.def.name,
+      type: this.def.type,
+      tags: this.def.tags,
+      duration: this.def.duration,
+      startTime: this.startTime,
+      maxStacks: this.def.maxStacks,
+      stackStrategy: this.def.stackStrategy,
+      currentStacks: this.currentStacks,
+      properties: this.def.properties,
+    };
   }
 }

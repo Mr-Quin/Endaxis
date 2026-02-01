@@ -54,11 +54,10 @@ export function simulate(
       }
 
       const effect = AfflictionEffectMap[tag];
-      effect.startTime = resolvedEffect.realStartTime;
 
       engine.enqueue({
         type: "EFFECT_START",
-        time: effect.startTime,
+        time: resolvedEffect.realStartTime,
         source: { id: action.trackId, type: "PLAYER" },
         target: { id: "boss", type: "ENEMY" },
         payload: {

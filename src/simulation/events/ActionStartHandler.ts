@@ -24,7 +24,6 @@ export class ActionStartHandler implements EventHandler<ActionStartEvent> {
     const skillEffects = SKILL_EFFECT_MAP[e.payload.skillId];
     if (skillEffects) {
       for (const effect of skillEffects) {
-        effect.startTime = e.time;
         ctx.queue.enqueue({
           type: "EFFECT_START",
           time: e.time,

@@ -1,23 +1,19 @@
 import type { EventHandler } from "@/simulation/events/EventHandler.ts";
 import type { EffectStartEvent } from "@/simulation/events/event.types.ts";
 import type { SimulationContext } from "@/simulation/engine/SimulationContext.ts";
-import { Effect } from "@/simulation/effects/Effect";
+import type { EffectDefinition } from "@/simulation/effects/Effect";
 import { ReactionRegistry } from "@/simulation/effects/reactions";
 
 export class EffectStartHandler implements EventHandler<EffectStartEvent> {
   handle(event: EffectStartEvent, ctx: SimulationContext) {
     const { effect } = event.payload;
-    const fallbackTarget =
-      event.payload.targetId === "boss"
-        ? { id: "boss", type: "ENEMY" }
-        : { id: event.payload.targetId, type: "PLAYER" };
 
     const target =
       event.payload.targetId === "boss"
         ? ctx.state.enemy
         : ctx.state.getActor(event.payload.targetId);
 
-    const incoming = new Effect(effect);
+    const incoming: EffectDefinition = effect;
 
     // 检查是否触发反应
     const reaction = ReactionRegistry.check(target.effects, incoming);
@@ -37,7 +33,7 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
           type: "EFFECT_END",
           time: ctx.state.getCurrentTime(),
           source: event.source,
-          target: event.target ?? fallbackTarget,
+          target: event.target,
           rootSource: event.rootSource,
           payload: {
             effectInstanceId: id,
@@ -51,7 +47,7 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
           type: "EFFECT_START",
           time: ctx.state.getCurrentTime(),
           source: event.source,
-          target: event.target ?? fallbackTarget,
+          target: event.target,
           rootSource: event.rootSource,
           payload: {
             effect: newEff,
@@ -66,22 +62,22 @@ export class EffectStartHandler implements EventHandler<EffectStartEvent> {
       }
     }
 
-    const appliedInstance = target.effects.add(new Effect(effect));
+    const appliedInstance = target.effects.add(effect, event.source, event.time);
 
     ctx.simLog({
       type: "EFFECT_START",
       time: event.time,
       payload: {
-        effectSnapshot: appliedInstance.effect.snapshot(),
+        effectSnapshot: appliedInstance.snapshot(),
         targetId: event.payload.targetId,
       },
     });
 
     ctx.queue.enqueue({
       type: "EFFECT_END",
-      time: effect.startTime + effect.duration,
+      time: event.time + effect.duration,
       source: event.source,
-      target: event.target ?? fallbackTarget,
+      target: event.target,
       rootSource: event.rootSource,
       payload: {
         effectInstanceId: appliedInstance.id,

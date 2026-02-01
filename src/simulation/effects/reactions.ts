@@ -1,6 +1,6 @@
 import type { EffectManager } from "@/simulation/state/EffectManager";
 import {
-  Effect,
+  EffectDefinition,
   type EffectTag,
   type ElementalEffectTag,
   type PhysicalEffectTag,
@@ -12,7 +12,7 @@ export interface ReactionResult {
   name: string;
   cancelIncoming: boolean;
   removeIds: string[];
-  spawnEffects: Effect[];
+  spawnEffects: EffectDefinition[];
 }
 
 const PHYSICAL_AFFLICTIONS = [
@@ -84,7 +84,10 @@ function getElementalAffliction(
 }
 
 export const ReactionRegistry = {
-  check(target: EffectManager, incoming: Effect): ReactionResult | null {
+  check(
+    target: EffectManager,
+    incoming: EffectDefinition,
+  ): ReactionResult | null {
     if (hasPhysicalAffliction(incoming.tags)) {
       const vulnerables = target.getByTag("PHYSICAL_VULNERABLE") || [];
 
@@ -96,7 +99,7 @@ export const ReactionRegistry = {
           name: "Physical Reaction",
           cancelIncoming: true,
           removeIds: [],
-          spawnEffects: [Effect.PhysicalVulnerable()],
+          spawnEffects: [EffectDefinition.PhysicalVulnerable()],
         };
       }
 
@@ -132,7 +135,7 @@ export const ReactionRegistry = {
             name: "Physical Lift",
             cancelIncoming: false,
             removeIds: [],
-            spawnEffects: [Effect.PhysicalVulnerable()],
+            spawnEffects: [EffectDefinition.PhysicalVulnerable()],
           };
         }
 
@@ -143,7 +146,7 @@ export const ReactionRegistry = {
             name: "Physical Knock Down",
             cancelIncoming: false,
             removeIds: [],
-            spawnEffects: [Effect.PhysicalVulnerable()],
+            spawnEffects: [EffectDefinition.PhysicalVulnerable()],
           };
         }
       }

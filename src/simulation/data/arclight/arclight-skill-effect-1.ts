@@ -1,7 +1,7 @@
 import { assert } from "@/utils/assert";
-import { createEffectTrigger, Effect } from "../../effects/Effect";
+import { createEffectTrigger, EffectDefinition } from "../../effects/Effect";
 
-export const ArclightSkillEffect1 = new Effect({
+export const ArclightSkillEffect1 = new EffectDefinition({
   id: "arclight_skill_effect_1",
   name: "Tempestuous Arc Effect",
   type: "buff",
@@ -22,7 +22,7 @@ export const ArclightSkillEffect1 = new Effect({
           type: "DAMAGE_TICK",
           time: ctx.state.getCurrentTime(),
           source: event.source,
-          target: event.target ?? { id: event.payload.targetId, type: "ENEMY" },
+          target: event.target,
           rootSource: event.rootSource,
           payload: {
             actorId: event.payload.actorId,
@@ -30,7 +30,7 @@ export const ArclightSkillEffect1 = new Effect({
             damage: 100,
             stagger: 0,
             sp: 10,
-            actionId: "arclight_skill_effect_1",
+            actionId: event.payload.actionId,
           },
         });
         const electrificationEffect = ctx.state.enemy.effects.getByTag(
@@ -46,7 +46,7 @@ export const ArclightSkillEffect1 = new Effect({
           type: "EFFECT_END",
           time: ctx.state.getCurrentTime(),
           source: event.source,
-          target: event.target ?? { id: event.payload.targetId, type: "ENEMY" },
+          target: event.target,
           rootSource: event.rootSource,
           payload: {
             type: "consumption",

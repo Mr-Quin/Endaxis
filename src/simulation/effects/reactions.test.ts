@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { ReactionRegistry } from "./reactions";
-import { Effect, type EffectTag } from "./Effect";
+import { EffectDefinition, type EffectTag } from "./Effect";
 import { EffectManager } from "@/simulation/state/EffectManager";
 
 describe("ReactionRegistry", () => {
   it("无可反应的元素时返回null", () => {
-    const effectManager = new EffectManager();
-    const incomingEffect = new Effect({
+    const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
+    const incomingEffect = new EffectDefinition({
       id: "NOTHING",
       tags: ["NOTHING" as EffectTag],
     });
@@ -21,9 +21,9 @@ describe("ReactionRegistry", () => {
       "ELEMENT_ELECTRIC",
       "ELEMENT_NATURE",
     ])("无先手元素时触发附着 %s", (incoming) => {
-      const effectManager = new EffectManager();
+      const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
 
-      const incomingEffect = new Effect({
+      const incomingEffect = new EffectDefinition({
         id: incoming,
         tags: [incoming as EffectTag],
       });
@@ -39,16 +39,18 @@ describe("ReactionRegistry", () => {
       ["ELEMENT_ELECTRIC", "ELEMENT_ELECTRIC", "ELEMENT_ELECTRIC_BURST"],
       ["ELEMENT_NATURE", "ELEMENT_NATURE", "ELEMENT_NATURE_BURST"],
     ])(`同元素触发法术爆发 %s + %s -> %s`, (existing, incoming, expected) => {
-      const effectManager = new EffectManager();
+      const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
 
       effectManager.add(
-        new Effect({
+        new EffectDefinition({
           id: existing,
           tags: [existing as EffectTag],
         }),
+        { id: "source", type: "PLAYER" },
+        0,
       );
 
-      const incomingEffect = new Effect({
+      const incomingEffect = new EffectDefinition({
         id: incoming,
         tags: [incoming as EffectTag],
       });
@@ -79,15 +81,17 @@ describe("ReactionRegistry", () => {
       ["ELEMENT_ELECTRIC", "ELEMENT_CRYO", "ELEMENT_SOLIDIFICATION"],
       ["ELEMENT_NATURE", "ELEMENT_CRYO", "ELEMENT_SOLIDIFICATION"],
     ])(`不同元素触发法术异常 %s + %s -> %s`, (existing, incoming, expected) => {
-      const effectManager = new EffectManager();
+      const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
       effectManager.add(
-        new Effect({
+        new EffectDefinition({
           id: existing,
           tags: [existing as EffectTag],
         }),
+        { id: "source", type: "PLAYER" },
+        0,
       );
 
-      const incomingEffect = new Effect({
+      const incomingEffect = new EffectDefinition({
         id: incoming,
         tags: [incoming as EffectTag],
       });
@@ -108,15 +112,17 @@ describe("ReactionRegistry", () => {
       "PHYSICAL_BREACH",
       "PHYSICAL_CRUSH",
     ])("无破防时触发破防 %s", (incoming) => {
-      const effectManager = new EffectManager();
+      const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
       effectManager.add(
-        new Effect({
+        new EffectDefinition({
           id: incoming,
           tags: [incoming as EffectTag],
         }),
+        { id: "source", type: "PLAYER" },
+        0,
       );
 
-      const incomingEffect = new Effect({
+      const incomingEffect = new EffectDefinition({
         id: incoming,
         tags: [incoming as EffectTag],
       });
@@ -132,15 +138,17 @@ describe("ReactionRegistry", () => {
     it.each(["PHYSICAL_KNOCK_DOWN", "PHYSICAL_LIFT"])(
       "破防时触发倒地击飞 %s",
       (incoming) => {
-        const effectManager = new EffectManager();
+        const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
         effectManager.add(
-          new Effect({
+          new EffectDefinition({
             id: "PHYSICAL_VULNERABLE",
             tags: ["PHYSICAL_VULNERABLE"],
           }),
+          { id: "source", type: "PLAYER" },
+          0,
         );
 
-        const incomingEffect = new Effect({
+        const incomingEffect = new EffectDefinition({
           id: incoming,
           tags: [incoming as EffectTag],
         });
@@ -158,15 +166,17 @@ describe("ReactionRegistry", () => {
     it.each(["PHYSICAL_BREACH", "PHYSICAL_CRUSH"])(
       "破防时触发猛击碎甲 %s",
       (incoming) => {
-        const effectManager = new EffectManager();
+        const effectManager = new EffectManager({ id: "boss", type: "ENEMY" });
         effectManager.add(
-          new Effect({
+          new EffectDefinition({
             id: "PHYSICAL_VULNERABLE",
             tags: ["PHYSICAL_VULNERABLE"],
           }),
+          { id: "source", type: "PLAYER" },
+          0,
         );
 
-        const incomingEffect = new Effect({
+        const incomingEffect = new EffectDefinition({
           id: incoming,
           tags: [incoming as EffectTag],
         });
